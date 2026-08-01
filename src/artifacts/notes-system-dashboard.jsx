@@ -42,10 +42,10 @@ export function initNotesSystemDashboard(containerEl) {
         const tabs = [
             { id: 'today', label: 'Today Homepage', icon: 'home-alt' },
             { id: 'templates', label: 'Template Studio', icon: 'layer' },
-            { id: 'relationships', label: 'Relationship Tree', icon: 'git-repo-forked' },
             { id: 'ifttt', label: 'IFTTT Automation', icon: 'git-commit' },
             { id: 'settings', label: 'Settings & Spec', icon: 'slider-alt' },
         ];
+
 
 
         for (const t of tabs) {

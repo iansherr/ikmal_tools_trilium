@@ -1,11 +1,11 @@
 /**
- * Template Studio Component: Nested Template Tree Sidebar, Inheritance & Relationship Section,
- * Large Live Note Preview with Inherited Attributes.
+ * Template Studio Component: Multi-Parent Tree Highlighting, Integrated Relationship Editing,
+ * and Multi-Parent Inheritance Live Preview.
  * Styled natively with Trilium Boxicons and design tokens.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
-import { TemplateDefinition, PromotedAttributeDef, AttributeDataType } from '../engine/types.js';
+import { TemplateDefinition, PromotedAttributeDef, TemplateRelationshipDef } from '../engine/types.js';
 import { exportTemplateAsHtml } from '../engine/yamlSpec.js';
 
 export function renderTemplateStudio(
@@ -23,16 +23,16 @@ export function renderTemplateStudio(
 
         // Header Banner
         const header = document.createElement('div');
-        header.className = 'p-3 rounded border d-flex align-items-center justify-content-between';
+        header.className = 'p-3 rounded border d-flex align-items-center justify-content-between shadow-sm';
         header.style.backgroundColor = 'var(--sub-background-color, transparent)';
         header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
         header.innerHTML = `
             <div class="d-flex align-items-center gap-3">
                 <i class="bx bx-layer h3 m-0 text-primary"></i>
                 <div>
-                    <h2 class="h5 m-0 font-weight-bold">Template Studio & Relationship Inheritance</h2>
+                    <h2 class="h5 m-0 font-weight-bold">Template Studio & Multi-Parent Relationship Manager</h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure nested template schemas, parent inheritance rules, promoted attributes, and live side-by-side note preview.
+                        Manage nested template schemas, configure parent-child relationship links, and preview multi-parent metadata inheritance.
                     </p>
                 </div>
             </div>
@@ -48,44 +48,65 @@ export function renderTemplateStudio(
         const layoutRow = document.createElement('div');
         layoutRow.className = 'row g-3';
 
-        // 1. Sidebar: Nested Template Hierarchy Tree
+        // 1. Sidebar: Multi-Parent Hierarchy Tree with Live Highlighting
         const sidebarCol = document.createElement('div');
         sidebarCol.className = 'col-md-3';
 
         const sidebarCard = document.createElement('div');
-        sidebarCard.className = 'card border h-100';
+        sidebarCard.className = 'card border h-100 shadow-sm';
         sidebarCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
         sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
         const sidebarHeader = document.createElement('div');
-        sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center gap-1';
-        sidebarHeader.innerHTML = '<i class="bx bx-sitemap"></i> Nested Template Hierarchy';
+        sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center justify-content-between';
+        sidebarHeader.innerHTML = `
+            <span class="d-flex align-items-center gap-1"><i class="bx bx-sitemap"></i> Template Tree</span>
+            <span class="tiny text-muted font-weight-normal">Multi-parent enabled</span>
+        `;
         sidebarCard.appendChild(sidebarHeader);
 
         const listGroup = document.createElement('div');
         listGroup.className = 'list-group list-group-flush p-2 d-flex flex-column gap-1';
 
-        // Define nested hierarchy tree groups
+        // Multi-Parent Hierarchy Groups (Templates can appear under multiple parent contexts!)
         const hierarchyGroups = [
             {
-                groupName: 'Project & Editorial Hubs',
+                groupName: 'Project Hub Hierarchy',
                 icon: 'book',
-                templates: ['projectHub', 'story', 'edit', 'reportingNotes', 'projectTask'],
+                templates: [
+                    { id: 'projectHub', role: 'Root Project Hub' },
+                    { id: 'story', role: 'Primary Child: Story Project' },
+                    { id: 'edit', role: 'Grandchild: Edit Package' },
+                    { id: 'reportingNotes', role: 'Child: Reporting Notes' },
+                    { id: 'projectTask', role: 'Child: Project Task' },
+                ],
             },
             {
-                groupName: 'Work & Meetings',
-                icon: 'calendar-event',
-                templates: ['meeting', 'meetingPrep', 'task', 'emailDraft'],
+                groupName: 'Standalone Work & Tasks',
+                icon: 'check-square',
+                templates: [
+                    { id: 'task', role: 'Standalone Task' },
+                    { id: 'projectTask', role: 'Multi-Parent: Under Project Hub' },
+                    { id: 'meeting', role: 'Meeting' },
+                    { id: 'meetingPrep', role: 'Child: Meeting Prep' },
+                    { id: 'emailDraft', role: 'Email Draft' },
+                ],
             },
             {
-                groupName: 'People & Organizations',
+                groupName: 'People & Client Orgs',
                 icon: 'user',
-                templates: ['person', 'organization'],
+                templates: [
+                    { id: 'person', role: 'Person' },
+                    { id: 'organization', role: 'Client Organization' },
+                    { id: 'meeting', role: 'Multi-Parent: Linked to Client' },
+                ],
             },
             {
-                groupName: 'System & Topics',
+                groupName: 'System & Topic Index',
                 icon: 'purchase-tag',
-                templates: ['topic'],
+                templates: [
+                    { id: 'topic', role: 'Topic Tag' },
+                ],
             },
         ];
 
@@ -96,27 +117,25 @@ export function renderTemplateStudio(
             grpHeader.innerHTML = `<i class="bx bx-${grp.icon}"></i> ${grp.groupName}`;
             listGroup.appendChild(grpHeader);
 
-            for (const tId of grp.templates) {
-                const tpl = templateEngine.getTemplate(tId);
+            for (const tItem of grp.templates) {
+                const tpl = templateEngine.getTemplate(tItem.id);
                 if (!tpl) continue;
 
-                const isChild = tId === 'story' || tId === 'edit' || tId === 'reportingNotes' || tId === 'projectTask' || tId === 'meetingPrep';
-                const isGrandchild = tId === 'edit';
+                const isSelected = tpl.id === selectedTemplateId;
 
                 const item = document.createElement('a');
                 item.href = '#';
-                item.className = `list-group-item list-group-item-action d-flex align-items-center justify-content-between p-2 rounded border-0 ${tpl.id === selectedTemplateId ? 'active' : ''}`;
-                item.style.backgroundColor = tpl.id === selectedTemplateId ? 'var(--active-item-background-color, #3b82f6)' : 'transparent';
-                item.style.color = tpl.id === selectedTemplateId ? '#fff' : 'var(--main-text-color, inherit)';
-                item.style.paddingLeft = isGrandchild ? '1.8rem' : (isChild ? '1.2rem' : '0.6rem');
+                item.className = `list-group-item list-group-item-action d-flex align-items-center justify-content-between p-2 rounded border-0 transition-all ${isSelected ? 'active font-weight-bold' : ''}`;
+                item.style.backgroundColor = isSelected ? 'var(--active-item-background-color, #3b82f6)' : 'transparent';
+                item.style.color = isSelected ? '#fff' : 'var(--main-text-color, inherit)';
+                item.style.borderColor = 'var(--border-color, rgba(128,128,128,0.1))';
 
                 item.innerHTML = `
                     <div class="d-flex align-items-center gap-2">
-                        ${isGrandchild ? '<i class="bx bx-subdirectory-right text-muted"></i>' : (isChild ? '<i class="bx bx-right-arrow-alt text-muted"></i>' : '')}
                         <i class="bx bx-${tpl.icon}"></i>
-                        <span class="font-weight-medium small">${tpl.title}</span>
+                        <span class="small">${tpl.title}</span>
                     </div>
-                    ${tpl.noJournalClone ? '<i class="bx bx-unlink small text-muted" title="No Journal clone"></i>' : ''}
+                    ${isSelected ? '<span class="badge bg-white text-primary tiny">Active</span>' : ''}
                 `;
 
                 item.addEventListener('click', (e) => {
@@ -132,16 +151,15 @@ export function renderTemplateStudio(
         sidebarCol.appendChild(sidebarCard);
         layoutRow.appendChild(sidebarCol);
 
-        // 2. Editor & Large Preview Columns
+        // 2. Editor Column (5 cols) with Integrated Relationship Rule Editor
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
 
         if (activeTpl) {
-            // Editor Column (5 cols)
             const editorCol = document.createElement('div');
             editorCol.className = 'col-md-5';
 
             const editorCard = document.createElement('div');
-            editorCard.className = 'card border';
+            editorCard.className = 'card border shadow-sm';
             editorCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
             editorCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
@@ -153,7 +171,7 @@ export function renderTemplateStudio(
                     <span>Template: ${activeTpl.title}</span>
                 </h5>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-xs btn-outline-secondary export-html-btn d-flex align-items-center gap-1" title="Download template HTML file">
+                    <button type="button" class="btn btn-xs btn-outline-secondary export-html-btn d-flex align-items-center gap-1">
                         <i class="bx bx-download"></i> Export .html
                     </button>
                     <span class="badge ${activeTpl.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${activeTpl.isBuiltin ? 'Built-in' : 'Custom'}</span>
@@ -195,22 +213,33 @@ export function renderTemplateStudio(
                     </div>
                 </div>
 
-                <!-- Integrated Parent Inheritance & Relationship Section -->
+                <!-- Integrated Relationship Rule Editor (Parent Links & Inheritance) -->
                 <div class="border-top pt-3">
-                    <h6 class="m-0 font-weight-bold small mb-2 d-flex align-items-center gap-1 text-info">
-                        <i class="bx bx-git-repo-forked"></i> Parent Inheritance & Relationship Rules
-                    </h6>
-                    <div class="p-2.5 rounded border small d-flex flex-column gap-1.5" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.2)) !important;">
-                        ${activeTpl.relationships.length > 0 ? activeTpl.relationships.map(r => `
-                            <div class="d-flex align-items-center justify-content-between">
-                                <span>
-                                    <i class="bx bx-right-arrow-alt text-success"></i> Links to <strong>${r.targetTemplateName}</strong> via <code>~${r.relationName}</code>
-                                </span>
-                                <span class="badge ${r.inheritTopics ? 'bg-info bg-opacity-20 text-info' : 'bg-secondary bg-opacity-20 text-muted'}">
-                                    ${r.inheritTopics ? 'Inherits Topics & Client' : 'Link Only'}
-                                </span>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="m-0 font-weight-bold small text-info d-flex align-items-center gap-1">
+                            <i class="bx bx-git-repo-forked"></i> Parent Relationship Rules & Links (${activeTpl.relationships.length})
+                        </h6>
+                        <button type="button" class="btn btn-xs btn-outline-info add-rel-rule-btn d-flex align-items-center gap-1">
+                            <i class="bx bx-plus"></i> Add Parent Link
+                        </button>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2 rel-rules-list">
+                        ${activeTpl.relationships.length > 0 ? activeTpl.relationships.map((r, idx) => `
+                            <div class="p-2.5 rounded border small d-flex align-items-center justify-content-between" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.2)) !important;">
+                                <div>
+                                    <div class="font-weight-bold">
+                                        <i class="bx bx-right-arrow-alt text-success"></i> <code>~${r.relationName}</code> &rarr; ${r.targetTemplateName}
+                                    </div>
+                                    <div class="tiny text-muted mt-0.5">
+                                        Auto-clone: <strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong> • Inherit Topics/Client: <strong>${r.inheritTopics ? 'Yes' : 'No'}</strong>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-xs btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
+                                    <i class="bx bx-trash"></i>
+                                </button>
                             </div>
-                        `).join('') : '<div class="text-muted">Root template (no parent relation required).</div>'}
+                        `).join('') : '<div class="text-muted small p-2 border rounded border-dashed text-center">Root template (No parent link required).</div>'}
                     </div>
                 </div>
 
@@ -222,7 +251,6 @@ export function renderTemplateStudio(
                         </h6>
                     </div>
 
-                    <!-- Interactive Option Chips for New Users -->
                     <div class="d-flex flex-wrap gap-1.5 mb-2">
                         <span class="badge bg-secondary bg-opacity-20 text-muted font-weight-normal small">Quick Add Chips:</span>
                         <button type="button" class="btn btn-xs btn-outline-info chip-btn" data-chip="label-text">Label: Priority</button>
@@ -268,7 +296,20 @@ export function renderTemplateStudio(
                 </div>
             `;
 
-            // Setup Quick Add Chips
+            // Relationship Editor Buttons
+            const addRelBtn = editorBody.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
+            addRelBtn.addEventListener('click', () => showAddRelationshipModal(activeTpl));
+
+            editorBody.querySelectorAll('.del-rel-btn').forEach(btn => {
+                btn.addEventListener('click', (e: any) => {
+                    const idx = Number(e.currentTarget.dataset.relIdx);
+                    activeTpl.relationships.splice(idx, 1);
+                    onSave();
+                    refresh();
+                });
+            });
+
+            // Quick Add Chips
             editorBody.querySelectorAll('.chip-btn').forEach(btn => {
                 btn.addEventListener('click', (e: any) => {
                     const chip = e.target.dataset.chip;
@@ -310,7 +351,7 @@ export function renderTemplateStudio(
             editorCol.appendChild(editorCard);
             layoutRow.appendChild(editorCol);
 
-            // 3. LARGE Live Note Preview Column (4 cols) with Inherited Attributes
+            // 3. Multi-Parent Inheritance Live Preview Column (4 cols)
             const previewCol = document.createElement('div');
             previewCol.className = 'col-md-4';
 
@@ -323,9 +364,9 @@ export function renderTemplateStudio(
             previewHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between';
             previewHeader.innerHTML = `
                 <h5 class="m-0 h6 font-weight-bold text-info d-flex align-items-center gap-2">
-                    <i class="bx bx-show"></i> Live Note & Inheritance Preview
+                    <i class="bx bx-show"></i> Multi-Parent Render Model
                 </h5>
-                <span class="badge bg-success bg-opacity-20 text-success">Render Model</span>
+                <span class="badge bg-success bg-opacity-20 text-success">Live Inheritance</span>
             `;
             previewCard.appendChild(previewHeader);
 
@@ -341,52 +382,54 @@ export function renderTemplateStudio(
                         <div>
                             <h4 class="h6 m-0 font-weight-bold">${formattedTitle}</h4>
                             <div class="small text-muted mt-0.5">
-                                <i class="bx bx-folder"></i> Target Subtree: <code>${activeTpl.noJournalClone ? '#projectRoot' : '#calendarRoot / Journal'}</code>
+                                <i class="bx bx-folder"></i> Subtree: <code>${activeTpl.noJournalClone ? '#projectRoot' : '#calendarRoot / Journal'}</code>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Promoted Attributes Form Preview -->
+                    <!-- Direct Form Attributes -->
                     <div class="border-bottom pb-2.5 mb-2.5">
                         <div class="small text-muted font-weight-bold mb-2 d-flex align-items-center gap-1">
-                            <i class="bx bx-slider-alt"></i> Direct Promoted Form Attributes
+                            <i class="bx bx-slider-alt"></i> Direct Form Attributes
                         </div>
                         <div class="d-flex flex-column gap-2">
                             ${activeTpl.attributes.map(a => `
                                 <div class="d-flex align-items-center justify-content-between p-1.5 rounded border" style="background-color: var(--sub-background-color, transparent);">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="badge bg-primary bg-opacity-10 text-primary">#${a.name}</span>
-                                    </div>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary">#${a.name}</span>
                                     ${a.options ? `
-                                        <select class="form-select form-select-sm py-0" style="width: 130px; font-size: 11px;">
+                                        <select class="form-select form-select-sm py-0" style="width: 120px; font-size: 11px;">
                                             ${a.options.map(opt => `<option>${opt}</option>`).join('')}
                                         </select>
                                     ` : `
-                                        <input type="text" class="form-control form-control-sm py-0 px-2" value="${a.defaultValue ?? ''}" placeholder="Value..." style="width: 130px; font-size: 11px;">
+                                        <input type="text" class="form-control form-control-sm py-0 px-2" value="${a.defaultValue ?? ''}" placeholder="Value..." style="width: 120px; font-size: 11px;">
                                     `}
                                 </div>
                             `).join('')}
                         </div>
                     </div>
 
-                    <!-- Inherited Attributes & Derived Topics Preview -->
+                    <!-- Multi-Parent Inherited Attributes & Topics -->
                     <div class="border-bottom pb-2.5 mb-2.5">
                         <div class="small text-info font-weight-bold mb-2 d-flex align-items-center gap-1">
-                            <i class="bx bx-git-repo-forked"></i> Inherited Parent Metadata & Topics
+                            <i class="bx bx-git-repo-forked"></i> Multi-Parent Inherited Context
                         </div>
                         <div class="d-flex flex-column gap-1.5 small text-muted">
                             <div class="d-flex align-items-center justify-content-between">
-                                <span>~client (Inherited):</span>
-                                <span class="badge bg-secondary bg-opacity-20 text-muted">Acme Corp</span>
+                                <span>Parent 1 (Project Hub):</span>
+                                <span class="badge bg-primary bg-opacity-20 text-primary">~project</span>
                             </div>
                             <div class="d-flex align-items-center justify-content-between">
-                                <span>~derivedTopic (Inherited):</span>
-                                <span class="badge bg-info bg-opacity-20 text-info">#AI Technology</span>
+                                <span>Parent 2 (Client Org):</span>
+                                <span class="badge bg-info bg-opacity-20 text-info">~client</span>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span>Derived Topics (Dual Inherited):</span>
+                                <span class="badge bg-success bg-opacity-20 text-success">#TechNews</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Content Skeleton Preview -->
+                    <!-- Body Skeleton -->
                     <div class="flex-grow-1 d-flex flex-column">
                         <div class="small text-muted font-weight-bold mb-2 d-flex align-items-center gap-1">
                             <i class="bx bx-file-blank"></i> Content Skeleton Body
@@ -407,6 +450,31 @@ export function renderTemplateStudio(
         container.appendChild(wrapper);
     }
 
+    function showAddRelationshipModal(tpl: TemplateDefinition) {
+        const relName = prompt('Enter relation name (e.g. project, client, organization, writer, attendee):');
+        if (!relName) return;
+        const allTemplates = templateEngine.getAllTemplates();
+        const targetId = prompt(`Select target parent template ID:\n${allTemplates.map(t => t.id).join(', ')}`);
+        if (!targetId) return;
+
+        const targetTpl = templateEngine.getTemplate(targetId);
+        const newRel: TemplateRelationshipDef = {
+            id: `rel_${tpl.id}_${targetId}_${Date.now()}`,
+            name: `${relName} link`,
+            relationName: relName,
+            targetTemplateId: targetId,
+            targetTemplateName: targetTpl ? targetTpl.title : targetId,
+            isMulti: false,
+            autoCloneToParent: true,
+            inheritTopics: true,
+            direction: 'parent',
+        };
+
+        templateEngine.addRelationship(tpl.id, newRel);
+        onSave();
+        refresh();
+    }
+
     function showCreateTemplateModal() {
         const title = prompt('Enter new Template ID (e.g. researchNote):');
         if (!title) return;
@@ -416,6 +484,7 @@ export function renderTemplateStudio(
             titlePattern: '{title}',
             icon: 'file-blank',
             attributes: [],
+            relationships: [],
             defaultContent: `<h2>${title}</h2><p>Notes content...</p>`,
         });
         onSave();
