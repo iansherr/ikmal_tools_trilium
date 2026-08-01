@@ -11,7 +11,7 @@
 import { TemplateEngine } from '../engine/templateEngine.js';
 import { IfThenRuleEngine } from '../engine/ifThenRuleEngine.js';
 import { TemplateDefinition, TemplateCategoryDef, IfThenRuleDef, PromotedAttributeDef } from '../engine/types.js';
-import { button, emptyState, escapeHtml, iconAction, listItem, openModal, pageHeader, row, section, switchRow, toggle } from './nativeUi.js';
+import { button, emptyState, escapeHtml, iconAction, listItem, openModal, pageHeader, row, searchableSelect, section, switchRow, toggle } from './nativeUi.js';
 
 /** The rail's template hierarchy. Ids reference templates registered in the engine. */
 const TEMPLATE_TREE: TreeNode[] = [
@@ -381,13 +381,13 @@ export function renderTemplateStudio(
         const titleInput = inputControl('tpl-title', tpl.title);
         card.appendChild(row(titleInput, { label: 'Title', htmlFor: 'tpl-title' }));
 
-        const categorySelect = document.createElement('select');
-        categorySelect.className = 'form-select form-select-sm';
-        categorySelect.id = 'tpl-category';
-        categorySelect.innerHTML = categories
-            .map((c) => `<option value="${escapeHtml(c.id)}"${tpl.category === c.id ? ' selected' : ''}>${escapeHtml(c.title)}</option>`)
-            .join('');
-        card.appendChild(row(categorySelect, {
+        const categorySelect = searchableSelect({
+            id: 'tpl-category',
+            value: tpl.category,
+            placeholder: 'Search categories…',
+            options: categories.map((c) => ({ value: c.id, label: c.title, description: c.description })),
+        });
+        card.appendChild(row(categorySelect.el, {
             label: 'Category',
             description: 'Category behaviour and category-wide rules apply to this template.',
             htmlFor: 'tpl-category',
@@ -492,7 +492,7 @@ export function renderTemplateStudio(
             onClick: () => {
                 templateEngine.updateTemplate(tpl.id, {
                     title: titleInput.value,
-                    category: categorySelect.value,
+                    category: categorySelect.getValue(),
                     titlePattern: patternInput.value,
                     icon: iconInput.value,
                     defaultContent: contentArea.value,
@@ -788,9 +788,7 @@ export function renderTemplateStudio(
                 </div>
                 <div class="ns-field">
                     <label for="rel-target">Parent template</label>
-                    <select id="rel-target" class="form-select form-select-sm">
-                        ${allTemplates.map((t) => `<option value="${escapeHtml(t.id)}"${t.id === rel.targetTemplateId ? ' selected' : ''}>${escapeHtml(t.title)}</option>`).join('')}
-                    </select>
+                    <div class="rel-target-slot"></div>
                 </div>
                 <div class="ns-toggles"></div>
             `,
@@ -798,7 +796,7 @@ export function renderTemplateStudio(
             const relName = content.querySelector<HTMLInputElement>('#rel-name')!.value.trim();
             if (!relName) return false;
 
-            const targetId = content.querySelector<HTMLSelectElement>('#rel-target')!.value;
+            const targetId = targetPicker.getValue();
             const targetTpl = templateEngine.getTemplate(targetId);
             const targetName = targetTpl ? targetTpl.title : targetId;
 
@@ -829,6 +827,17 @@ export function renderTemplateStudio(
             refresh();
         });
 
+        // A searchable picker rather than a plain <select> — the template list
+        // only grows as categories fill in, and scanning a couple dozen options by
+        // scrolling a native dropdown gets old fast.
+        const targetPicker = searchableSelect({
+            id: 'rel-target',
+            value: rel.targetTemplateId,
+            placeholder: 'Search templates…',
+            options: allTemplates.map((t) => ({ value: t.id, label: t.title, description: `#${t.marker}` })),
+        });
+        modal.querySelector('.rel-target-slot')!.appendChild(targetPicker.el);
+
         // Toggles are real controls rather than markup, so they carry their state.
         const toggles = modal.querySelector('.ns-toggles') as HTMLElement;
         const cloneRow = switchRow({
@@ -848,7 +857,7 @@ export function renderTemplateStudio(
     function openNewTemplateModal() {
         const categories = templateEngine.getAllCategories();
 
-        openModal({
+        const modal = openModal({
             title: 'New template',
             icon: 'bx-plus',
             confirmText: 'Create template',
@@ -859,16 +868,14 @@ export function renderTemplateStudio(
                 </div>
                 <div class="ns-field">
                     <label for="new-tpl-cat">Category</label>
-                    <select id="new-tpl-cat" class="form-select form-select-sm">
-                        ${categories.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.title)}</option>`).join('')}
-                    </select>
+                    <div class="new-tpl-cat-slot"></div>
                 </div>
             `,
         }, (content) => {
             const title = content.querySelector<HTMLInputElement>('#new-tpl-title')!.value.trim();
             if (!title) return false;
 
-            const category = content.querySelector<HTMLSelectElement>('#new-tpl-cat')!.value;
+            const category = categoryPicker.getValue();
             const id = title.toLowerCase().replace(/\s+/g, '-');
 
             templateEngine.registerTemplate({
@@ -889,6 +896,14 @@ export function renderTemplateStudio(
             onSave();
             refresh();
         });
+
+        const categoryPicker = searchableSelect({
+            id: 'new-tpl-cat',
+            value: categories[0]?.id ?? 'work',
+            placeholder: 'Search categories…',
+            options: categories.map((c) => ({ value: c.id, label: c.title, description: c.description })),
+        });
+        modal.querySelector('.new-tpl-cat-slot')!.appendChild(categoryPicker.el);
     }
 
     function openNewCategoryModal() {

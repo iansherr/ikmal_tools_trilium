@@ -31,14 +31,15 @@ either — its template list (`storyDraft`, etc.) predates the current
 all before investing in fixing it — nothing in the dashboard currently calls
 it.
 
-## Open-ended note pickers, if added, would want fuzzy search
+## If an open-ended note picker is ever added, it should reuse `searchableSelect`
 
-Every `<select>` in Template Studio today (target template for a parent
-link, category, template) is a small, curated, fixed list — a native select
-is fine at that size. If a feature is added that picks from an open-ended set
-(e.g., linking to an arbitrary existing note rather than a fixed template),
-that's when a fuzzy-search dropdown earns its complexity. Not worth adding
-ahead of that need.
+The template and category pickers in Template Studio (`nativeUi.ts`'s
+`searchableSelect`) already do fuzzy filtering; the remaining `<select>`s
+(trigger/action type, attribute kind/type, column count, density, units) are
+small fixed enums where a native select is still the right call. If a future
+feature picks from an open-ended set — linking to an arbitrary existing note
+rather than a fixed template — extend `searchableSelect` rather than
+building a second combobox.
 
 ## Design rules
 

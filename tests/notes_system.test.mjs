@@ -498,6 +498,28 @@ test('security: escapeHtml neutralizes markup, quotes, and ampersands', async ()
     assert.equal(escapeHtml(42), '42');
 });
 
+test('fuzzyScore ranks substring matches over subsequence matches and rejects non-matches', async () => {
+    const { fuzzyScore } = await import('../dist/components/nativeUi.js');
+
+    // Empty query matches everything, ranked equally, so the panel shows the
+    // full list on focus before the user has typed anything.
+    assert.equal(fuzzyScore('', 'Project Hub'), 0);
+
+    // A literal substring match ranks by how early it starts.
+    assert.equal(fuzzyScore('meeting', 'Meeting Prep'), 0);
+    assert.ok(fuzzyScore('prep', 'Meeting Prep') > 0);
+
+    // A scattered but in-order subsequence still matches ("otx" -> "prOjecT X"),
+    // but always ranks below every substring match.
+    const substringScore = fuzzyScore('meet', 'Meeting Prep');
+    const subsequenceScore = fuzzyScore('mtg', 'Meeting');
+    assert.ok(subsequenceScore !== null && substringScore !== null && subsequenceScore > substringScore);
+
+    // Out-of-order or missing characters are not a match.
+    assert.equal(fuzzyScore('xyz', 'Meeting Prep'), null);
+    assert.equal(fuzzyScore('gnitem', 'Meeting'), null);
+});
+
 test('security: buildWeatherUrl never leaks the free-text location label', async () => {
     const { buildWeatherUrl } = await import('../dist/engine/weatherEngine.js');
     const url = buildWeatherUrl({

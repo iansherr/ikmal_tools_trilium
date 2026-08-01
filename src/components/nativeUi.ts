@@ -345,3 +345,184 @@ export function openModal(
 
     return modal;
 }
+
+// ------------------------------------------------------------- searchable select
+
+export interface ComboboxOption {
+    value: string;
+    label: string;
+    description?: string;
+}
+
+export interface ComboboxHandle {
+    /** Mount this in place of a `<select>`. */
+    el: HTMLElement;
+    getValue: () => string;
+    setValue: (value: string) => void;
+}
+
+/**
+ * Ranks how well `query` matches `text`: a contiguous substring ranks by how
+ * early it starts, an in-order-but-scattered subsequence match ranks below
+ * every substring match (so "otx" still finds "Project Task" but after any
+ * option that contains "otx" literally), and no match returns null. Deliberately
+ * not a real fuzzy-matching library — this is filtering a few dozen curated
+ * options, not ranking full-text search results.
+ */
+export function fuzzyScore(query: string, text: string): number | null {
+    if (!query) return 0;
+    const q = query.toLowerCase();
+    const t = text.toLowerCase();
+
+    const idx = t.indexOf(q);
+    if (idx !== -1) return idx;
+
+    let cursor = 0;
+    let gaps = 0;
+    for (const ch of q) {
+        const found = t.indexOf(ch, cursor);
+        if (found === -1) return null;
+        gaps += found - cursor;
+        cursor = found + 1;
+    }
+    return 1000 + gaps;
+}
+
+/**
+ * A text input with a filtered dropdown of options, for picking one value out
+ * of a list too long to scan as a native `<select>`. Still a closed picker,
+ * not a free-text field: blurring without a valid selection snaps the input
+ * back to the current value's label rather than accepting arbitrary text.
+ */
+export function searchableSelect({
+    id,
+    options,
+    value,
+    placeholder,
+    onChange,
+}: {
+    id: string;
+    options: ComboboxOption[];
+    value: string;
+    placeholder?: string;
+    onChange?: (value: string) => void;
+}): ComboboxHandle {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ns-combobox';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = id;
+    input.className = 'form-control form-control-sm';
+    input.autocomplete = 'off';
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-expanded', 'false');
+    input.setAttribute('aria-autocomplete', 'list');
+    if (placeholder) input.placeholder = placeholder;
+
+    const panel = document.createElement('div');
+    panel.className = 'ns-combobox-panel';
+    panel.setAttribute('role', 'listbox');
+    panel.hidden = true;
+
+    wrapper.append(input, panel);
+
+    let selectedValue = value;
+    let visible: ComboboxOption[] = [];
+    let highlighted = -1;
+
+    const labelFor = (v: string) => options.find((o) => o.value === v)?.label ?? '';
+
+    function highlight(index: number) {
+        highlighted = index;
+        Array.from(panel.children).forEach((el, i) => el.classList.toggle('active', i === index));
+    }
+
+    function closePanel() {
+        panel.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+        highlighted = -1;
+    }
+
+    function selectOption(option: ComboboxOption) {
+        selectedValue = option.value;
+        input.value = option.label;
+        closePanel();
+        onChange?.(option.value);
+    }
+
+    function renderPanel(query: string) {
+        visible = options
+            .map((o) => ({ o, score: fuzzyScore(query, o.label) }))
+            .filter((x): x is { o: ComboboxOption; score: number } => x.score !== null)
+            .sort((a, b) => a.score - b.score)
+            .map((x) => x.o);
+
+        panel.innerHTML = '';
+
+        if (!visible.length) {
+            const empty = document.createElement('div');
+            empty.className = 'ns-combobox-empty';
+            empty.textContent = 'No matches.';
+            panel.appendChild(empty);
+        } else {
+            for (const option of visible) {
+                const item = document.createElement('div');
+                item.className = 'ns-combobox-option';
+                item.setAttribute('role', 'option');
+                item.innerHTML = `<span>${escapeHtml(option.label)}</span>${option.description ? `<span class="ns-meta">${escapeHtml(option.description)}</span>` : ''}`;
+                // mousedown fires before the input's blur handler, so the click
+                // registers before closePanel() would otherwise swallow it.
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    selectOption(option);
+                });
+                panel.appendChild(item);
+            }
+        }
+
+        panel.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        highlighted = -1;
+    }
+
+    input.addEventListener('focus', () => {
+        input.select();
+        renderPanel('');
+    });
+
+    input.addEventListener('input', () => renderPanel(input.value));
+
+    input.addEventListener('blur', () => {
+        input.value = labelFor(selectedValue);
+        closePanel();
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            input.value = labelFor(selectedValue);
+            closePanel();
+            input.blur();
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (panel.hidden) { renderPanel(input.value); return; }
+            const delta = e.key === 'ArrowDown' ? 1 : -1;
+            highlight(Math.max(0, Math.min(visible.length - 1, highlighted + delta)));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const option = highlighted >= 0 ? visible[highlighted] : visible[0];
+            if (option) selectOption(option);
+        }
+    });
+
+    input.value = labelFor(selectedValue);
+
+    return {
+        el: wrapper,
+        getValue: () => selectedValue,
+        setValue: (v: string) => {
+            selectedValue = v;
+            input.value = labelFor(v);
+        },
+    };
+}

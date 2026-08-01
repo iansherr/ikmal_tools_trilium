@@ -69,13 +69,16 @@ since a real note wouldn't show that either.
 
 The schema editor for a template covers:
 
-- Title, category, title pattern (e.g. `Project: {title}`), and icon.
+- Title, category (type to filter — a searchable picker, not a plain
+  dropdown, since the list grows as you add categories), title pattern
+  (e.g. `Project: {title}`), and icon.
 - **Global rules** — run for every note the system creates.
 - **Category rules** — inherited from the template's category; "Edit the
   `<category>` category" jumps the rail over to it.
 - **Template rules** — this template's parent links (`~relation` →
-  target template, with auto-clone/topic-inheritance toggles) plus any
-  rule scoped only to this template.
+  target template, picked from the same searchable list, with
+  auto-clone/topic-inheritance toggles) plus any rule scoped only to this
+  template.
 - Promoted attributes (name, label/relation, data type, default/options).
 - The content skeleton (raw HTML) inserted into a new note's body.
 

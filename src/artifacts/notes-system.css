@@ -863,6 +863,61 @@ body[dir="rtl"] .ns-switch .ns-switch-button.on::after {
     font-size: 0.9em;
 }
 
+/* ----------------------------------------------------------- searchable select */
+
+.ns-combobox {
+    position: relative;
+}
+
+.ns-combobox-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: 240px;
+    overflow-y: auto;
+    /* --ns-card-bg is a translucent wash meant to sit on top of an opaque page
+       background, not a standalone opaque surface — using it here let whatever
+       was underneath the floating panel bleed through. --main-background-color
+       is what Trilium's own note-autocomplete dropdown (.aa-dropdown-menu in
+       style.css) uses for exactly this reason. */
+    background: var(--main-background-color);
+    border: 1px solid var(--ns-card-border);
+    border-radius: 6px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    padding: 4px;
+}
+
+.ns-combobox-option {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+.ns-combobox-option .ns-meta {
+    font-size: 0.85em;
+    color: var(--ns-muted);
+}
+
+.ns-combobox-option.active,
+.ns-combobox-option:hover {
+    /* Matches Trilium's own note-jump-to-note autocomplete (.aa-suggestion.aa-cursor
+       in style.css) rather than inventing a highlight colour of our own. */
+    color: var(--active-item-text-color);
+    background: var(--active-item-background-color);
+}
+
+.ns-combobox-empty {
+    padding: 6px 8px;
+    font-size: 0.9em;
+    color: var(--ns-muted);
+}
+
 /* --------------------------------------------------------------------- tables */
 
 .ns-table {

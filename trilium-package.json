@@ -55,7 +55,7 @@
       "id": "notes-system-dashboard",
       "type": "render",
       "source": "src/artifacts/notes-system-dashboard.jsx",
-      "integrity": "sha256-RZq9KR0Qo0bDFUyUySIrpWj5hGBXrqJOLKsBmJ2Wdfs=",
+      "integrity": "sha256-5XlIyynSAhgpiCsWp8kEk6/xM5rBcjPZsvU9WH6Z1Eg=",
       "title": "Notes System & Today Homepage",
       "activation": "manual"
     },
@@ -88,7 +88,7 @@
       "id": "notes-system-css",
       "type": "css",
       "source": "src/artifacts/notes-system.css",
-      "integrity": "sha256-7aPkxSoP8xtINq/lyZ3M410Ki/yDfmvkFvrHGHXjSmU=",
+      "integrity": "sha256-+8ZhjT1MB6CictsB65Y5u4+qkj0HzTBEZapvunsQ/zU=",
       "title": "Notes System Theme & Styles",
       "activation": "startup"
     }
