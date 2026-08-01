@@ -1,8 +1,8 @@
-# Trilium Notes System
+# Ikmal Notes for Trilium
 
-A component-driven Trilium plugin: a Today Homepage, a Template Studio for
-editing note templates and automation, and a Settings tab — all served from
-one render note, styled to match Trilium's own native theme.
+A component-driven plugin suite for Trilium Notes: a Today Homepage, Template Studio for
+editing note schemas and automation rules, standalone micro-tools, and a Settings tab —
+all served from an installable package styled strictly to match Trilium's native theme.
 
 For day-to-day use, see [`USER_GUIDE.md`](USER_GUIDE.md). Troubleshooting is
 in [`FAQ.md`](FAQ.md). Backup and recovery is in
