@@ -1,0 +1,153 @@
+<div class="today-dashboard">
+    <style>
+        .today-dashboard { max-width: 440px; padding: 0.4rem 0.65rem 1.25rem; container-type: inline-size; }
+        .today-dashboard .today-card,
+        .today-dashboard .today-actions { background: var(--accented-background-color); border-radius: 0.65rem; }
+        .today-dashboard .today-card { padding: 0.85rem 0.95rem; }
+        .today-dashboard .today-health { background: var(--accented-background-color); border-radius: 0.65rem; margin-top: 0.65rem; padding: 0.2rem 0.75rem 0.75rem; }
+        .today-dashboard .today-health summary { cursor: pointer; font-weight: 600; padding: 0.45rem 0; }
+        .today-dashboard .today-health-body { color: var(--muted-text-color); font-size: 0.85rem; }
+        .today-dashboard .today-health-status { color: var(--text-success); font-weight: 600; }
+        .today-dashboard .today-health-status.is-error { color: var(--text-error); }
+        .today-dashboard .today-health-list { list-style: none; margin: 0 0 0.55rem; padding: 0; }
+        .today-dashboard .today-health-list li { margin: 0.2rem 0; }
+        .today-dashboard h1 { margin: 0 0 0.2rem; font-size: 1.35rem; }
+        .today-dashboard p { margin: 0.25rem 0 0.7rem; }
+        .today-dashboard .today-note-title { font-weight: 600; overflow-wrap: anywhere; }
+        .today-dashboard .today-hint { color: var(--muted-text-color); font-size: 0.85rem; }
+        .today-dashboard .today-open-note { width: 100%; }
+        .today-dashboard .today-layout { background: var(--accented-background-color); border-radius: 0.65rem; margin-top: 0.65rem; padding: 0.2rem 0.75rem 0.75rem; }
+        .today-dashboard .today-layout summary { cursor: pointer; font-weight: 600; padding: 0.45rem 0; }
+        .today-dashboard .today-split-controls { align-items: center; color: var(--muted-text-color); display: flex; flex-wrap: wrap; font-size: 0.8rem; gap: 0.45rem; }
+        .today-dashboard .today-split-controls label { align-items: center; display: inline-flex; gap: 0.35rem; }
+        .today-dashboard .today-journal-width { accent-color: var(--accent-color); width: 7rem; }
+        .today-dashboard .today-journal-width-value { min-width: 2.6rem; text-align: right; }
+        .today-dashboard .today-reset-split { font-size: 0.75rem; padding: 0.15rem 0.4rem; }
+        .today-dashboard .today-actions { margin-top: 0.65rem; padding: 0.2rem 0.75rem 0.75rem; }
+        .today-dashboard .today-actions summary { cursor: pointer; font-weight: 600; padding: 0.45rem 0; }
+        .today-dashboard .today-action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; }
+        .today-dashboard .today-action { text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .today-dashboard .today-action i { margin-right: 0.25rem; }
+        .today-dashboard .today-widgets { display: grid; gap: 0.55rem; margin-top: 0.75rem; }
+        .today-dashboard .today-widgets > h2 { font-size: 1rem; margin: 0.25rem 0 0; }
+        .today-dashboard .today-widget { background: var(--main-background-color); border: 1px solid var(--main-border-color); border-radius: 0.55rem; min-width: 0; overflow-x: auto; padding: 0.6rem 0.7rem; }
+        .today-dashboard .today-widget h3 { border-bottom: 1px solid var(--main-border-color); font-size: 0.9rem; margin: 0 0 0.45rem; padding-bottom: 0.3rem; }
+        .today-dashboard .today-widget table { margin: 0; width: 100%; }
+        .today-dashboard .today-widget td, .today-dashboard .today-widget th { max-width: 11rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .today-dashboard .today-widget .today-empty { color: var(--muted-text-color); margin: 0; }
+        .today-dashboard .today-empty-action { margin-top: 0.45rem; }
+        .daily-open-tasks-widget { border-top: 1px solid var(--main-border-color); margin-top: 1rem; padding-top: 0.75rem; }
+        .daily-open-tasks-widget h2 { margin-top: 0; }
+        .daily-open-tasks-widget table { width: 100%; }
+        @container (max-width: 520px) {
+            .today-dashboard .today-action-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 520px) {
+            .today-dashboard .today-action-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 700px) {
+            .today-dashboard .today-split-controls { display: none; }
+        }
+    </style>
+
+    <div class="today-card">
+        <h1>Today</h1>
+        <p class="today-note-title">Loading today’s Journal note…</p>
+        <p class="today-hint">Keep this page pinned; the button opens the editable day note in a split.</p>
+        <button type="button" class="btn btn-primary today-open-note" disabled>
+            <i class="bx bx-edit-alt"></i> Open Today’s Journal
+        </button>
+    </div>
+
+    <details class="today-actions" open>
+        <summary>Quick capture</summary>
+        <div class="today-action-grid">
+            <button type="button" class="btn btn-outline-secondary today-action" data-today-action="projectHub" title="Create a new Project Hub">
+                <i class="bx bx-book"></i> New Project
+            </button>
+            <button type="button" class="btn btn-outline-secondary today-action" data-today-action="scratch" title="Create an untemplated scratch note">
+                <i class="bx bx-file-blank"></i> New Scratch
+            </button>
+            <button type="button" class="btn btn-outline-secondary today-action" data-today-action="meeting" title="Create a new Meeting">
+                <i class="bx bx-calendar-event"></i> New Meeting
+            </button>
+            <button type="button" class="btn btn-outline-secondary today-action" data-today-action="task" title="Create a new Task">
+                <i class="bx bx-check-square"></i> New Task
+            </button>
+            <button type="button" class="btn btn-outline-secondary today-action" data-today-action="story" title="Create a new Story draft">
+                <i class="bx bx-news"></i> New Story
+            </button>
+            <button type="button" class="btn btn-outline-secondary today-action" data-today-action="edit" title="Create a new Edit round">
+                <i class="bx bx-edit-alt"></i> New Edit
+            </button>
+            <button type="button" class="btn btn-outline-secondary today-action" data-today-action="email" title="Create a new Email draft">
+                <i class="bx bx-envelope"></i> New Email
+            </button>
+            <button type="button" class="btn btn-outline-secondary today-action" data-today-action="person" title="Create a new Person">
+                <i class="bx bx-user"></i> New Person
+            </button>
+            <button type="button" class="btn btn-outline-secondary today-action" data-today-action="organization" title="Create a new Organization">
+                <i class="bx bx-buildings"></i> New Org
+            </button>
+            <button type="button" class="btn btn-outline-secondary today-action" data-today-action="topic" title="Create a new Topic">
+                <i class="bx bx-purchase-tag"></i> New Topic
+            </button>
+        </div>
+    </details>
+
+    <div class="today-widgets">
+        <h2>Dashboard</h2>
+        <section class="today-widget" data-today-widget="activeProjects">
+            <h3>Active Projects</h3>
+            <div class="today-widget-body">Loading…</div>
+        </section>
+        <section class="today-widget" data-today-widget="recentlyTouched">
+            <h3>Recently Touched</h3>
+            <div class="today-widget-body">Loading…</div>
+        </section>
+        <section class="today-widget" data-today-widget="openDrafts">
+            <h3>Drafts</h3>
+            <div class="today-widget-body">Loading…</div>
+        </section>
+        <section class="today-widget" data-today-widget="overdue">
+            <h3>Overdue</h3>
+            <div class="today-widget-body">Loading…</div>
+        </section>
+        <section class="today-widget" data-today-widget="dueSoon">
+            <h3>Due Soon</h3>
+            <div class="today-widget-body">Loading…</div>
+        </section>
+        <section class="today-widget" data-today-widget="followUpsDue">
+            <h3>Follow-ups Due</h3>
+            <div class="today-widget-body">Loading…</div>
+        </section>
+        <section class="today-widget" data-today-widget="awaitingReplies">
+            <h3>Awaiting Replies</h3>
+            <div class="today-widget-body">Loading…</div>
+        </section>
+        <section class="today-widget" data-today-widget="highPriority">
+            <h3>High Priority</h3>
+            <div class="today-widget-body">Loading…</div>
+        </section>
+        <section class="today-widget" data-today-widget="openEmails">
+            <h3>Emails</h3>
+            <div class="today-widget-body">Loading…</div>
+        </section>
+    </div>
+
+    <details class="today-layout">
+        <summary>Today layout</summary>
+        <div class="today-split-controls" aria-label="Today split controls">
+            <label for="today-journal-width">Journal width</label>
+            <input id="today-journal-width" class="today-journal-width" type="range" min="50" max="80" step="1" value="65">
+            <output class="today-journal-width-value" for="today-journal-width">65%</output>
+            <button type="button" class="btn btn-sm btn-outline-secondary today-reset-split">Reset</button>
+            <span>or drag the divider</span>
+        </div>
+    </details>
+
+    <details class="today-health">
+        <summary>Extension health <span class="today-health-status">Checking…</span></summary>
+        <div class="today-health-body">Checking installed scripts and Journal hooks…</div>
+    </details>
+</div>

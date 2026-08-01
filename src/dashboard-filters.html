@@ -1,0 +1,66 @@
+<div class="dashboard-filter-panel">
+    <style>
+        .dashboard-filter-panel { padding: 0.75rem 0.9rem; }
+        .dashboard-filter-panel h2 { font-size: 1rem; margin: 0 0 0.55rem; }
+        .dashboard-filter-panel .dashboard-filter-grid { display: grid; gap: 0.55rem; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        .dashboard-filter-panel label { color: var(--muted-text-color); display: flex; flex-direction: column; font-size: 0.8rem; gap: 0.2rem; }
+        .dashboard-filter-panel select { min-width: 0; }
+        .dashboard-filter-panel .dashboard-filter-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.65rem; }
+        .dashboard-filter-panel .dashboard-filter-status { color: var(--muted-text-color); font-size: 0.8rem; }
+        .dashboard-filter-panel .dashboard-filter-summary { border-top: 1px solid var(--main-border-color); color: var(--muted-text-color); font-size: 0.8rem; margin-top: 0.65rem; padding-top: 0.55rem; }
+        .dashboard-filter-panel .dashboard-filter-summary.is-error { color: var(--text-error); }
+        .dashboard-filter-panel .dashboard-filter-summary.is-empty { color: var(--text-accent); }
+        @media (max-width: 700px) {
+            .dashboard-filter-panel .dashboard-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 420px) {
+            .dashboard-filter-panel .dashboard-filter-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+    <h2>Dashboard filters</h2>
+    <div class="dashboard-filter-grid">
+        <label>Time range
+            <select data-dashboard-filter="time">
+                <option value="">Any time</option>
+                <option value="7">Modified in the last 7 days</option>
+                <option value="30">Modified in the last 30 days</option>
+                <option value="90">Modified in the last 90 days</option>
+            </select>
+        </label>
+        <label>Project
+            <select data-dashboard-filter="project">
+                <option value="">All projects</option>
+            </select>
+        </label>
+        <label>Status
+            <select data-dashboard-filter="status">
+                <option value="">Any status</option>
+                <option value="active">Active</option>
+                <option value="drafting">Drafting</option>
+                <option value="editing">Editing</option>
+                <option value="awaiting">Awaiting reply</option>
+                <option value="complete">Complete</option>
+                <option value="done">Done</option>
+            </select>
+        </label>
+        <label>Assigned to
+            <select data-dashboard-filter="assignment">
+                <option value="">Anyone</option>
+            </select>
+        </label>
+        <label>Topic
+            <select data-dashboard-filter="topic">
+                <option value="">All topics</option>
+            </select>
+        </label>
+    </div>
+    <div class="dashboard-filter-actions">
+        <button type="button" class="btn btn-primary dashboard-filter-apply">Apply filters</button>
+        <button type="button" class="btn btn-outline-secondary dashboard-filter-clear">Clear</button>
+        <button type="button" class="btn btn-outline-secondary dashboard-layout-compact">Collapse widgets</button>
+        <button type="button" class="btn btn-outline-secondary dashboard-layout-comfortable">Expand widgets</button>
+        <button type="button" class="btn btn-outline-secondary dashboard-layout-reset">Reset layout</button>
+        <span class="dashboard-filter-status" aria-live="polite"></span>
+    </div>
+    <div class="dashboard-filter-summary" aria-live="polite">Checking dashboard widgets…</div>
+</div>

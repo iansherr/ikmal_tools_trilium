@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Trilium dev instance data and credentials
+dev/data/
+dev/.env
+
+# Generated export artifacts
+dist/
