@@ -11,6 +11,7 @@
 import { TemplateEngine } from '../engine/templateEngine.js';
 import { IfThenRuleEngine } from '../engine/ifThenRuleEngine.js';
 import { TemplateDefinition, TemplateCategoryDef, IfThenRuleDef, PromotedAttributeDef } from '../engine/types.js';
+import { exportTemplateToYaml, importTemplateFromYaml } from '../engine/yamlSpec.js';
 import { button, emptyState, escapeHtml, iconAction, listItem, openModal, pageHeader, row, searchableSelect, section, switchRow, toggle } from './nativeUi.js';
 
 /** The rail's template hierarchy. Ids reference templates registered in the engine. */
@@ -82,19 +83,29 @@ export function renderTemplateStudio(
             subtitle: 'Template schemas, parent links, automation rules, and promoted attributes.',
             actions: [
                 ...(inCategories || !activeTpl ? [] : [modeSwitcher()]),
-                inCategories
-                    ? button({
-                        text: 'New category',
-                        icon: 'bx-plus',
-                        kind: 'primary',
-                        onClick: () => openNewCategoryModal(),
-                    })
-                    : button({
-                        text: 'New template',
-                        icon: 'bx-plus',
-                        kind: 'primary',
-                        onClick: () => openNewTemplateModal(),
-                    }),
+                ...(inCategories
+                    ? [
+                          button({
+                              text: 'New category',
+                              icon: 'bx-plus',
+                              kind: 'primary',
+                              onClick: () => openNewCategoryModal(),
+                          }),
+                      ]
+                    : [
+                          button({
+                              text: 'Import template',
+                              icon: 'bx-import',
+                              kind: 'secondary',
+                              onClick: () => openImportTemplateModal(),
+                          }),
+                          button({
+                              text: 'New template',
+                              icon: 'bx-plus',
+                              kind: 'primary',
+                              onClick: () => openNewTemplateModal(),
+                          }),
+                      ]),
             ],
         }));
 
@@ -481,9 +492,16 @@ export function renderTemplateStudio(
         contentArea.value = tpl.defaultContent;
         contentCard.appendChild(contentArea);
 
-        // --- save
+        // --- save & export
         const actions = document.createElement('div');
         actions.className = 'ns-actions ns-actions-end';
+        actions.appendChild(button({
+            text: 'Export YAML',
+            icon: 'bx-export',
+            kind: 'secondary',
+            size: 'normal',
+            onClick: () => openExportTemplateModal(tpl),
+        }));
         actions.appendChild(button({
             text: 'Save template',
             icon: 'bx-save',
@@ -592,6 +610,30 @@ export function renderTemplateStudio(
         }
     }
 
+    function formatActionSummary(rule: IfThenRuleDef): string {
+        if (rule.description && rule.description.trim()) return rule.description;
+        const act = rule.actions[0];
+        if (!act) return 'No action defined';
+        switch (act.type) {
+            case 'setLabel':
+                return `Set #${act.params.labelName ?? 'label'} = "${act.params.labelValue ?? ''}"`;
+            case 'removeLabel':
+                return `Remove #${act.params.labelName ?? 'label'}`;
+            case 'setRelation':
+                return `Set ~${act.params.relationName ?? 'relation'} → ${act.params.targetNoteId ?? 'target'}`;
+            case 'cloneToContainer':
+                return 'File reference link under parent container';
+            case 'archiveNote':
+                return 'Archive note (#archived)';
+            case 'prependContent':
+                return 'Prepend template checklist or header content';
+            case 'syncDerivedTopics':
+                return 'Recalculate inherited parent topics';
+            default:
+                return act.type;
+        }
+    }
+
     function ruleItem(rule: IfThenRuleDef, onDelete?: () => void): HTMLElement {
         // Enablement is a state, so it gets the same switch the settings page uses
         // rather than a button whose label restates the state it is about to leave.
@@ -613,7 +655,7 @@ export function renderTemplateStudio(
         return listItem({
             icon: 'bx-bolt-circle',
             title: rule.name,
-            description: rule.description,
+            description: formatActionSummary(rule),
             disabled: !rule.enabled,
             actions,
         });
@@ -707,6 +749,8 @@ export function renderTemplateStudio(
                 ? `Template: ${rule.trigger.targetTemplateId}`
                 : 'Global';
 
+        const currentAct = rule.actions[0] || { type: 'setLabel', params: {} };
+
         openModal({
             title: isEdit ? 'Edit automation rule' : 'New automation rule',
             icon: 'bx-bolt-circle',
@@ -718,7 +762,7 @@ export function renderTemplateStudio(
                 </div>
                 <div class="ns-field">
                     <label for="rule-desc">Description</label>
-                    <input type="text" id="rule-desc" class="form-control form-control-sm" value="${escapeHtml(rule.description)}" placeholder="What this rule does">
+                    <input type="text" id="rule-desc" class="form-control form-control-sm" value="${escapeHtml(rule.description)}" placeholder="What this rule does (optional)">
                 </div>
                 <div class="ns-field-grid">
                     <div class="ns-field">
@@ -736,10 +780,24 @@ export function renderTemplateStudio(
                 <div class="ns-field">
                     <label for="rule-action">Action</label>
                     <select id="rule-action" class="form-select form-select-sm">
-                        <option value="cloneToContainer"${rule.actions[0]?.type === 'cloneToContainer' ? ' selected' : ''}>File a reference link under the parent container</option>
-                        <option value="setLabel"${rule.actions[0]?.type === 'setLabel' ? ' selected' : ''}>Assign a label value</option>
-                        <option value="syncDerivedTopics"${rule.actions[0]?.type === 'syncDerivedTopics' ? ' selected' : ''}>Recalculate inherited topics</option>
+                        <option value="setLabel"${currentAct.type === 'setLabel' ? ' selected' : ''}>Assign a label value (#doneDate, #color)</option>
+                        <option value="removeLabel"${currentAct.type === 'removeLabel' ? ' selected' : ''}>Remove a label</option>
+                        <option value="setRelation"${currentAct.type === 'setRelation' ? ' selected' : ''}>Set relation link (~parent, ~client)</option>
+                        <option value="cloneToContainer"${currentAct.type === 'cloneToContainer' ? ' selected' : ''}>File a reference link under parent container</option>
+                        <option value="archiveNote"${currentAct.type === 'archiveNote' ? ' selected' : ''}>Archive note (#archived)</option>
+                        <option value="prependContent"${currentAct.type === 'prependContent' ? ' selected' : ''}>Prepend checklist or header content</option>
+                        <option value="syncDerivedTopics"${currentAct.type === 'syncDerivedTopics' ? ' selected' : ''}>Recalculate inherited parent topics</option>
                     </select>
+                </div>
+                <div class="action-params-box border-top pt-2 mt-2">
+                    <div class="ns-field param-label-name">
+                        <label for="param-lname">Label / Relation Name</label>
+                        <input type="text" id="param-lname" class="form-control form-control-sm" value="${escapeHtml(currentAct.params.labelName ?? currentAct.params.relationName ?? 'processed')}">
+                    </div>
+                    <div class="ns-field param-label-val">
+                        <label for="param-lval">Value / Target ID / Content</label>
+                        <input type="text" id="param-lval" class="form-control form-control-sm" value="${escapeHtml(currentAct.params.labelValue ?? currentAct.params.targetNoteId ?? currentAct.params.content ?? 'true')}" placeholder="Supports {TODAY}, {NOTE_TITLE}">
+                    </div>
                 </div>
             `,
         }, (content) => {
@@ -749,14 +807,97 @@ export function renderTemplateStudio(
             rule.name = name;
             rule.description = content.querySelector<HTMLInputElement>('#rule-desc')!.value;
             rule.trigger.type = content.querySelector<HTMLSelectElement>('#rule-trigger')!.value as IfThenRuleDef['trigger']['type'];
-            rule.actions = [{
-                type: content.querySelector<HTMLSelectElement>('#rule-action')!.value as IfThenRuleDef['actions'][number]['type'],
-                params: { labelName: 'processed', labelValue: 'true' },
-            }];
+
+            const actionType = content.querySelector<HTMLSelectElement>('#rule-action')!.value as any;
+            const lName = content.querySelector<HTMLInputElement>('#param-lname')?.value.trim();
+            const lVal = content.querySelector<HTMLInputElement>('#param-lval')?.value;
+
+            const params: Record<string, any> = {};
+            if (actionType === 'setLabel') {
+                params.labelName = lName || 'processed';
+                params.labelValue = lVal !== undefined ? lVal : 'true';
+            } else if (actionType === 'removeLabel') {
+                params.labelName = lName || '';
+            } else if (actionType === 'setRelation') {
+                params.relationName = lName || 'project';
+                params.targetNoteId = lVal || '';
+            } else if (actionType === 'archiveNote') {
+                params.containerMarker = lName || 'archiveRoot';
+            } else if (actionType === 'prependContent') {
+                params.content = lVal || '';
+            } else if (actionType === 'cloneToContainer') {
+                params.relationName = 'project';
+            }
+
+            rule.actions = [{ type: actionType, params }];
 
             ifThenRuleEngine.registerRule(rule);
             onSave();
             refresh();
+        });
+    }
+
+    function openExportTemplateModal(tpl: TemplateDefinition) {
+        const yamlContent = exportTemplateToYaml(tpl);
+        openModal({
+            title: `Export ${tpl.title} (YAML)`,
+            icon: 'bx-export',
+            confirmText: 'Copy to Clipboard',
+            cancelText: 'Close',
+            body: `
+                <div class="ns-field">
+                    <label>Single Template Specification</label>
+                    <textarea class="form-control form-control-sm font-monospace yaml-export-text" rows="14" readonly>${escapeHtml(yamlContent)}</textarea>
+                    <small class="ns-row-desc">Share or paste into another Trilium Notes System package.</small>
+                </div>
+                <div class="copy-status alert alert-success d-none py-1 px-2 tiny mt-2">Copied to clipboard!</div>
+            `,
+        }, (content) => {
+            const textarea = content.querySelector<HTMLTextAreaElement>('.yaml-export-text');
+            if (textarea) {
+                textarea.select();
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(textarea.value);
+                }
+                const status = content.querySelector<HTMLElement>('.copy-status');
+                if (status) status.classList.remove('d-none');
+            }
+            return false;
+        });
+    }
+
+    function openImportTemplateModal() {
+        openModal({
+            title: 'Import Template from YAML',
+            icon: 'bx-import',
+            confirmText: 'Import Template',
+            body: `
+                <div class="ns-field">
+                    <label for="import-yaml-input">Paste Template YAML</label>
+                    <textarea id="import-yaml-input" class="form-control form-control-sm font-monospace" rows="12" placeholder="Paste single template YAML specification here..."></textarea>
+                    <small class="ns-row-desc">Expects a YAML document with template properties, attributes, and parentLinks.</small>
+                </div>
+                <div class="import-error alert alert-danger d-none py-1 px-2 tiny m-0"></div>
+            `,
+        }, (content) => {
+            const yamlStr = content.querySelector<HTMLTextAreaElement>('#import-yaml-input')?.value || '';
+            const errorBox = content.querySelector<HTMLElement>('.import-error');
+
+            try {
+                const imported = importTemplateFromYaml(yamlStr);
+                templateEngine.registerTemplate(imported);
+                selectedTemplateId = imported.id;
+                activeEditorTab = 'editor';
+                onSave();
+                refresh();
+                return true;
+            } catch (err: any) {
+                if (errorBox) {
+                    errorBox.textContent = `Import failed: ${err.message}`;
+                    errorBox.classList.remove('d-none');
+                }
+                return false;
+            }
         });
     }
 

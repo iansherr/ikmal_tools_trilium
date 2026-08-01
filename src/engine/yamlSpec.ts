@@ -398,3 +398,70 @@ export function exportTemplateAsHtml(tpl: TemplateDefinition): string {
 ${attributes}
 ${tpl.defaultContent ?? ''}`;
 }
+
+/**
+ * Dumps a single template definition as a clean, targeted YAML document.
+ */
+export function exportTemplateToYaml(tpl: TemplateDefinition): string {
+    const dumped = dumpTemplate(tpl);
+    return `# Trilium Template Definition: ${tpl.title} (#${tpl.marker})\n${YamlParser.stringify({ template: dumped })}\n`;
+}
+
+/**
+ * Parses a targeted template YAML document into a TemplateDefinition object.
+ */
+export function importTemplateFromYaml(yamlString: string): TemplateDefinition {
+    if (!yamlString || !yamlString.trim()) {
+        throw new Error('YAML template string is empty.');
+    }
+
+    const parsed = YamlParser.parse(yamlString);
+    if (!parsed || typeof parsed !== 'object') {
+        throw new Error('YAML did not parse into a valid mapping.');
+    }
+
+    const tplObj = parsed.template ?? parsed;
+    if (!tplObj.id && !tplObj.title) {
+        throw new Error('Template definition must specify at least an id or title.');
+    }
+
+    const id = String(tplObj.id || tplObj.title.toLowerCase().replace(/\s+/g, '-'));
+
+    return {
+        id,
+        marker: String(tplObj.marker || `ext${id.charAt(0).toUpperCase()}${id.slice(1)}`),
+        title: String(tplObj.title || id),
+        icon: String(tplObj.icon || 'file-blank'),
+        category: String(tplObj.category || 'work'),
+        rootContainerMarker: String(tplObj.rootContainerMarker || 'projectRoot'),
+        titlePattern: String(tplObj.titlePattern || '{title}'),
+        defaultContent: String(tplObj.defaultContent || ''),
+        projectScoped: Boolean(tplObj.projectScoped),
+        noJournalClone: Boolean(tplObj.noJournalClone),
+        isBuiltin: Boolean(tplObj.isBuiltin),
+        attributes: Array.isArray(tplObj.attributes)
+            ? tplObj.attributes.filter((a: any) => a?.name).map((a: any) => ({
+                name: String(a.name),
+                type: a.type === 'relation' ? 'relation' : 'label',
+                dataType: a.dataType ?? 'string',
+                ...(a.label ? { label: String(a.label) } : {}),
+                ...(a.defaultValue !== '' && a.defaultValue != null ? { defaultValue: a.defaultValue } : {}),
+                ...(Array.isArray(a.options) && a.options.length ? { options: a.options.map(String) } : {}),
+                isPromoted: a.isPromoted !== false,
+            }))
+            : [],
+        relationships: Array.isArray(tplObj.parentLinks ?? tplObj.relationships)
+            ? (tplObj.parentLinks ?? tplObj.relationships).filter((r: any) => r?.relationName).map((r: any) => ({
+                id: `rel_${id}_${r.relationName}`,
+                name: `${r.relationName} link`,
+                relationName: String(r.relationName),
+                targetTemplateId: String(r.targetTemplateId ?? ''),
+                targetTemplateName: String(r.targetTemplateName ?? r.targetTemplateId ?? ''),
+                isMulti: Boolean(r.isMulti),
+                autoCloneToParent: r.autoCloneToParent !== false,
+                inheritTopics: r.inheritTopics !== false,
+                direction: r.direction === 'child' || r.direction === 'peer' ? r.direction : 'parent',
+            }))
+            : [],
+    };
+}

@@ -85,6 +85,8 @@ export type ActionType =
     | 'syncDerivedTopics'
     | 'createLinkedNote'
     | 'setTaskStatus'
+    | 'archiveNote'
+    | 'prependContent'
     | 'runScript';
 
 export interface IfThenAction {

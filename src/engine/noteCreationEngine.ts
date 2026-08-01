@@ -130,6 +130,8 @@ export class NoteCreationEngine {
 
         const executedIfThenRules: Array<{ ruleId: string; ruleName: string }> = [];
 
+        let content = template.defaultContent;
+
         if (this.settingsEngine.get('autoRunIfThenRulesOnCreation')) {
             const ruleResults = this.ifThenRuleEngine.evaluateEvent('onNoteCreated', noteContext);
             for (const res of ruleResults) {
@@ -141,11 +143,21 @@ export class NoteCreationEngine {
                                 name: action.params.labelName,
                                 value: action.params.labelValue || '',
                             });
+                        } else if (action.type === 'removeLabel' && action.params.labelName) {
+                            const idx = labelsToCreate.findIndex((l) => l.name === action.params.labelName);
+                            if (idx !== -1) labelsToCreate.splice(idx, 1);
                         } else if (action.type === 'setRelation' && action.params.relationName && action.params.targetNoteId) {
                             relationsToCreate.push({
                                 name: action.params.relationName,
                                 value: action.params.targetNoteId,
                             });
+                        } else if (action.type === 'archiveNote') {
+                            labelsToCreate.push({ name: 'archived', value: '' });
+                            if (action.params.containerMarker && !autoCloneContainers.includes(action.params.containerMarker)) {
+                                autoCloneContainers.push(action.params.containerMarker);
+                            }
+                        } else if (action.type === 'prependContent' && action.params.content) {
+                            content = `${action.params.content}\n${content}`;
                         }
                     }
                 }
@@ -166,7 +178,7 @@ export class NoteCreationEngine {
             formattedTitle,
             rootContainerMarker: template.rootContainerMarker,
             targetContainerId: request.targetContainerId,
-            content: template.defaultContent,
+            content,
             labelsToCreate,
             relationsToCreate,
             autoCloneContainers,

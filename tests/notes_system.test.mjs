@@ -8,7 +8,7 @@ import { NoteCreationEngine } from '../dist/engine/noteCreationEngine.js';
 import { buildAttributeRows, applyDerivedTopics } from '../dist/engine/noteMaterializer.js';
 import { SettingsEngine, DEFAULT_AUTOMATION_SETTINGS } from '../dist/engine/settingsEngine.js';
 import { loadAutomationSettings, saveAutomationSetting, loadYamlSpecification, saveYamlSpecification } from '../dist/engine/packagePersistence.js';
-import { dumpYamlSpec, parseAndApplyYamlSpec } from '../dist/engine/yamlSpec.js';
+import { dumpYamlSpec, parseAndApplyYamlSpec, exportTemplateToYaml, importTemplateFromYaml } from '../dist/engine/yamlSpec.js';
 import { YamlParser } from '../dist/engine/yamlParser.js';
 import { describeWeatherCode, hasLocation, parseWeatherResponse } from '../dist/engine/weatherEngine.js';
 import {
@@ -630,4 +630,48 @@ test('Multi-value relationships support multiple target note IDs in plan and aut
     assert.equal(projectRelations.length, 2);
     assert.deepEqual(projectRelations.map((r) => r.value), ['proj_alpha', 'proj_beta']);
 });
+
+test('exportTemplateToYaml and importTemplateFromYaml round-trip single template specifications', () => {
+    const tplEngine = new TemplateEngine();
+    const origTpl = tplEngine.getTemplate('task');
+    assert.ok(origTpl);
+
+    const yamlStr = exportTemplateToYaml(origTpl);
+    assert.match(yamlStr, /Trilium Template Definition: Task/);
+
+    const imported = importTemplateFromYaml(yamlStr);
+    assert.equal(imported.id, 'task');
+    assert.equal(imported.title, 'Task');
+    assert.equal(imported.category, 'work');
+    assert.ok(imported.attributes.length >= 2);
+    assert.equal(imported.relationships[0].relationName, 'project');
+});
+
+test('NoteCreationEngine handles archiveNote, removeLabel, and prependContent rule actions', () => {
+    const tplEngine = new TemplateEngine();
+    const relEngine = new RelationshipEngine(tplEngine);
+    const ifThenRuleEngine = new IfThenRuleEngine([]);
+    const settingsEngine = new SettingsEngine({ autoRunIfThenRulesOnCreation: true });
+
+    ifThenRuleEngine.registerRule({
+        id: 'rule_custom_actions',
+        name: 'Custom Action Test',
+        description: 'Test archiveNote and prependContent',
+        enabled: true,
+        trigger: { type: 'onNoteCreated', targetTemplateId: 'task' },
+        conditions: [],
+        actions: [
+            { type: 'archiveNote', params: { containerMarker: 'archiveRoot' } },
+            { type: 'prependContent', params: { content: '<h3>Header Checklist</h3>' } },
+        ],
+    });
+
+    const engine = new NoteCreationEngine(tplEngine, relEngine, ifThenRuleEngine, settingsEngine);
+    const plan = engine.planNoteCreation({ type: 'task', title: 'Legacy Cleanup' });
+
+    assert.ok(plan.labelsToCreate.some((l) => l.name === 'archived'));
+    assert.ok(plan.autoCloneContainers.includes('archiveRoot'));
+    assert.match(plan.content, /<h3>Header Checklist<\/h3>/);
+});
+
 
