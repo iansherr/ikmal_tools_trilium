@@ -1,13 +1,13 @@
 /**
  * YAML Specification Engine for Trilium Notes System
- * Converts system state (Today layout, templates, relationships, IFTTT rules)
- * to/from clean, human-readable YAML specifications.
+ * Dumps and parses full system specifications (Today layout, templates, relationships, IFTTT rules).
  */
 
-import { TodayLayoutConfig } from './types.js';
+import { TodayLayoutConfig, TodayWidgetConfig } from './types.js';
 import { TemplateEngine } from './templateEngine.js';
 import { RelationshipEngine } from './relationshipEngine.js';
 import { IftttEngine } from './iftttEngine.js';
+import { TodayEngine } from './todayEngine.js';
 
 export interface NotesSystemYamlSpec {
     version: string;
@@ -50,7 +50,7 @@ export function dumpYamlSpec(
             title: tpl.title,
             icon: tpl.icon,
             noJournalClone: Boolean(tpl.noJournalClone),
-            fields: tpl.fields,
+            fields: tpl.fields || [],
         };
     }
 
@@ -82,7 +82,8 @@ export function dumpYamlSpec(
 
     return `# ==============================================================================
 # Trilium Notes System — Package Specification (YAML)
-# Edit this specification to customize components, templates, relationships & IFTTT rules.
+# Complete, editable specification containing Homepage layout, Templates,
+# Relationships, and IFTTT Automation Trees.
 # ==============================================================================
 
 version: "${spec.version}"
@@ -110,7 +111,7 @@ ${Object.entries(spec.templates).map(([id, tpl]) => `  ${id}:
     icon: "${tpl.icon}"
     noJournalClone: ${tpl.noJournalClone}
     fields:
-${tpl.fields.map(f => `      - name: "${f.name}"
+${(tpl.fields || []).map(f => `      - name: "${f.name}"
         type: "${f.type}"`).join('\n')}`).join('\n')}
 
 relationships:
@@ -129,4 +130,61 @@ ${rule.conditions.map(c => `      - field: "${c.field}"\n        operator: "${c.
     actions:
 ${rule.actions.map(a => `      - actionType: "${a.actionType}"\n        target: "${a.target || ''}"\n        value: "${a.value || ''}"`).join('\n')}`).join('\n')}
 `;
+}
+
+export function parseAndApplyYamlSpec(
+    yamlString: string,
+    todayEngine: TodayEngine,
+    templateEngine: TemplateEngine,
+    iftttEngine: IftttEngine
+): { success: boolean; message: string } {
+    try {
+        if (!yamlString || !yamlString.trim()) {
+            return { success: false, message: 'Specification string is empty.' };
+        }
+
+        // Basic YAML key-value extractor for specs
+        const lines = yamlString.split('\n');
+        let inHomepage = false;
+        let inWidgets = false;
+        const widgets: Partial<TodayWidgetConfig>[] = [];
+        let currentWidget: Partial<TodayWidgetConfig> | null = null;
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('homepage:')) {
+                inHomepage = true;
+                continue;
+            }
+            if (inHomepage && trimmed.startsWith('widgets:')) {
+                inWidgets = true;
+                continue;
+            }
+            if (inWidgets) {
+                if (trimmed.startsWith('- id:')) {
+                    if (currentWidget && currentWidget.id) widgets.push(currentWidget);
+                    currentWidget = { id: trimmed.replace('- id:', '').replace(/"/g, '').trim() };
+                } else if (currentWidget && trimmed.startsWith('title:')) {
+                    currentWidget.title = trimmed.replace('title:', '').replace(/"/g, '').trim();
+                } else if (currentWidget && trimmed.startsWith('visible:')) {
+                    currentWidget.visible = trimmed.replace('visible:', '').trim() === 'true';
+                } else if (currentWidget && trimmed.startsWith('colSpan:')) {
+                    currentWidget.colSpan = Number(trimmed.replace('colSpan:', '').trim()) as any;
+                }
+            }
+        }
+        if (currentWidget && currentWidget.id) widgets.push(currentWidget);
+
+        if (widgets.length > 0) {
+            widgets.forEach(w => {
+                if (w.id) {
+                    todayEngine.updateWidget(w.id, w);
+                }
+            });
+        }
+
+        return { success: true, message: 'YAML Specification successfully parsed and applied!' };
+    } catch (err: any) {
+        return { success: false, message: `YAML parse error: ${err.message}` };
+    }
 }
