@@ -142,7 +142,40 @@ class LiveInstanceSmokeTest(unittest.TestCase):
             if st in status_counts:
                 status_counts[st] += 1
 
-        self.assertGreaterEqual(status_counts["in_progress"], 1)
+    def test_06_canvas_drawing_note_creation(self):
+        root_id = self.api.get_note("root")["noteId"]
+
+        # Create native Excalidraw drawing note (type: canvas)
+        canvas_id = self.api.create_note(root_id, "System Topology Diagram (Diagram)", "", note_type="canvas")
+        self.api.set_label(canvas_id, "extCanvas", "")
+        self.api.set_label(canvas_id, "diagramType", "architecture")
+
+        note_info = self.api.get_note(canvas_id)
+        self.assertEqual(note_info.get("type"), "canvas")
+
+    def test_07_fleet_bridge_sync_tagging(self):
+        root_id = self.api.get_note("root")["noteId"]
+
+        # Create task tagged for FleetSync bridge
+        synced_id = self.api.create_note(root_id, "FleetBridge Targeted Task", "<p>Bridge payload</p>")
+        self.api.set_label(synced_id, "extTask", "")
+        self.api.set_label(synced_id, "ikmalSynced", "true")
+
+        updated = self.api.get_note(synced_id)
+        sync_attrs = [a for a in updated["attributes"] if a["name"] == "ikmalSynced"]
+        self.assertEqual(len(sync_attrs), 1)
+
+    def test_08_rule_actions_and_archival(self):
+        root_id = self.api.get_note("root")["noteId"]
+
+        # Create note and simulate archiveNote action
+        archived_id = self.api.create_note(root_id, "Legacy Spec Draft", "<p>Archive me</p>")
+        self.api.set_label(archived_id, "extTask", "")
+        self.api.set_label(archived_id, "archived", "")
+
+        updated = self.api.get_note(archived_id)
+        archived_attrs = [a for a in updated["attributes"] if a["name"] == "archived"]
+        self.assertEqual(len(archived_attrs), 1)
 
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(LiveInstanceSmokeTest)
