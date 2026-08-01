@@ -101,3 +101,20 @@ export function initNotesSystemDashboard(containerEl) {
 
     renderMain();
 }
+
+// Auto-initialize inside Trilium render note or browser window
+if (typeof api !== 'undefined' || typeof window !== 'undefined') {
+    const init = () => {
+        const container = (typeof api !== 'undefined' && api.$container && (api.$container[0] || api.$container))
+            || document.querySelector('.notes-system-root')
+            || document.body;
+        if (container) {
+            initNotesSystemDashboard(container);
+        }
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+}

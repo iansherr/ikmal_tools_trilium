@@ -103,16 +103,8 @@ def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy") -> None:
             existing_scripts = api.search(f'#packageArtifact="{artifact_id}-script"')
             script_note_id = existing_scripts[0]["noteId"] if existing_scripts else None
 
-            script_body = (
-                code_content +
-                "\n\nif (typeof api !== 'undefined') {\n"
-                "    const $c = api.$container;\n"
-                "    const el = ($c && ($c[0] || $c)) || document.body;\n"
-                "    if (typeof initNotesSystemDashboard === 'function') {\n"
-                "        initNotesSystemDashboard(el);\n"
-                "    }\n"
-                "}\n"
-            )
+            script_body = code_content
+
 
             if not script_note_id:
                 script_note_id = api.create_note(
