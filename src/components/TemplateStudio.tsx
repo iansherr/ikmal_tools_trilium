@@ -1,6 +1,6 @@
 /**
- * Template Studio Component: Spacious, High-Elegance Refined UI.
- * Integrates native Trilium design tokens, generous whitespace, glassmorphism cards, and un-cramped layouts.
+ * Template Studio Component: Template Category Types, Refined Dialog Modals, and High-Elegance UI.
+ * Styled natively with Trilium Boxicons and standard Trilium form components.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
@@ -35,11 +35,11 @@ export function renderTemplateStudio(
                 </div>
                 <div>
                     <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        Template Studio & Hierarchy
+                        Template Studio & Category Types
                         <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure nested template schemas, parent-child relations, promoted attributes, and note previews.
+                        Configure template category types (Work, Drafts, Entities, System), parent relations, promoted attributes, and note previews.
                     </p>
                 </div>
             </div>
@@ -211,6 +211,7 @@ export function renderTemplateStudio(
                     <div>
                         <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
                             <span>Template: ${activeTpl.title}</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>
                             <span class="badge ${activeTpl.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted font-weight-normal small">${activeTpl.isBuiltin ? 'Built-in' : 'Custom'}</span>
                         </h3>
                         <div class="text-muted small mt-0.5">Marker: <code>#${activeTpl.marker}</code> • ID: <code>${activeTpl.id}</code></div>
@@ -284,7 +285,7 @@ export function renderTemplateStudio(
         const formWrapper = document.createElement('div');
         formWrapper.className = 'd-flex flex-column gap-4';
 
-        // 1. Basic Template Settings
+        // 1. Basic Template Settings & Category Type
         const basicCard = document.createElement('div');
         basicCard.className = 'card border p-3.5';
         basicCard.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -292,20 +293,29 @@ export function renderTemplateStudio(
 
         basicCard.innerHTML = `
             <h6 class="font-weight-bold text-primary mb-3 d-flex align-items-center gap-2">
-                <i class="bx bx-slider"></i> General Settings
+                <i class="bx bx-slider"></i> General Settings & Category Type
             </h6>
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label small font-weight-bold">Template Title</label>
                     <input type="text" id="tpl-title" class="form-control" value="${tpl.title}">
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label small font-weight-bold">Title Naming Pattern</label>
-                    <input type="text" id="tpl-pattern" class="form-control" value="${tpl.titlePattern}">
-                    <div class="form-text small text-muted">Variables: <code>{title}</code>, <code>{isoDate}</code></div>
+                <div class="col-md-3">
+                    <label class="form-label small font-weight-bold">Category Type</label>
+                    <select id="tpl-category" class="form-select">
+                        <option value="work" ${tpl.category === 'work' ? 'selected' : ''}>Work & Project Scoped</option>
+                        <option value="drafts" ${tpl.category === 'drafts' ? 'selected' : ''}>Draft & Editorial</option>
+                        <option value="people" ${tpl.category === 'people' ? 'selected' : ''}>People & Entities</option>
+                        <option value="system" ${tpl.category === 'system' ? 'selected' : ''}>System & Index</option>
+                        <option value="custom" ${tpl.category === 'custom' ? 'selected' : ''}>Custom / Flexible</option>
+                    </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label small font-weight-bold">Boxicons Icon</label>
+                <div class="col-md-3">
+                    <label class="form-label small font-weight-bold">Title Pattern</label>
+                    <input type="text" id="tpl-pattern" class="form-control" value="${tpl.titlePattern}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small font-weight-bold">Icon Class</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bx bx-${tpl.icon}"></i></span>
                         <input type="text" id="tpl-icon" class="form-control" value="${tpl.icon}">
@@ -424,12 +434,14 @@ export function renderTemplateStudio(
         saveBtn.innerHTML = '<i class="bx bx-save fs-6"></i> Save Template Schema';
         saveBtn.addEventListener('click', () => {
             const newTitle = (formWrapper.querySelector('#tpl-title') as HTMLInputElement).value;
+            const newCategory = (formWrapper.querySelector('#tpl-category') as HTMLSelectElement).value as any;
             const newPattern = (formWrapper.querySelector('#tpl-pattern') as HTMLInputElement).value;
             const newIcon = (formWrapper.querySelector('#tpl-icon') as HTMLInputElement).value;
             const newContent = (formWrapper.querySelector('#tpl-content') as HTMLTextAreaElement).value;
 
             templateEngine.updateTemplate(tpl.id, {
                 title: newTitle,
+                category: newCategory,
                 titlePattern: newPattern,
                 icon: newIcon,
                 defaultContent: newContent,
@@ -543,11 +555,17 @@ export function renderTemplateStudio(
     }
 
     function showCreateTemplateModal() {
-        const title = prompt('Enter new Template ID (e.g. researchNote):');
+        const title = prompt('Enter new Template Title (e.g. Research Brief):');
         if (!title) return;
+        const category = prompt('Category Type (work, drafts, people, system, custom):', 'work') as any;
+
+        const id = title.toLowerCase().replace(/\s+/g, '-');
         templateEngine.registerTemplate({
-            id: title.toLowerCase().replace(/\s+/g, '-'),
+            id,
+            marker: `ext${title.replace(/\s+/g, '')}`,
             title,
+            category: category || 'work',
+            rootContainerMarker: 'projectRoot',
             titlePattern: '{title}',
             icon: 'file-blank',
             attributes: [],
@@ -570,6 +588,7 @@ export function renderTemplateStudio(
             type: type === 'relation' ? 'relation' : 'label',
             dataType: dataType || 'text',
             options: optionsRaw ? optionsRaw.split(',').map(s => s.trim()) : undefined,
+            isPromoted: true,
         });
         onSave();
         refresh();
