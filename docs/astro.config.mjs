@@ -17,6 +17,7 @@ export default defineConfig({
             { label: 'Template Studio & Rules', link: '/user-guide/03-template-studio/' },
             { label: 'Quick Capture & Hotkey', link: '/user-guide/04-quick-capture/' },
             { label: 'Micro-Tools Suite', link: '/user-guide/05-micro-tools/' },
+            { label: 'LanguageTool for Trilium', link: '/user-guide/06-languagetool-plugin/' },
           ],
         },
         {
@@ -26,6 +27,7 @@ export default defineConfig({
             { label: 'FleetSync Bridge Spec', link: '/developer-guide/02-fleetsync-bridge/' },
             { label: 'Building & Testing', link: '/developer-guide/03-building-and-testing/' },
             { label: 'Extending Templates', link: '/developer-guide/04-extending-templates/' },
+            { label: 'LanguageTool Integration', link: '/developer-guide/05-languagetool-integration/' },
           ],
         },
       ],
