@@ -91,10 +91,11 @@ export function initNotesSystemDashboard(containerEl) {
                 console.log('IFTTT rules updated!');
             });
         } else if (activeTab === 'settings') {
-            renderSettingsStudio(contentArea, todayEngine, templateEngine, (jsonString) => {
-                console.log('Package settings saved:', jsonString);
+            renderSettingsStudio(contentArea, todayEngine, templateEngine, relationshipEngine, iftttEngine, (yamlSpec) => {
+                console.log('YAML settings package saved:', yamlSpec);
             });
         }
+
 
         shell.appendChild(contentArea);
         containerEl.appendChild(shell);

@@ -1,19 +1,24 @@
 /**
  * Settings Studio Component: Configures Today Homepage Components,
- * Package Preferences, and JSON Package Import/Export.
- * Uses Trilium native theme tokens for seamless dark/light mode compatibility.
+ * Package Preferences, and YAML Package Import/Export.
+ * Styled with elegant, native Trilium design tokens.
  */
 
 import { TodayEngine } from '../engine/todayEngine.js';
 import { TemplateEngine } from '../engine/templateEngine.js';
+import { RelationshipEngine } from '../engine/relationshipEngine.js';
+import { IftttEngine } from '../engine/iftttEngine.js';
+import { dumpYamlSpec } from '../engine/yamlSpec.js';
 
 export function renderSettingsStudio(
     container: HTMLElement,
     todayEngine: TodayEngine,
     templateEngine: TemplateEngine,
-    onSaveSettings?: (packageJson: string) => void
+    relationshipEngine: RelationshipEngine,
+    iftttEngine: IftttEngine,
+    onSaveSettings?: (yamlSpec: string) => void
 ): void {
-    let activeSection: 'todayComponents' | 'packagePreferences' | 'jsonPackage' = 'todayComponents';
+    let activeSection: 'todayComponents' | 'packagePreferences' | 'yamlPackage' = 'todayComponents';
     let importError = '';
     let importSuccess = '';
 
@@ -23,40 +28,49 @@ export function renderSettingsStudio(
         const wrapper = document.createElement('div');
         wrapper.className = 'settings-studio-container d-flex flex-column gap-4';
 
-        // 1. Header Banner
+        // 1. Elegant Header Banner
         const header = document.createElement('div');
-        header.className = 'p-3 rounded border d-flex align-items-center justify-content-between';
-        header.style.backgroundColor = 'var(--sub-background-color, transparent)';
+        header.className = 'p-4 rounded border d-flex align-items-center justify-content-between shadow-sm';
+        header.style.backgroundColor = 'var(--sub-background-color, var(--main-background-color, transparent))';
         header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
+        header.style.borderRadius = '10px';
+
         header.innerHTML = `
-            <div>
-                <h2 class="h4 m-0 font-weight-bold d-flex align-items-center gap-2 text-primary">
-                    <i class="bx bx-cog text-warning"></i> Settings & Component Studio
-                </h2>
-                <p class="text-muted small m-0 mt-1">
-                    Component-driven configuration for the Today Homepage, automation toggles, and JSON settings package manager.
-                </p>
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bx bx-cog h3 m-0 text-warning"></i>
+                </div>
+                <div>
+                    <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
+                        Settings & Component Studio
+                        <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
+                    </h2>
+                    <p class="text-muted small m-0 mt-1">
+                        Configure Today Homepage components, template schemas, relationship trees, and YAML package specs.
+                    </p>
+                </div>
             </div>
         `;
         wrapper.appendChild(header);
 
         // 2. Sub-Navigation Tabs
         const subNav = document.createElement('ul');
-        subNav.className = 'nav nav-tabs border-bottom mb-3';
+        subNav.className = 'nav nav-pills border-bottom pb-2 mb-2';
 
         const sections = [
-            { id: 'todayComponents', label: '⚡ Today Homepage Components', icon: 'grid-alt' },
+            { id: 'todayComponents', label: '⚡ Today Components', icon: 'grid-alt' },
             { id: 'packagePreferences', label: '🎛️ Package Preferences', icon: 'slider' },
-            { id: 'jsonPackage', label: '📦 JSON Settings Package', icon: 'code-alt' },
+            { id: 'yamlPackage', label: '📜 Full YAML Package Spec', icon: 'file-coding' },
         ];
 
         for (const sec of sections) {
             const li = document.createElement('li');
             li.className = 'nav-item';
             const a = document.createElement('a');
-            a.className = `nav-link ${activeSection === sec.id ? 'active font-weight-bold' : ''} cursor-pointer`;
+            a.className = `nav-link ${activeSection === sec.id ? 'active' : ''} cursor-pointer d-flex align-items-center gap-2`;
             a.style.cursor = 'pointer';
-            a.innerHTML = `<i class="bx bx-${sec.icon} mr-1"></i> ${sec.label}`;
+            a.style.borderRadius = '6px';
+            a.innerHTML = `<i class="bx bx-${sec.icon}"></i> ${sec.label}`;
             a.addEventListener('click', (e) => {
                 e.preventDefault();
                 activeSection = sec.id as any;
@@ -75,8 +89,8 @@ export function renderSettingsStudio(
             renderTodayComponentsSection(contentArea);
         } else if (activeSection === 'packagePreferences') {
             renderPackagePreferencesSection(contentArea);
-        } else if (activeSection === 'jsonPackage') {
-            renderJsonPackageSection(contentArea);
+        } else if (activeSection === 'yamlPackage') {
+            renderYamlPackageSection(contentArea);
         }
 
         wrapper.appendChild(contentArea);
@@ -90,18 +104,22 @@ export function renderSettingsStudio(
 
         // Journal Split Width Control
         const widthCard = document.createElement('div');
-        widthCard.className = 'card mb-3 border-secondary';
+        widthCard.className = 'card border';
         widthCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
         widthCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
         widthCard.innerHTML = `
             <div class="card-body">
-                <h5 class="card-title h6 text-info font-weight-bold">
-                    <i class="bx bx-dock-right"></i> Journal Split Panel Width (${layout.journalWidthPercent}%)
-                </h5>
-                <p class="text-muted small mb-2">Adjust default split width allocated to the Journal note on the Today Homepage.</p>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h5 class="card-title h6 text-info font-weight-bold m-0 d-flex align-items-center gap-2">
+                        <i class="bx bx-dock-right"></i> Journal Side Panel Width
+                    </h5>
+                    <span class="badge bg-primary font-weight-bold px-3 py-1 fs-6">${layout.journalWidthPercent}%</span>
+                </div>
+                <p class="text-muted small mb-3">Adjust the default split width allocated to the Journal day note on the Today Homepage.</p>
                 <div class="d-flex align-items-center gap-3">
+                    <span class="small text-muted font-weight-bold">35%</span>
                     <input type="range" class="form-range flex-grow-1" min="35" max="85" value="${layout.journalWidthPercent}">
-                    <span class="badge bg-primary font-weight-bold p-2">${layout.journalWidthPercent}%</span>
+                    <span class="small text-muted font-weight-bold">85%</span>
                 </div>
             </div>
         `;
@@ -119,14 +137,14 @@ export function renderSettingsStudio(
 
         // Today Widgets Manager
         const widgetCard = document.createElement('div');
-        widgetCard.className = 'card border-secondary';
+        widgetCard.className = 'card border';
         widgetCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
         widgetCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
         widgetCard.innerHTML = `
             <div class="card-body">
                 <h5 class="card-title h6 text-info font-weight-bold mb-3 d-flex align-items-center justify-content-between">
-                    <span><i class="bx bx-layer"></i> Today Homepage Widgets (${layout.widgets.length})</span>
-                    <span class="small text-muted font-weight-normal">Drag or use arrow buttons to reorder</span>
+                    <span class="d-flex align-items-center gap-2"><i class="bx bx-layer"></i> Today Homepage Widgets (${layout.widgets.length})</span>
+                    <span class="small text-muted font-weight-normal">Toggle visibility or reorder sections</span>
                 </h5>
                 <div class="widget-list d-flex flex-column gap-2"></div>
             </div>
@@ -137,16 +155,19 @@ export function renderSettingsStudio(
 
         widgets.forEach((w, index) => {
             const item = document.createElement('div');
-            item.className = `d-flex align-items-center justify-content-between p-3 rounded border ${w.visible ? 'border-primary' : 'border-secondary opacity-75'}`;
+            item.className = `d-flex align-items-center justify-content-between p-3 rounded border transition-all ${w.visible ? 'border-primary' : 'border-secondary opacity-75'}`;
             item.style.backgroundColor = 'var(--main-background-color, transparent)';
             item.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
             item.innerHTML = `
                 <div class="d-flex align-items-center gap-3">
-                    <input type="checkbox" class="form-check-input widget-toggle" ${w.visible ? 'checked' : ''}>
+                    <input type="checkbox" class="form-check-input widget-toggle cursor-pointer" ${w.visible ? 'checked' : ''} style="width: 20px; height: 20px;">
                     <div>
                         <strong class="${w.visible ? 'font-weight-bold' : 'text-muted'}">${w.title}</strong>
-                        <div class="small text-muted">Marker: <code>#extView="${w.marker}"</code> • Columns: ${w.colSpan === 2 ? 'Full Width (2 col)' : 'Half Width (1 col)'}</div>
+                        <div class="small text-muted mt-1">
+                            Query Marker: <code class="px-1 py-0.5 rounded border">#extView="${w.marker}"</code> • Grid: 
+                            <span class="badge ${w.colSpan === 2 ? 'bg-info bg-opacity-10 text-info' : 'bg-secondary bg-opacity-10 text-muted'}">${w.colSpan === 2 ? 'Full Width (2 col)' : 'Half Width (1 col)'}</span>
+                        </div>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
@@ -200,40 +221,40 @@ export function renderSettingsStudio(
 
     function renderPackagePreferencesSection(el: HTMLElement) {
         const section = document.createElement('div');
-        section.className = 'card border-secondary';
+        section.className = 'card border';
         section.style.backgroundColor = 'var(--sub-background-color, transparent)';
         section.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
         section.innerHTML = `
             <div class="card-body d-flex flex-column gap-4">
-                <h5 class="card-title h6 text-info font-weight-bold m-0">
-                    <i class="bx bx-slider"></i> Global Package Automation & Relationship Preferences
+                <h5 class="card-title h6 text-info font-weight-bold m-0 d-flex align-items-center gap-2">
+                    <i class="bx bx-slider"></i> Global Automation & Relationship Preferences
                 </h5>
 
                 <div class="form-check form-switch p-3 border rounded" style="border-color: var(--border-color, rgba(128, 128, 128, 0.2)) !important;">
-                    <input class="form-check-input ms-0 me-3" type="checkbox" id="iftttToggle" checked>
-                    <label class="form-check-label font-weight-bold" for="iftttToggle">
+                    <input class="form-check-input ms-0 me-3 cursor-pointer" type="checkbox" id="iftttToggle" checked style="width: 40px; height: 20px;">
+                    <label class="form-check-label font-weight-bold cursor-pointer" for="iftttToggle">
                         Auto-Execute IFTTT Automation Rules
-                        <div class="small text-muted font-weight-normal">
+                        <div class="small text-muted font-weight-normal mt-1">
                             Automatically evaluate IF-THIS-THEN-THAT rules when creating tasks, story drafts, or project hubs.
                         </div>
                     </label>
                 </div>
 
                 <div class="form-check form-switch p-3 border rounded" style="border-color: var(--border-color, rgba(128, 128, 128, 0.2)) !important;">
-                    <input class="form-check-input ms-0 me-3" type="checkbox" id="derivedTopicsToggle" checked>
-                    <label class="form-check-label font-weight-bold" for="derivedTopicsToggle">
+                    <input class="form-check-input ms-0 me-3 cursor-pointer" type="checkbox" id="derivedTopicsToggle" checked style="width: 40px; height: 20px;">
+                    <label class="form-check-label font-weight-bold cursor-pointer" for="derivedTopicsToggle">
                         Enable Derived Topic Propagation
-                        <div class="small text-muted font-weight-normal">
+                        <div class="small text-muted font-weight-normal mt-1">
                             Inherit topic tags dynamically from parent project hubs, organizations, or person relations.
                         </div>
                     </label>
                 </div>
 
                 <div class="form-check form-switch p-3 border rounded" style="border-color: var(--border-color, rgba(128, 128, 128, 0.2)) !important;">
-                    <input class="form-check-input ms-0 me-3" type="checkbox" id="autoJournalCloneToggle" checked>
-                    <label class="form-check-label font-weight-bold" for="autoJournalCloneToggle">
+                    <input class="form-check-input ms-0 me-3 cursor-pointer" type="checkbox" id="autoJournalCloneToggle" checked style="width: 40px; height: 20px;">
+                    <label class="form-check-label font-weight-bold cursor-pointer" for="autoJournalCloneToggle">
                         Auto-Clone Created Notes into Journal Day Note
-                        <div class="small text-muted font-weight-normal">
+                        <div class="small text-muted font-weight-normal mt-1">
                             Clone newly created tasks, meetings, and story drafts into the current Journal day note.
                         </div>
                     </label>
@@ -243,43 +264,40 @@ export function renderSettingsStudio(
         el.appendChild(section);
     }
 
-    function renderJsonPackageSection(el: HTMLElement) {
+    function renderYamlPackageSection(el: HTMLElement) {
         const section = document.createElement('div');
         section.className = 'd-flex flex-column gap-3';
 
-        const jsonState = {
-            version: '1.0.0',
-            packageId: 'iansherr/notes-system',
-            todayLayout: todayEngine.getLayout(),
-            templates: templateEngine.getAllTemplates(),
-        };
-
-        const jsonString = JSON.stringify(jsonState, null, 2);
+        const yamlContent = dumpYamlSpec(
+            todayEngine.getLayout(),
+            templateEngine,
+            relationshipEngine,
+            iftttEngine
+        );
 
         section.innerHTML = `
-            <div class="card border-secondary" style="background-color: var(--sub-background-color, transparent); border-color: var(--border-color, rgba(128, 128, 128, 0.2));">
+            <div class="card border" style="background-color: var(--sub-background-color, transparent); border-color: var(--border-color, rgba(128, 128, 128, 0.2));">
                 <div class="card-body">
-                    <h5 class="card-title h6 text-info font-weight-bold mb-2">
-                        <i class="bx bx-code-alt"></i> JSON Package Manifest & Settings State
+                    <h5 class="card-title h6 text-info font-weight-bold mb-2 d-flex align-items-center gap-2">
+                        <i class="bx bx-file-coding"></i> Complete YAML Package Specification
                     </h5>
                     <p class="text-muted small mb-3">
-                        Export your Today Homepage components, templates, and automation state as a clean JSON package. Load it into the plugin settings note anytime.
+                        Includes Today Homepage layout, all 12 templates, relationship rules, and IFTTT automation trees in clean, commented YAML.
                     </p>
 
                     ${importError ? `<div class="alert alert-danger small mb-3">${importError}</div>` : ''}
                     ${importSuccess ? `<div class="alert alert-success small mb-3">${importSuccess}</div>` : ''}
 
                     <div class="mb-3">
-                        <label class="form-label font-weight-bold small">Package Configuration JSON</label>
-                        <textarea class="form-html-code form-control font-monospace small" rows="12" style="font-family: monospace; font-size: 13px; background-color: var(--main-background-color, inherit); color: var(--main-text-color, inherit); border-color: var(--border-color, rgba(128,128,128,0.3));">${jsonString}</textarea>
+                        <textarea class="form-control font-monospace small" rows="18" style="font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 12.5px; line-height: 1.5; background-color: var(--main-background-color, inherit); color: var(--main-text-color, inherit); border-color: var(--border-color, rgba(128,128,128,0.3));">${yamlContent}</textarea>
                     </div>
 
                     <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-primary copy-json-btn">
-                            <i class="bx bx-copy"></i> Copy JSON to Clipboard
+                        <button type="button" class="btn btn-sm btn-primary copy-yaml-btn d-flex align-items-center gap-1">
+                            <i class="bx bx-copy"></i> Copy YAML to Clipboard
                         </button>
-                        <button type="button" class="btn btn-sm btn-success save-json-btn">
-                            <i class="bx bx-save"></i> Save Settings Package
+                        <button type="button" class="btn btn-sm btn-success save-yaml-btn d-flex align-items-center gap-1">
+                            <i class="bx bx-save"></i> Save Specification Package
                         </button>
                     </div>
                 </div>
@@ -287,13 +305,13 @@ export function renderSettingsStudio(
         `;
 
         const textarea = section.querySelector('textarea') as HTMLTextAreaElement;
-        const copyBtn = section.querySelector('.copy-json-btn') as HTMLButtonElement;
-        const saveBtn = section.querySelector('.save-json-btn') as HTMLButtonElement;
+        const copyBtn = section.querySelector('.copy-yaml-btn') as HTMLButtonElement;
+        const saveBtn = section.querySelector('.save-yaml-btn') as HTMLButtonElement;
 
         if (copyBtn) {
             copyBtn.addEventListener('click', () => {
                 navigator.clipboard.writeText(textarea.value);
-                importSuccess = 'JSON Package copied to clipboard!';
+                importSuccess = 'YAML Specification copied to clipboard!';
                 importError = '';
                 render();
             });
@@ -301,22 +319,11 @@ export function renderSettingsStudio(
 
         if (saveBtn) {
             saveBtn.addEventListener('click', () => {
-                try {
-                    const parsed = JSON.parse(textarea.value);
-                    if (parsed && parsed.todayLayout) {
-                        if (onSaveSettings) {
-                            onSaveSettings(textarea.value);
-                        }
-                        importSuccess = 'Settings package successfully saved!';
-                        importError = '';
-                    } else {
-                        importError = 'Invalid JSON: missing todayLayout property';
-                        importSuccess = '';
-                    }
-                } catch (e: any) {
-                    importError = `JSON parse error: ${e.message}`;
-                    importSuccess = '';
+                if (onSaveSettings) {
+                    onSaveSettings(textarea.value);
                 }
+                importSuccess = 'YAML Specification package successfully saved!';
+                importError = '';
                 render();
             });
         }
