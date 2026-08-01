@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: Multi-Parent Tree Hierarchy, Scratch Notes, and Native Trilium UI Polish.
+ * Template Studio Component: Multi-Parent Tree Hierarchy with Project Scratch, Person, Org, and Unassigned Scratch.
  * Styled natively with Trilium Boxicons and standard Trilium form components.
  */
 
@@ -70,7 +70,7 @@ export function renderTemplateStudio(
         const treeContainer = document.createElement('div');
         treeContainer.className = 'card-body p-2.5';
 
-        // Multi-Parent Nested Tree Structure (Audit aligned with src/)
+        // Complete Multi-Parent Nested Tree Structure
         const treeNodes = [
             {
                 id: 'projectHub',
@@ -86,13 +86,16 @@ export function renderTemplateStudio(
                     },
                     { id: 'projectTask', label: 'Project Task', children: [] },
                     { id: 'meeting', label: 'Project Meeting', children: [] },
+                    { id: 'scratch', label: 'Project Scratch Note', children: [] },
+                    { id: 'person', label: 'Project Person / Contact', children: [] },
+                    { id: 'organization', label: 'Client Organization', children: [] },
                     { id: 'emailDraft', label: 'Email Draft', children: [] },
                     { id: 'topic', label: 'Assigned Topic', children: [] }
                 ]
             },
             {
                 id: 'organization',
-                label: 'Organization',
+                label: 'Organization Directory',
                 children: [
                     { id: 'person', label: 'Key Contact Person', children: [] },
                     {
@@ -105,13 +108,20 @@ export function renderTemplateStudio(
                 ]
             },
             {
+                id: 'person',
+                label: 'Person Directory',
+                children: [
+                    { id: 'meeting', label: 'Person Meeting', children: [] }
+                ]
+            },
+            {
                 id: 'task',
                 label: 'Standalone / Unassigned Tasks',
                 children: []
             },
             {
                 id: 'scratch',
-                label: 'Quick Scratch Note (Unassigned)',
+                label: 'Unassigned Scratch Note',
                 children: []
             },
             {
