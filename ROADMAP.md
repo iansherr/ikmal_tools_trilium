@@ -1,59 +1,53 @@
-# Extension improvement roadmap
+# Roadmap
 
-This is the working product roadmap for the Trilium extension. The system is
-already usable; these items improve clarity, speed, safety, and recoverability
-without changing the underlying note model.
+Known gaps in the current package, in rough priority order. Nothing here is
+scheduled — this is a punch list, not a commitment.
 
-## Phase 1 — Today and daily workflow
+## Quick Capture doesn't create notes yet
 
-- [x] Add a dedicated Overdue view, separate from Due Soon.
-- [x] Add a compact Recently Touched section.
-- [x] Add clearer empty states that explain what each empty widget represents.
-- [x] Add direct empty-state actions, such as “New Task”.
-- [x] Make the Today split resizable and keep the Journal pane dominant.
-- [ ] Add keyboard shortcuts for Today, New Task, New Scratch, and New Meeting.
+`NoteCreationEngine.planNoteCreation()` computes the plan (title, labels,
+auto-file target) and the modal shows it, but nothing calls
+`api.createNewTextNote` or equivalent to actually write the note. This is the
+single biggest gap between what the UI implies and what it does — see
+`USER_GUIDE.md` → Quick capture.
 
-## Phase 2 — Project workflow
+## The Kanban board is sample data
 
-- [x] Add a project activity timeline showing rounds, tasks, meetings, and emails.
-- [x] Make project activity sort by modification date and show project status.
-- [x] Show the latest round, status, and next action in project tables.
-- [x] Add a first-class Next Action field and surface it on project dashboards.
-- [x] Make Active and Archive transitions explicit from project and round views.
-- [x] Add “create Organization” from relation-field workflows.
+`renderKanban()` in `TodayHomepage.tsx` always renders `SAMPLE_TASKS`, a
+fixed array, regardless of environment. Every other Today widget is backed by
+a real `api.searchForNotes` query (with a sample-data fallback only outside
+Trilium); Kanban has no live path at all yet.
 
-## Phase 3 — Dashboards and navigation
+## The custom HTTP endpoint is a stub
 
-- [x] Add dashboard filters for time range, project, status, and assignment.
-- [x] Improve widget empty states and error messages.
-- [x] Add collapse/expand controls and sensible widget sizing defaults.
-- [x] Add breadcrumbs and “open project” links from rounds and search results.
-- [x] Keep the Today quick-capture actions available inside the daily workflow.
+`src/artifacts/notes-system-backend.js`'s `handleCustomRequest` only
+implements `/notes-system/create` and `/notes-system/templates`, even though
+`trilium-package.json`'s endpoint route also declares `ifThen` and
+`settings`. What it does implement doesn't match the current engine model
+either — its template list (`storyDraft`, etc.) predates the current
+`TemplateEngine` template ids (`story`, `edit`, ...), and it hardcodes a
+`taskRoot` container lookup rather than going through `TemplateEngine` /
+`NoteCreationEngine`. Worth deciding whether this endpoint is still needed at
+all before investing in fixing it — nothing in the dashboard currently calls
+it.
 
-## Phase 4 — Safety and maintenance
+## Open-ended note pickers, if added, would want fuzzy search
 
-- [x] Add an extension health panel showing version, required notes, and hooks.
-- [x] Add a repair command for missing templates, launchers, and Journal branches.
-- [x] Add migration logging so upgrades explain what changed and what was preserved.
-- [x] Add automated delete/recreate-day tests for branch restoration and Open Tasks.
-- [x] Add a documented backup and rollback procedure before upgrades.
+Every `<select>` in Template Studio today (target template for a parent
+link, category, template) is a small, curated, fixed list — a native select
+is fine at that size. If a feature is added that picks from an open-ended set
+(e.g., linking to an arbitrary existing note rather than a fixed template),
+that's when a fuzzy-search dropdown earns its complexity. Not worth adding
+ahead of that need.
 
 ## Design rules
 
-1. Trilium notes remain the source of truth; dashboards are views, not copies.
-2. User-authored content is preserved unless a migration recognizes an untouched
-   body shipped by an earlier extension version.
-3. Project notes may have multiple branches, but every note keeps one identity.
-4. New automation must be idempotent, versioned, and covered by an install test.
-5. Implementation notes belong in Trilium’s hidden system subtree and are managed
-   from this repository’s source files.
-
-The Journal repair hook uses inheritable creation and change events because
-Trilium creates day notes beneath year/month nodes and adds their date metadata
-after the initial note-creation event.
-
-## Delivery order
-
-Work proceeds from the smallest daily-workflow improvements toward larger
-project and dashboard features. Each slice should be installed against the
-disposable instance, tested, and documented before the next slice begins.
+1. Trilium notes remain the source of truth; the dashboard is a view, not a
+   copy. Persisted state (settings, the YAML specification) lives on the
+   package's manifest note, not in browser storage.
+2. New automation must be idempotent and covered by a test in
+   `tests/notes_system.test.mjs`.
+3. UI changes get checked against a real Trilium render — Boxicons, Bootstrap
+   classes, and CSS custom properties that actually exist in Trilium's
+   theme-next stylesheets — not just `tsc`/tests. See `README.md` →
+   Verifying visually.

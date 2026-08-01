@@ -1,5 +1,4 @@
 {
-  "$schema": "../schema/notes-system.schema.json",
   "name": "Ian's Trilium Notes Setup",
   "version": "1.0.0",
   "description": "Complete component-driven notes system configuration containing containers, templates, promoted attributes, relationships, Today Homepage components, and if/then automation rules.",

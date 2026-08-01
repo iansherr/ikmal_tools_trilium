@@ -1,7 +1,7 @@
 {
   "name": "trilium-notes-system",
   "version": "1.0.0",
-  "description": "Editable, organizable, component-driven notes system plugin for Trilium Notes with Today Homepage, Template Studio, Relationship Manager, and If/Then Automation Rules.",
+  "description": "Editable, organizable, component-driven notes system plugin for Trilium Notes with Today Homepage, Template Studio, and If/Then Automation Rules.",
   "type": "module",
   "main": "dist/notes-system-dashboard.js",
   "scripts": {

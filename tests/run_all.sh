@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 #
-# run_all.sh — runs the Trilium extension test suite.
-#
-# Tests run against the dev instance and clean up after themselves. They skip
-# rather than fail if no instance is reachable, so this is safe to run anywhere.
+# run_all.sh — runs every test suite in this repo.
 #
 # Usage:
 #   ./run_all.sh
@@ -13,21 +10,30 @@ set -u
 cd "$(dirname "$0")"
 
 GREEN='\033[0;32m'; RED='\033[0;31m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+failed=0
 
-printf "%b\n" "${CYAN}${BOLD}== trilium extension (py) ==${NC}"
-
-if ! curl -s -o /dev/null --max-time 3 http://localhost:8080/ 2>/dev/null; then
-    printf "%b\n" "${CYAN}no instance at :8080 — start it with:${NC}"
-    printf "  cd ../dev && docker compose up -d\n"
+printf "%b\n" "${CYAN}${BOLD}== notes-system (node) ==${NC}"
+if (cd .. && npm test); then
+    printf "%b\n" "${GREEN}PASS${NC} notes-system"
+else
+    printf "%b\n" "${RED}FAIL${NC} notes-system"
+    failed=1
 fi
 
-if python3 -m unittest test_etapi test_extension 2>&1; then
-    printf "%b\n" "${GREEN}PASS${NC} trilium extension"
-    printf "\n=========================================\n"
+printf "\n%b\n" "${CYAN}${BOLD}== etapi client (py, offline) ==${NC}"
+if python3 -m unittest test_etapi 2>&1; then
+    printf "%b\n" "${GREEN}PASS${NC} etapi client"
+else
+    printf "%b\n" "${RED}FAIL${NC} etapi client"
+    failed=1
+fi
+
+printf "\n=========================================\n"
+if [ "$failed" -eq 0 ]; then
     printf "%b\n" "  ${GREEN}${BOLD}ALL SUITES PASSED${NC}"
     printf "=========================================\n"
     exit 0
 fi
-
-printf "%b\n" "${RED}FAIL${NC} trilium extension"
+printf "%b\n" "  ${RED}${BOLD}SOME SUITES FAILED${NC}"
+printf "=========================================\n"
 exit 1

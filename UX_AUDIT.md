@@ -1,73 +1,68 @@
-# Trilium workflow UX audit
+# UX acceptance checklist
 
-This is the working checklist for the usability and reliability pass on the
-Trilium extension. It records the problems found in the live disposable
-instance and the acceptance criteria for closing them.
+The engineering acceptance criteria for this package, separate from the
+user-facing `USER_GUIDE.md` and `FAQ.md`. Update this alongside any change
+to `src/components/` or `src/artifacts/`.
 
-## Findings and acceptance criteria
+## Dashboard rendering
 
-### Dashboard rendering
+- [x] `initNotesSystemDashboard` returns quietly without a container rather
+      than throwing — checked in `notes-system-dashboard.jsx`'s `init()`
+      before mounting.
+- [x] Every list/grid section (Today widgets, Template Studio rule lists,
+      attribute tables) has an explicit empty state via `nativeUi.ts`'s
+      `emptyState()`, rather than rendering nothing.
+- [x] User-controlled and note-derived text is escaped through `escapeHtml`
+      before landing in `innerHTML` — enforced by
+      `tests/notes_system.test.mjs`'s `security:` tests (markup/quote/
+      ampersand neutralization, and that the weather label can't leak into
+      the request URL).
+- [ ] Narrow-pane layout: no `@media` breakpoints exist in
+      `notes-system.css` yet — the grid currently relies on flex/grid sizing
+      alone. Not yet checked at a genuinely narrow pane width.
+- [x] Dark/light theme: no theme-specific CSS in this package at all — every
+      color comes from Trilium's own `var(--...)` custom properties, so it
+      tracks whichever theme Trilium is in by construction rather than by a
+      separate check here.
 
-- A render note can be opened without a frontend `$container`. The dashboard
-  must return quietly in that context instead of throwing a null-container
-  error.
-- A new hub should show one useful empty-state message and the primary action.
-  Empty dashboard sections should not occupy most of the page.
-- Editorial actions should be visible only for an edit hub with a current
-  round. A writing/project hub should show `New Draft`, without disabled
-  editorial controls.
-- Dates should be readable at a glance: overdue and today follow-ups need a
-  visual distinction, while all values remain accessible as text.
-- The dashboard must remain usable in a narrow pane and in Trilium's dark
-  theme. The visual system should use Trilium's existing button and table
-  classes rather than introducing a competing application shell.
+## Persistence correctness
 
-### Creation and editorial state validation
+- [x] Settings and the YAML specification round-trip through the manifest
+      note's labels — covered by `packagePersistence` tests, including the
+      case where nothing has been saved yet (`null`, not a thrown error or a
+      wrong default).
+- [x] A save failure (non-2xx response, or a 403 that survives a CSRF
+      refresh) surfaces as a visible error in the Settings tab rather than
+      failing silently to the console — see `SettingsStudio.tsx`'s
+      `applySetting`/save-button handlers.
+- [x] Saving a partial YAML specification patches the running config rather
+      than clearing sections it doesn't mention — `parseAndApplyYamlSpec`
+      tests cover this directly.
 
-- Story mode accepts only `project` or `edit`.
-- Editorial actions accept only `awaiting`, `returned`, or `complete`, and
-  only apply to Story Draft notes.
-- `awaiting` requires a non-empty person/team and a valid `YYYY-MM-DD`
-  follow-up date. Optional sent dates use the same date validation.
-- Unknown project IDs, malformed dates, malformed rounds, blank titles, and
-  unsupported note types fail with a useful 400 response and do not create a
-  partial note.
-- Returned and completed rounds clear stale waiting metadata; completion also
-  records the completion date.
+## Template Studio correctness
 
-### Launcher and install behavior
+- [x] Adding a parent link also registers the matching if/then rule
+      (auto-clone + topic sync) rather than requiring both to be defined by
+      hand.
+- [x] Rule enable/disable, edit, and delete are available at all three
+      scopes (global, category, template) with consistent controls
+      (`ruleItem()` in `TemplateStudio.tsx`).
+- [x] The Preview tab renders only what a real note would show (title,
+      promoted attributes, body) — no rule/inheritance metadata leaking into
+      what's meant to look like the actual note.
 
-- The install process must create the complete launcher set idempotently.
-- The launcher implementation should use Trilium's current launchbar API. The
-  old `api.addButtonToToolbar()` path is deprecated in Trilium 0.104 and is
-  cleaned up during installation.
-- Re-running install must preserve custom template content and must not create
-  duplicate dashboards, launcher notes, or saved searches.
+## Known-incomplete surfaces (see `ROADMAP.md` for detail)
 
-### Coverage still required
+- [ ] Quick Capture's Create button only plans a note; it doesn't call the
+      Trilium API to create one.
+- [ ] The Kanban board always shows fixed sample data, never a real search.
+- [ ] The custom HTTP endpoint (`notes-system-endpoint` artifact) only
+      implements `create` and `templates`, and those don't match the current
+      `TemplateEngine` model.
 
-The regression suite should cover invalid mode/action/note/project IDs,
-invalid dates, missing awaiting fields, state cleanup, custom-template
-preservation, duplicate round requests, and both story modes. A browser pass
-should check the project and edit dashboards, cancelled prompts, direct render
-context, narrow width, dark theme, and the absence of extension errors in the
-console.
+## Verification method
 
-## Status
-
-- [x] Story project/edit modes and type-specific scaffolds
-- [x] Links and open questions placed first in story workflows
-- [x] Editorial round actions and state labels
-- [x] Template migration that preserves user-customized content
-- [x] Null-container-safe dashboard startup
-- [x] Compact, content-aware dashboard empty states
-- [x] Date/status visual cues
-- [x] Strict request validation and edge-case tests
-- [x] Duplicate-round protection
-- [x] Current launchbar API migration
-- [x] Browser verification of project dashboard, launcher cancellation, explicit mode chooser, and narrow layout
-- [ ] Browser verification of a populated edit dashboard and dark theme
-
-The detailed user-facing workflow remains in [USER_GUIDE.md](USER_GUIDE.md),
-with common questions in [FAQ.md](FAQ.md). This file is intentionally more
-technical: it is the acceptance checklist for future changes.
+`npm run check` and `npm test` catch logic and type regressions. They do not
+catch a widget rendering behind a CSS variable Trilium doesn't define, or
+content bleeding between two sections — those need a real render. See
+`README.md` → Verifying visually.

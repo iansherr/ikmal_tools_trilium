@@ -1,89 +1,80 @@
 # Backup and rollback
 
-Use this procedure before installing an extension update on a real Trilium
-instance. The extension package is a software backup; it is not a backup of
-your Journal, Projects, archive, or other user notes.
+This plugin keeps no state of its own outside Trilium's database — settings
+and the YAML specification are labels on notes inside your Trilium instance
+(see `README.md` → Persistence), and the artifact notes (dashboard, backend
+script, CSS, launcher) are ordinary notes too. There is nothing to back up
+separately from Trilium itself. This procedure is about that database, plus
+knowing how to redeploy the package's code.
 
-## Before an upgrade
+## Before deploying an update
 
-1. Stop active editing and pause synchronization. A rollback must be applied
-   consistently to every member of a synchronization cluster.
-2. In Trilium, open **Settings → Backup → Existing backups → Download** and
-   save the newest database backup somewhere outside the Trilium data
-   directory. Trilium also keeps daily, weekly, monthly, and pre-migration
-   database backups in its data directory. See the [Trilium backup guide](https://docs.triliumnotes.org/user-guide/setup/backup).
-3. If you administer the server directly, make a second copy of the complete
-   Trilium data directory while Trilium is stopped, including `document.db`,
-   its WAL/SHM files if present, and any relevant `config.ini`. Do not copy a
-   live SQLite database as your only backup.
-4. Save the extension source revision and package:
+1. Stop active editing and pause synchronization if this instance syncs with
+   others — a rollback must be applied consistently across a sync cluster.
+2. In Trilium: **Settings → Backup → Existing backups → Download**, and save
+   the newest backup outside the Trilium data directory. See the
+   [Trilium backup guide](https://docs.triliumnotes.org/user-guide/setup/backup).
+3. If you administer the server directly, copy the complete data directory
+   while Trilium is stopped (`document.db`, its WAL/SHM files if present,
+   `config.ini`). Don't copy a live SQLite database as your only backup.
+4. If you've made live edits to the YAML Specification in the Settings tab
+   that you want tracked in git, copy them out now: Settings → Specification
+   → **Copy**, then paste over `config/ians_notes_setup.yaml` and commit.
+   Nothing does this automatically — the manifest note's
+   `packageData:yamlSpecification` label is the only live copy, and it isn't
+   in version control.
+5. Note the current source revision:
 
    ```sh
    git rev-parse --short HEAD
-   python3 tools/export_package.py
-   cp -a dist /path/to/safe/extension-package-backup
    ```
 
-   The generated package contains Templates, Dashboards, and Scripts only. It
-   deliberately excludes Config and its instance-local secret.
-5. Record the installed `#extensionVersion` from Config and keep the current
-   ETAPI URL/token and `EXTENSION_SECRET` in a private password manager or
-   deployment environment. Never put them in the package or repository.
-
-## Install and verify
-
-Run the update from the saved source revision or the new revision you intend
-to deploy:
+## Deploy and verify
 
 ```sh
-python3 tools/install.py
-python3 tools/repair.py
+npm run build
+python3 tools/deploy_plugin_to_instance.py
 bash tests/run_all.sh
 ```
 
-The repair command is safe to run after install. It recreates missing
-extension-owned structure and records the result in the hidden Extension
-Migration Log; it does not delete user notes. Reload Trilium after the scripts
-are updated and check Today, Dashboards, one Project Dashboard, and the
-launchbar before resuming normal work.
+`deploy_plugin_to_instance.py` is idempotent — it finds each artifact note by
+its `packageArtifact` label and updates its content in place rather than
+duplicating it. It does not touch the `packageSetting:*` or
+`packageData:yamlSpecification` labels, so your saved settings and
+specification survive a redeploy. Reload the dashboard afterward and check
+Today, Template Studio, and Settings before resuming normal work.
 
-## Roll back a bad upgrade
+## Rolling back a bad deploy
 
-Prefer a database restore when the problem involves missing notes, damaged
-branches, unexpected migrations, or a Trilium server upgrade. The database
-contains the notes, tree, metadata, and most configuration; Trilium's backup
-documentation describes restoring a backup by stopping Trilium, replacing
-`document.db`, removing stale `document.db-wal` and `document.db-shm`, and
-starting Trilium again. See the [Trilium database guide](https://docs.triliumnotes.org/user-guide/advanced-usage/database) and [restore instructions](https://docs.triliumnotes.org/user-guide/setup/backup#restoring-backup).
-
-For a code-only problem where the database is healthy:
-
-1. Stop creating or editing notes while deciding.
-2. Check out the previously known-good extension revision.
-3. Run that revision's `install.py` or `repair.py` and verify its recorded
-   version. This can repair additive script/template changes, but it is not a
-   substitute for restoring the database if a migration changed or deleted
-   data.
-4. Reload the browser and inspect the Migration Log and key workflows.
-
-Do not use `uninstall.py` as a rollback. Uninstall removes extension-owned
-runtime notes and launchbar entries; it preserves user content, but it does not
-restore an earlier database state. Do not manually delete `document.db` or
-extension notes until the backup is confirmed readable.
-
-After restoring, pause synchronization until every synchronized instance is
-restored or intentionally re-seeded from the same database state. Otherwise a
-newer copy can propagate the bad state back into the restored instance.
-
-## Disposable development instance
-
-For experiments, use the repository's disposable Trilium instance instead of
-the real database:
+Because the deploy script only ever updates artifact-note *content*, rolling
+back code is: check out the previously known-good revision and redeploy.
 
 ```sh
-cd dev
-docker compose up -d
+git checkout <previous-good-revision>
+npm run build
+python3 tools/deploy_plugin_to_instance.py
 ```
 
-Run install, repair, uninstall, reinstall, and the live test suite there before
-deploying to a real instance.
+This restores the dashboard/backend/CSS code, but not settings or a
+specification you saved *after* that revision — those live in the manifest
+note's labels independently of which code revision deployed them, so they
+aren't affected by checking out older code, and won't be reverted by it
+either.
+
+If the problem is data loss or corruption rather than a bad code deploy —
+missing notes, damaged branches, an unexpected migration — restore Trilium's
+database instead: stop Trilium, replace `document.db`, remove stale
+`document.db-wal`/`document.db-shm`, and start Trilium again. See the
+[Trilium database guide](https://docs.triliumnotes.org/user-guide/advanced-usage/database)
+and [restore instructions](https://docs.triliumnotes.org/user-guide/setup/backup#restoring-backup).
+After restoring, pause synchronization until every synced instance is
+restored or intentionally re-seeded from the same state — otherwise a newer
+copy can propagate the bad state back in.
+
+## Removing the package
+
+Find its manifest note (`#packageOwner="iansherr/notes-system" #packageArtifact="manifest"`)
+and delete it along with its child artifact notes — everything the package
+owns is filed under that note. This does not touch any notes the package
+created for you (tasks, projects, journal entries); those are ordinary notes
+with no dependency on the package continuing to exist.
