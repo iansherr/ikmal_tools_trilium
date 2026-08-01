@@ -13,6 +13,7 @@ import { renderTemplateStudio } from '../components/TemplateStudio.js';
 import { renderRelationshipManager } from '../components/RelationshipManager.js';
 import { renderIftttRuleTree } from '../components/IftttRuleTree.js';
 import { renderSettingsStudio } from '../components/SettingsStudio.js';
+import { showQuickCaptureModal } from '../components/QuickCaptureModal.js';
 
 export function initNotesSystemDashboard(containerEl) {
     const templateEngine = new TemplateEngine();
@@ -21,7 +22,7 @@ export function initNotesSystemDashboard(containerEl) {
     const todayEngine = new TodayEngine();
     const noteCreationEngine = new NoteCreationEngine(templateEngine, relationshipEngine, iftttEngine);
 
-    let activeTab: 'today' | 'templates' | 'relationships' | 'ifttt' | 'settings' = 'today';
+    let activeTab = 'today';
 
     function renderMain() {
         containerEl.innerHTML = '';
@@ -58,7 +59,7 @@ export function initNotesSystemDashboard(containerEl) {
             a.innerHTML = `<i class="bx bx-${t.icon}"></i> ${t.label}`;
             a.addEventListener('click', (e) => {
                 e.preventDefault();
-                activeTab = t.id as any;
+                activeTab = t.id;
                 renderMain();
             });
 
@@ -74,10 +75,9 @@ export function initNotesSystemDashboard(containerEl) {
 
         if (activeTab === 'today') {
             renderTodayHomepage(contentArea, todayEngine, templateEngine, (templateId) => {
-                const title = prompt(`Create new ${templateId}:`);
-                if (!title) return;
-                const plan = noteCreationEngine.planNoteCreation({ type: templateId, title });
-                alert(`Note creation planned!\nTitle: ${plan.formattedTitle}\nTemplate: ${plan.templateId}\nExecuted IFTTT Rules: ${plan.executedIftttRules.map(r => r.ruleName).join(', ') || 'None'}`);
+                showQuickCaptureModal(templateId, templateEngine, noteCreationEngine, (plan) => {
+                    alert(`🎉 Created ${templateId.toUpperCase()} Note!\n\nFormatted Title: ${plan.formattedTitle}\nLabels: ${plan.labelsToCreate.map(l => '#' + l.name + '=' + l.value).join(', ')}\nAuto-Clone Target: ${plan.autoCloneContainers.join(', ') || 'Journal'}`);
+                });
             });
         } else if (activeTab === 'templates') {
             renderTemplateStudio(contentArea, templateEngine, () => {
