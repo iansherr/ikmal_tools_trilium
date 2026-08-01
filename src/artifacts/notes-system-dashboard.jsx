@@ -29,8 +29,9 @@ export function initNotesSystemDashboard(containerEl) {
         // Container Shell
         const shell = document.createElement('div');
         shell.className = 'notes-system-shell p-4';
-        shell.style.backgroundColor = 'var(--main-background-color, #181825)';
-        shell.style.color = 'var(--main-text-color, #cdd6f4)';
+        shell.style.backgroundColor = 'var(--main-background-color, transparent)';
+        shell.style.color = 'var(--main-text-color, inherit)';
+
         shell.style.minHeight = '100vh';
 
         // Top Navigation Bar

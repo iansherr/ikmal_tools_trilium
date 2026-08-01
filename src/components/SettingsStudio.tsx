@@ -1,6 +1,7 @@
 /**
  * Settings Studio Component: Configures Today Homepage Components,
  * Package Preferences, and JSON Package Import/Export.
+ * Uses Trilium native theme tokens for seamless dark/light mode compatibility.
  */
 
 import { TodayEngine } from '../engine/todayEngine.js';
@@ -24,8 +25,9 @@ export function renderSettingsStudio(
 
         // 1. Header Banner
         const header = document.createElement('div');
-        header.className = 'p-3 rounded border bg-dark d-flex align-items-center justify-content-between';
-        header.style.backgroundColor = 'var(--main-background-color, #1e1e2e)';
+        header.className = 'p-3 rounded border d-flex align-items-center justify-content-between';
+        header.style.backgroundColor = 'var(--sub-background-color, transparent)';
+        header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
         header.innerHTML = `
             <div>
                 <h2 class="h4 m-0 font-weight-bold d-flex align-items-center gap-2 text-primary">
@@ -89,6 +91,8 @@ export function renderSettingsStudio(
         // Journal Split Width Control
         const widthCard = document.createElement('div');
         widthCard.className = 'card mb-3 border-secondary';
+        widthCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
+        widthCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
         widthCard.innerHTML = `
             <div class="card-body">
                 <h5 class="card-title h6 text-info font-weight-bold">
@@ -116,6 +120,8 @@ export function renderSettingsStudio(
         // Today Widgets Manager
         const widgetCard = document.createElement('div');
         widgetCard.className = 'card border-secondary';
+        widgetCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
+        widgetCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
         widgetCard.innerHTML = `
             <div class="card-body">
                 <h5 class="card-title h6 text-info font-weight-bold mb-3 d-flex align-items-center justify-content-between">
@@ -131,19 +137,20 @@ export function renderSettingsStudio(
 
         widgets.forEach((w, index) => {
             const item = document.createElement('div');
-            item.className = `d-flex align-items-center justify-content-between p-3 rounded border ${w.visible ? 'border-primary bg-dark' : 'border-secondary opacity-75'}`;
-            item.style.backgroundColor = 'var(--main-background-color, #1e1e2e)';
+            item.className = `d-flex align-items-center justify-content-between p-3 rounded border ${w.visible ? 'border-primary' : 'border-secondary opacity-75'}`;
+            item.style.backgroundColor = 'var(--main-background-color, transparent)';
+            item.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
             item.innerHTML = `
                 <div class="d-flex align-items-center gap-3">
                     <input type="checkbox" class="form-check-input widget-toggle" ${w.visible ? 'checked' : ''}>
                     <div>
-                        <strong class="${w.visible ? 'text-white' : 'text-muted'}">${w.title}</strong>
+                        <strong class="${w.visible ? 'font-weight-bold' : 'text-muted'}">${w.title}</strong>
                         <div class="small text-muted">Marker: <code>#extView="${w.marker}"</code> • Columns: ${w.colSpan === 2 ? 'Full Width (2 col)' : 'Half Width (1 col)'}</div>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <select class="form-select form-select-sm col-select" style="width: 140px;">
+                    <select class="form-select form-select-sm col-select" style="width: 140px; background-color: var(--main-background-color, inherit); color: var(--main-text-color, inherit); border-color: var(--border-color, #ccc);">
                         <option value="1" ${w.colSpan === 1 ? 'selected' : ''}>Half Width (1 col)</option>
                         <option value="2" ${w.colSpan === 2 ? 'selected' : ''}>Full Width (2 col)</option>
                     </select>
@@ -194,13 +201,15 @@ export function renderSettingsStudio(
     function renderPackagePreferencesSection(el: HTMLElement) {
         const section = document.createElement('div');
         section.className = 'card border-secondary';
+        section.style.backgroundColor = 'var(--sub-background-color, transparent)';
+        section.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
         section.innerHTML = `
             <div class="card-body d-flex flex-column gap-4">
                 <h5 class="card-title h6 text-info font-weight-bold m-0">
                     <i class="bx bx-slider"></i> Global Package Automation & Relationship Preferences
                 </h5>
 
-                <div class="form-check form-switch p-3 border rounded">
+                <div class="form-check form-switch p-3 border rounded" style="border-color: var(--border-color, rgba(128, 128, 128, 0.2)) !important;">
                     <input class="form-check-input ms-0 me-3" type="checkbox" id="iftttToggle" checked>
                     <label class="form-check-label font-weight-bold" for="iftttToggle">
                         Auto-Execute IFTTT Automation Rules
@@ -210,7 +219,7 @@ export function renderSettingsStudio(
                     </label>
                 </div>
 
-                <div class="form-check form-switch p-3 border rounded">
+                <div class="form-check form-switch p-3 border rounded" style="border-color: var(--border-color, rgba(128, 128, 128, 0.2)) !important;">
                     <input class="form-check-input ms-0 me-3" type="checkbox" id="derivedTopicsToggle" checked>
                     <label class="form-check-label font-weight-bold" for="derivedTopicsToggle">
                         Enable Derived Topic Propagation
@@ -220,7 +229,7 @@ export function renderSettingsStudio(
                     </label>
                 </div>
 
-                <div class="form-check form-switch p-3 border rounded">
+                <div class="form-check form-switch p-3 border rounded" style="border-color: var(--border-color, rgba(128, 128, 128, 0.2)) !important;">
                     <input class="form-check-input ms-0 me-3" type="checkbox" id="autoJournalCloneToggle" checked>
                     <label class="form-check-label font-weight-bold" for="autoJournalCloneToggle">
                         Auto-Clone Created Notes into Journal Day Note
@@ -248,7 +257,7 @@ export function renderSettingsStudio(
         const jsonString = JSON.stringify(jsonState, null, 2);
 
         section.innerHTML = `
-            <div class="card border-secondary">
+            <div class="card border-secondary" style="background-color: var(--sub-background-color, transparent); border-color: var(--border-color, rgba(128, 128, 128, 0.2));">
                 <div class="card-body">
                     <h5 class="card-title h6 text-info font-weight-bold mb-2">
                         <i class="bx bx-code-alt"></i> JSON Package Manifest & Settings State
@@ -262,7 +271,7 @@ export function renderSettingsStudio(
 
                     <div class="mb-3">
                         <label class="form-label font-weight-bold small">Package Configuration JSON</label>
-                        <textarea class="form-html-code form-control font-monospace small bg-dark text-light" rows="12" style="font-family: monospace; font-size: 13px;">${jsonString}</textarea>
+                        <textarea class="form-html-code form-control font-monospace small" rows="12" style="font-family: monospace; font-size: 13px; background-color: var(--main-background-color, inherit); color: var(--main-text-color, inherit); border-color: var(--border-color, rgba(128,128,128,0.3));">${jsonString}</textarea>
                     </div>
 
                     <div class="d-flex align-items-center gap-2">
