@@ -74,7 +74,7 @@
       "id": "notes-system-dashboard",
       "type": "render",
       "source": "src/artifacts/notes-system-dashboard.jsx",
-      "integrity": "sha256-lxF3R8t0+eCO7VMF7BOV+5U1CpC29dW4Bjw+5WsGsiE=",
+      "integrity": "sha256-Nyt9wTouCN7xBRQik9sD3wlQX2gGSu+TGryphb3lHI8=",
       "title": "Ikmal Tools for Trilium: Today Homepage & Workspace Dashboard",
       "activation": "manual"
     },
@@ -82,7 +82,7 @@
       "id": "notes-system-kanban",
       "type": "render",
       "source": "src/artifacts/notes-system-kanban.jsx",
-      "integrity": "sha256-PKyy8c1ccEbjajKiD4BlC6zlJQK1hyZgQn+7cObXZ1Y=",
+      "integrity": "sha256-EHlakmiQ2zrIBZEpu7XGSss8EqdaXO53hQ+Dpk/lqzM=",
       "title": "Ikmal Tools for Trilium: Standalone Task Kanban Board",
       "activation": "manual"
     },
@@ -90,7 +90,7 @@
       "id": "notes-system-insights",
       "type": "render",
       "source": "src/artifacts/notes-system-insights.jsx",
-      "integrity": "sha256-lfZS1EhGzLPIQ1Z+rJnpMClse8/GtQ2DBOTaL6sBQCs=",
+      "integrity": "sha256-76Zr+wJ6t26K1RIkf6U4yALfhKV2dhwQxYu2olEMETw=",
       "title": "Ikmal Tools for Trilium: Standalone Productivity & Writing Insights",
       "activation": "manual"
     },
@@ -98,7 +98,7 @@
       "id": "notes-system-quick-capture",
       "type": "render",
       "source": "src/artifacts/notes-system-quick-capture.jsx",
-      "integrity": "sha256-gETHAwgGf9D+nHgY6G9qvaOnxwvmrU/1FzvouCHnYoo=",
+      "integrity": "sha256-jUzFc0y1Rx6IGDTr2LGBp/sfobuCPc3nfu+6Ao+jMxc=",
       "title": "Ikmal Tools for Trilium: Standalone Quick Capture Toolbar",
       "activation": "manual"
     },
@@ -138,7 +138,7 @@
       "id": "notes-system-launcher",
       "type": "launcher",
       "source": "src/artifacts/notes-system-launcher.js",
-      "integrity": "sha256-uVqTMFNMBR1uuNE+iR0hUb9TOuQdlk/RvIR2LPjPotc=",
+      "integrity": "sha256-bkfCNUEtOxwPbJ8fy6D/WabNE+ulqCcQxoqC2wxtGA0=",
       "title": "Ikmal Tools for Trilium: Header Launcher Bar & Hotkey",
       "activation": "manual"
     },

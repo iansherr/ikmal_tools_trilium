@@ -55,6 +55,7 @@ export interface TemplateDefinition {
     projectScoped?: boolean;
     noJournalClone?: boolean;
     isBuiltin?: boolean;
+    noteType?: string;
 }
 
 // If/Then Rules Engine Types (event-triggered automation)

@@ -32,6 +32,7 @@ export interface NoteCreationPlan {
     inheritedTopicSources: string[];
     executedIfThenRules: Array<{ ruleId: string; ruleName: string }>;
     childNotesToCreate?: Array<{ title: string; templateId: string; labels: Array<{ name: string; value: string }> }>;
+    noteType?: string;
     /**
      * Whether this note should be referenced under today's journal note. True
      * only when nothing else already claims it (no relation-based auto-clone
@@ -184,8 +185,9 @@ export class NoteCreationEngine {
             autoCloneContainers,
             inheritedTopicSources,
             executedIfThenRules,
-            childNotesToCreate,
+            childNotesToCreate: childNotesToCreate.length > 0 ? childNotesToCreate : undefined,
             journalClone,
+            noteType: template.noteType,
         };
     }
 }

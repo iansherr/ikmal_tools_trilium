@@ -187,7 +187,7 @@ export async function materializeNoteCreation(
     const { note } = await api.createNote(parentNoteId, {
         title: plan.formattedTitle,
         content: plan.content,
-        type: 'text',
+        type: plan.noteType || 'text',
         activate: false,
         attributes: buildAttributeRows(plan),
     });
