@@ -55,7 +55,7 @@
       "id": "notes-system-dashboard",
       "type": "render",
       "source": "src/artifacts/notes-system-dashboard.jsx",
-      "integrity": "sha256-hIYEo4fXfO4O31biLC4djvSTzKkwU3MtBwnZfvUG0Xo=",
+      "integrity": "sha256-RZq9KR0Qo0bDFUyUySIrpWj5hGBXrqJOLKsBmJ2Wdfs=",
       "title": "Notes System & Today Homepage",
       "activation": "manual"
     },

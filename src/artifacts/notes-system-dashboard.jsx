@@ -1,6 +1,7 @@
 /**
  * Notes System Dashboard Entrypoint (JSX Render Note)
- * Combines Today Homepage, Template Studio, Relationship Manager, If/Then Automation Rules, and Package Settings.
+ * Combines Today Homepage, Template Studio (which owns relationship and if/then
+ * rule editing inline), and Package Settings.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
@@ -13,8 +14,6 @@ import { loadAutomationSettings, loadYamlSpecification, saveYamlSpecification } 
 import { parseAndApplyYamlSpec } from '../engine/yamlSpec.js';
 import { renderTodayHomepage } from '../components/TodayHomepage.js';
 import { renderTemplateStudio } from '../components/TemplateStudio.js';
-import { renderRelationshipManager } from '../components/RelationshipManager.js';
-import { renderIfThenRuleTree } from '../components/IfThenRuleTree.js';
 import { renderSettingsStudio } from '../components/SettingsStudio.js';
 import { showQuickCaptureModal } from '../components/QuickCaptureModal.js';
 
@@ -82,14 +81,6 @@ export function initNotesSystemDashboard(containerEl) {
                 console.log('Templates & Automations updated!');
             });
 
-        } else if (activeTab === 'relationships') {
-            renderRelationshipManager(contentArea, templateEngine, relationshipEngine, () => {
-                console.log('Relationships updated!');
-            });
-        } else if (activeTab === 'ifThen') {
-            renderIfThenRuleTree(contentArea, ifThenRuleEngine, () => {
-                console.log('If/Then rules updated!');
-            });
         } else if (activeTab === 'settings') {
             renderSettingsStudio(contentArea, todayEngine, templateEngine, relationshipEngine, ifThenRuleEngine, settingsEngine, (yamlSpec) => {
                 return saveYamlSpecification(yamlSpec);
