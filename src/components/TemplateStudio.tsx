@@ -1,10 +1,10 @@
 /**
- * Template Studio Component: Template Category Types, Refined Dialog Modals, and High-Elegance UI.
+ * Template Studio Component: Category Type Editor & Dynamic Category Management.
  * Styled natively with Trilium Boxicons and standard Trilium form components.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
-import { TemplateDefinition, PromotedAttributeDef, TemplateRelationshipDef } from '../engine/types.js';
+import { TemplateDefinition, PromotedAttributeDef, TemplateRelationshipDef, TemplateCategoryDef } from '../engine/types.js';
 import { exportTemplateAsHtml } from '../engine/yamlSpec.js';
 
 export function renderTemplateStudio(
@@ -13,7 +13,7 @@ export function renderTemplateStudio(
     onSave: () => void
 ): void {
     let selectedTemplateId: string = templateEngine.getAllTemplates()[0]?.id || 'story';
-    let activeEditorTab: 'editor' | 'preview' = 'editor';
+    let activeEditorTab: 'editor' | 'preview' | 'categories' = 'editor';
 
     function refresh() {
         container.innerHTML = '';
@@ -21,7 +21,7 @@ export function renderTemplateStudio(
         const wrapper = document.createElement('div');
         wrapper.className = 'template-studio-wrapper d-flex flex-column gap-4';
 
-        // 1. Refined Premium Header
+        // 1. Refined Header with Category Type Editor button
         const header = document.createElement('div');
         header.className = 'p-4 rounded border d-flex align-items-center justify-content-between shadow-sm';
         header.style.backgroundColor = 'var(--sub-background-color, transparent)';
@@ -39,14 +39,25 @@ export function renderTemplateStudio(
                         <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure template category types (Work, Drafts, Entities, System), parent relations, promoted attributes, and note previews.
+                        Configure template category types, parent-child relations, promoted attributes, and note previews.
                     </p>
                 </div>
             </div>
-            <button type="button" class="btn btn-sm btn-primary new-template-btn px-3 py-2 d-flex align-items-center gap-1.5 shadow-xs">
-                <i class="bx bx-plus fs-6"></i> New Template
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary manage-cats-btn px-3 py-2 d-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bx bx-category fs-6"></i> Category Type Editor
+                </button>
+                <button type="button" class="btn btn-sm btn-primary new-template-btn px-3 py-2 d-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bx bx-plus fs-6"></i> New Template
+                </button>
+            </div>
         `;
+
+        const manageCatsBtn = header.querySelector('.manage-cats-btn') as HTMLButtonElement;
+        manageCatsBtn.addEventListener('click', () => {
+            activeEditorTab = 'categories';
+            refresh();
+        });
 
         const newTplBtn = header.querySelector('.new-template-btn') as HTMLButtonElement;
         newTplBtn.addEventListener('click', () => showCreateTemplateModal());
@@ -147,7 +158,7 @@ export function renderTemplateStudio(
                 if (!tpl) continue;
 
                 const li = document.createElement('li');
-                const isSelected = tpl.id === selectedTemplateId;
+                const isSelected = tpl.id === selectedTemplateId && activeEditorTab !== 'categories';
 
                 const item = document.createElement('div');
                 item.className = `d-flex align-items-center justify-content-between px-3 py-2 rounded cursor-pointer transition-all ${isSelected ? 'bg-primary text-white font-weight-bold shadow-sm' : 'text-body'}`;
@@ -167,6 +178,7 @@ export function renderTemplateStudio(
                 item.addEventListener('click', (e) => {
                     e.preventDefault();
                     selectedTemplateId = tpl.id;
+                    if (activeEditorTab === 'categories') activeEditorTab = 'editor';
                     refresh();
                 });
 
@@ -187,103 +199,144 @@ export function renderTemplateStudio(
         sidebarCol.appendChild(sidebarCard);
         layoutRow.appendChild(sidebarCol);
 
-        // 3. Workspace Column: Spacious 9-column Editor + Render Preview
+        // 3. Workspace Column: Spacious 9-column Editor / Render Preview / Category Type Editor
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
 
-        if (activeTpl) {
-            const mainCol = document.createElement('div');
-            mainCol.className = 'col-md-9';
+        const mainCol = document.createElement('div');
+        mainCol.className = 'col-md-9';
 
-            const workspaceCard = document.createElement('div');
-            workspaceCard.className = 'card border shadow-sm h-100';
-            workspaceCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
-            workspaceCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
-            workspaceCard.style.borderRadius = '12px';
+        const workspaceCard = document.createElement('div');
+        workspaceCard.className = 'card border shadow-sm h-100';
+        workspaceCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
+        workspaceCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
+        workspaceCard.style.borderRadius = '12px';
 
-            // Top Workspace Header & View Mode Switcher
-            const mainHeader = document.createElement('div');
-            mainHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between p-3.5';
-            mainHeader.innerHTML = `
-                <div class="d-flex align-items-center gap-3">
-                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
-                        <i class="bx bx-${activeTpl.icon} fs-5 m-0"></i>
-                    </div>
-                    <div>
-                        <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
-                            <span>Template: ${activeTpl.title}</span>
-                            <span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>
-                            <span class="badge ${activeTpl.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted font-weight-normal small">${activeTpl.isBuiltin ? 'Built-in' : 'Custom'}</span>
-                        </h3>
-                        <div class="text-muted small mt-0.5">Marker: <code>#${activeTpl.marker}</code> • ID: <code>${activeTpl.id}</code></div>
-                    </div>
+        // Workspace Header
+        const mainHeader = document.createElement('div');
+        mainHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between p-3.5';
+        mainHeader.innerHTML = `
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
+                    <i class="bx bx-${activeEditorTab === 'categories' ? 'category' : (activeTpl?.icon || 'layer')} fs-5 m-0"></i>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                    <ul class="nav nav-pills bg-body bg-opacity-50 p-1 rounded border">
-                        <li class="nav-item">
-                            <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'editor' ? 'active font-weight-bold' : ''} editor-tab-btn" type="button">
-                                <i class="bx bx-edit-alt"></i> Schema Editor
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'preview' ? 'active font-weight-bold' : ''} preview-tab-btn" type="button">
-                                <i class="bx bx-show"></i> Live Preview & Render Model
-                            </button>
-                        </li>
-                    </ul>
-                    <button type="button" class="btn btn-sm btn-outline-secondary export-html-btn d-flex align-items-center gap-1" title="Download template HTML file">
-                        <i class="bx bx-download"></i> Export .html
-                    </button>
+                <div>
+                    <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
+                        <span>${activeEditorTab === 'categories' ? 'Category Type Editor' : `Template: ${activeTpl?.title}`}</span>
+                        ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
+                    </h3>
+                    <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Manage global template category types and inheritance rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
                 </div>
-            `;
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <ul class="nav nav-pills bg-body bg-opacity-50 p-1 rounded border">
+                    <li class="nav-item">
+                        <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'editor' ? 'active font-weight-bold' : ''} editor-tab-btn" type="button">
+                            <i class="bx bx-edit-alt"></i> Schema Editor
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'preview' ? 'active font-weight-bold' : ''} preview-tab-btn" type="button">
+                            <i class="bx bx-show"></i> Live Preview
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'categories' ? 'active font-weight-bold' : ''} categories-tab-btn" type="button">
+                            <i class="bx bx-category"></i> Categories
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        `;
 
-            const editorTabBtn = mainHeader.querySelector('.editor-tab-btn') as HTMLButtonElement;
-            const previewTabBtn = mainHeader.querySelector('.preview-tab-btn') as HTMLButtonElement;
+        const editorTabBtn = mainHeader.querySelector('.editor-tab-btn') as HTMLButtonElement;
+        const previewTabBtn = mainHeader.querySelector('.preview-tab-btn') as HTMLButtonElement;
+        const categoriesTabBtn = mainHeader.querySelector('.categories-tab-btn') as HTMLButtonElement;
 
-            editorTabBtn.addEventListener('click', () => {
-                activeEditorTab = 'editor';
-                refresh();
-            });
+        editorTabBtn.addEventListener('click', () => { activeEditorTab = 'editor'; refresh(); });
+        previewTabBtn.addEventListener('click', () => { activeEditorTab = 'preview'; refresh(); });
+        categoriesTabBtn.addEventListener('click', () => { activeEditorTab = 'categories'; refresh(); });
 
-            previewTabBtn.addEventListener('click', () => {
-                activeEditorTab = 'preview';
-                refresh();
-            });
+        workspaceCard.appendChild(mainHeader);
 
-            const exportBtn = mainHeader.querySelector('.export-html-btn') as HTMLButtonElement;
-            exportBtn.addEventListener('click', () => {
-                const { filename, content } = exportTemplateAsHtml(activeTpl);
-                const blob = new Blob([content], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.click();
-                URL.revokeObjectURL(url);
-            });
+        const workspaceBody = document.createElement('div');
+        workspaceBody.className = 'card-body p-4';
 
-            workspaceCard.appendChild(mainHeader);
-
-            const workspaceBody = document.createElement('div');
-            workspaceBody.className = 'card-body p-4';
-
-            if (activeEditorTab === 'editor') {
-                renderSchemaEditorView(workspaceBody, activeTpl);
-            } else {
-                renderLivePreviewView(workspaceBody, activeTpl);
-            }
-
-            workspaceCard.appendChild(workspaceBody);
-            mainCol.appendChild(workspaceCard);
-            layoutRow.appendChild(mainCol);
+        if (activeEditorTab === 'categories') {
+            renderCategoryTypeEditorView(workspaceBody, templateEngine, () => { onSave(); refresh(); });
+        } else if (activeEditorTab === 'editor' && activeTpl) {
+            renderSchemaEditorView(workspaceBody, activeTpl, templateEngine);
+        } else if (activeTpl) {
+            renderLivePreviewView(workspaceBody, activeTpl, templateEngine);
         }
+
+        workspaceCard.appendChild(workspaceBody);
+        mainCol.appendChild(workspaceCard);
+        layoutRow.appendChild(mainCol);
 
         wrapper.appendChild(layoutRow);
         container.appendChild(wrapper);
     }
 
-    function renderSchemaEditorView(el: HTMLElement, tpl: TemplateDefinition) {
+    function renderCategoryTypeEditorView(el: HTMLElement, engine: TemplateEngine, onSave: () => void) {
+        const catWrapper = document.createElement('div');
+        catWrapper.className = 'd-flex flex-column gap-4';
+
+        const cats = engine.getAllCategories();
+
+        catWrapper.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="h6 font-weight-bold m-0">Template Category Types (${cats.length})</h5>
+                    <p class="text-muted small m-0 mt-1">Categories define template behaviors, container locations, and system automation rules.</p>
+                </div>
+                <button type="button" class="btn btn-sm btn-primary add-cat-btn d-flex align-items-center gap-1">
+                    <i class="bx bx-plus"></i> Add New Category Type
+                </button>
+            </div>
+
+            <div class="row g-3">
+                ${cats.map(c => `
+                    <div class="col-md-6">
+                        <div class="card border p-3.5 h-100" style="background-color: var(--main-background-color, transparent);">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
+                                        <i class="bx bx-${c.icon} fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="font-weight-bold m-0">${c.title}</h6>
+                                        <code class="small">ID: ${c.id}</code>
+                                    </div>
+                                </div>
+                                <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${c.isBuiltin ? 'Built-in' : 'Custom'}</span>
+                            </div>
+                            <p class="text-muted small m-0 mt-2">${c.description}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        const addCatBtn = catWrapper.querySelector('.add-cat-btn') as HTMLButtonElement;
+        addCatBtn.addEventListener('click', () => {
+            const title = prompt('Enter Category Title (e.g. Research Briefs):');
+            if (!title) return;
+            const description = prompt('Enter Category Description:') || 'Custom category';
+            const icon = prompt('Enter Boxicons icon name (e.g. search, heart, bookmark):', 'layer') || 'layer';
+
+            const id = title.toLowerCase().replace(/\s+/g, '-');
+            engine.registerCategory({ id, title, description, icon, isBuiltin: false });
+            onSave();
+        });
+
+        el.appendChild(catWrapper);
+    }
+
+    function renderSchemaEditorView(el: HTMLElement, tpl: TemplateDefinition, engine: TemplateEngine) {
         const formWrapper = document.createElement('div');
         formWrapper.className = 'd-flex flex-column gap-4';
+
+        const categories = engine.getAllCategories();
 
         // 1. Basic Template Settings & Category Type
         const basicCard = document.createElement('div');
@@ -303,11 +356,7 @@ export function renderTemplateStudio(
                 <div class="col-md-3">
                     <label class="form-label small font-weight-bold">Category Type</label>
                     <select id="tpl-category" class="form-select">
-                        <option value="work" ${tpl.category === 'work' ? 'selected' : ''}>Work & Project Scoped</option>
-                        <option value="drafts" ${tpl.category === 'drafts' ? 'selected' : ''}>Draft & Editorial</option>
-                        <option value="people" ${tpl.category === 'people' ? 'selected' : ''}>People & Entities</option>
-                        <option value="system" ${tpl.category === 'system' ? 'selected' : ''}>System & Index</option>
-                        <option value="custom" ${tpl.category === 'custom' ? 'selected' : ''}>Custom / Flexible</option>
+                        ${categories.map(c => `<option value="${c.id}" ${tpl.category === c.id ? 'selected' : ''}>${c.title}</option>`).join('')}
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -356,14 +405,13 @@ export function renderTemplateStudio(
         `;
 
         const addRelBtn = relCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
-        addRelBtn.addEventListener('click', () => showAddRelationshipModal(tpl));
+        addRelBtn.addEventListener('click', () => showAddRelationshipModal(tpl, engine));
 
         relCard.querySelectorAll('.del-rel-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const idx = Number(e.currentTarget.dataset.relIdx);
                 tpl.relationships.splice(idx, 1);
-                onSave();
-                refresh();
+                engine.updateTemplate(tpl.id, tpl);
             });
         });
 
@@ -407,7 +455,7 @@ export function renderTemplateStudio(
         `;
 
         const addAttrBtn = attrCard.querySelector('.add-attr-btn') as HTMLButtonElement;
-        addAttrBtn.addEventListener('click', () => showAddAttrModal(tpl));
+        addAttrBtn.addEventListener('click', () => showAddAttrModal(tpl, engine));
 
         formWrapper.appendChild(attrCard);
 
@@ -439,15 +487,13 @@ export function renderTemplateStudio(
             const newIcon = (formWrapper.querySelector('#tpl-icon') as HTMLInputElement).value;
             const newContent = (formWrapper.querySelector('#tpl-content') as HTMLTextAreaElement).value;
 
-            templateEngine.updateTemplate(tpl.id, {
+            engine.updateTemplate(tpl.id, {
                 title: newTitle,
                 category: newCategory,
                 titlePattern: newPattern,
                 icon: newIcon,
                 defaultContent: newContent,
             });
-            onSave();
-            refresh();
         });
 
         footer.appendChild(saveBtn);
@@ -456,11 +502,11 @@ export function renderTemplateStudio(
         el.appendChild(formWrapper);
     }
 
-    function renderLivePreviewView(el: HTMLElement, tpl: TemplateDefinition) {
+    function renderLivePreviewView(el: HTMLElement, tpl: TemplateDefinition, engine: TemplateEngine) {
         const previewWrapper = document.createElement('div');
         previewWrapper.className = 'd-flex flex-column gap-4';
 
-        const formattedTitle = templateEngine.formatTitle(tpl.id, 'Sample Note Title');
+        const formattedTitle = engine.formatTitle(tpl.id, 'Sample Note Title');
 
         previewWrapper.innerHTML = `
             <div class="p-4 rounded border" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.15)) !important;">
@@ -529,14 +575,14 @@ export function renderTemplateStudio(
         el.appendChild(previewWrapper);
     }
 
-    function showAddRelationshipModal(tpl: TemplateDefinition) {
+    function showAddRelationshipModal(tpl: TemplateDefinition, engine: TemplateEngine) {
         const relName = prompt('Enter relation name (e.g. project, client, organization, writer, attendee):');
         if (!relName) return;
-        const allTemplates = templateEngine.getAllTemplates();
+        const allTemplates = engine.getAllTemplates();
         const targetId = prompt(`Select target parent template ID:\n${allTemplates.map(t => t.id).join(', ')}`);
         if (!targetId) return;
 
-        const targetTpl = templateEngine.getTemplate(targetId);
+        const targetTpl = engine.getTemplate(targetId);
         const newRel: TemplateRelationshipDef = {
             id: `rel_${tpl.id}_${targetId}_${Date.now()}`,
             name: `${relName} link`,
@@ -549,9 +595,7 @@ export function renderTemplateStudio(
             direction: 'parent',
         };
 
-        templateEngine.addRelationship(tpl.id, newRel);
-        onSave();
-        refresh();
+        engine.addRelationship(tpl.id, newRel);
     }
 
     function showCreateTemplateModal() {
@@ -576,7 +620,7 @@ export function renderTemplateStudio(
         refresh();
     }
 
-    function showAddAttrModal(tpl: TemplateDefinition) {
+    function showAddAttrModal(tpl: TemplateDefinition, engine: TemplateEngine) {
         const name = prompt('Attribute name (e.g. priority, status, dueDate):');
         if (!name) return;
         const type = prompt('Attribute type (label or relation):', 'label') as any;
@@ -590,8 +634,7 @@ export function renderTemplateStudio(
             options: optionsRaw ? optionsRaw.split(',').map(s => s.trim()) : undefined,
             isPromoted: true,
         });
-        onSave();
-        refresh();
+        engine.updateTemplate(tpl.id, tpl);
     }
 
     refresh();

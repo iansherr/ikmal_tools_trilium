@@ -29,12 +29,20 @@ export interface TemplateRelationshipDef {
     direction: 'parent' | 'child' | 'peer';
 }
 
+export interface TemplateCategoryDef {
+    id: string;
+    title: string;
+    description: string;
+    icon: string;
+    isBuiltin?: boolean;
+}
+
 export interface TemplateDefinition {
     id: string;
     marker: string; // e.g. extTask, extMeeting, extProjectHub
     title: string; // Template display name
     icon: string; // Icon name e.g. 'check-square', 'calendar-event'
-    category: 'daily' | 'work' | 'people' | 'drafts' | 'system' | 'custom';
+    category: string; // Category ID e.g. 'work', 'drafts', 'people', 'system', 'custom'
     rootContainerMarker: string; // e.g. taskRoot, meetingRoot, projectRoot
     titlePattern: string; // e.g. 'YYYY-MM-DD - dddd', 'Project: {title}'
     defaultContent: string; // Default HTML/Markdown skeleton
@@ -121,6 +129,7 @@ export interface TodayLayoutConfig {
 export interface NotesSystemConfig {
     version: string;
     templates: TemplateDefinition[];
+    categories?: TemplateCategoryDef[];
     iftttRules: IftttRuleDef[];
     todayLayout: TodayLayoutConfig;
 }
