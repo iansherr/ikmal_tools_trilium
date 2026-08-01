@@ -1,10 +1,11 @@
 /**
- * Template Studio Component: Interactive editor & Live Note Preview for Trilium templates.
+ * Template Studio Component: Large Live Note Preview, interactive Help Chips, and HTML/YAML File Exporters.
  * Styled natively with Trilium Boxicons and design tokens.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
 import { TemplateDefinition, PromotedAttributeDef, AttributeDataType } from '../engine/types.js';
+import { exportTemplateAsHtml } from '../engine/yamlSpec.js';
 
 export function renderTemplateStudio(
     container: HTMLElement,
@@ -28,9 +29,9 @@ export function renderTemplateStudio(
             <div class="d-flex align-items-center gap-3">
                 <i class="bx bx-layer h3 m-0 text-primary"></i>
                 <div>
-                    <h2 class="h5 m-0 font-weight-bold">Template Studio & Live Note Preview</h2>
+                    <h2 class="h5 m-0 font-weight-bold">Template Studio & Large Live Note Preview</h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure template title patterns, promoted attribute forms, and content skeletons with live preview.
+                        Configure template title patterns, promoted attribute forms, and content skeletons with live side-by-side preview.
                     </p>
                 </div>
             </div>
@@ -48,7 +49,7 @@ export function renderTemplateStudio(
 
         // 1. Sidebar: Template Selector
         const sidebarCol = document.createElement('div');
-        sidebarCol.className = 'col-md-3';
+        sidebarCol.className = 'col-md-2';
 
         const sidebarCard = document.createElement('div');
         sidebarCard.className = 'card border';
@@ -91,11 +92,11 @@ export function renderTemplateStudio(
         sidebarCol.appendChild(sidebarCard);
         layoutRow.appendChild(sidebarCol);
 
-        // 2. Editor & Live Note Preview Columns
+        // 2. Editor & Large Preview Columns
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
 
         if (activeTpl) {
-            // Editor Column
+            // Editor Column (5 cols)
             const editorCol = document.createElement('div');
             editorCol.className = 'col-md-5';
 
@@ -111,14 +112,31 @@ export function renderTemplateStudio(
                     <i class="bx bx-${activeTpl.icon} text-primary"></i>
                     <span>Template: ${activeTpl.title}</span>
                 </h5>
-                <span class="badge ${activeTpl.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${activeTpl.isBuiltin ? 'Built-in' : 'Custom'}</span>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-xs btn-outline-secondary export-html-btn d-flex align-items-center gap-1" title="Download template HTML file">
+                        <i class="bx bx-download"></i> Export .html
+                    </button>
+                    <span class="badge ${activeTpl.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${activeTpl.isBuiltin ? 'Built-in' : 'Custom'}</span>
+                </div>
             `;
+
+            const exportBtn = editorHeader.querySelector('.export-html-btn') as HTMLButtonElement;
+            exportBtn.addEventListener('click', () => {
+                const { filename, content } = exportTemplateAsHtml(activeTpl);
+                const blob = new Blob([content], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
             editorCard.appendChild(editorHeader);
 
             const editorBody = document.createElement('div');
             editorBody.className = 'card-body d-flex flex-column gap-3';
 
-            // Form Fields
             editorBody.innerHTML = `
                 <div>
                     <label class="form-label small font-weight-bold">Template Title</label>
@@ -137,12 +155,23 @@ export function renderTemplateStudio(
                     </div>
                 </div>
 
+                <!-- Promoted Attributes with Interactive Help Chips -->
                 <div class="border-top pt-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <h6 class="m-0 font-weight-bold small d-flex align-items-center gap-1">
                             <i class="bx bx-list-check text-success"></i> Promoted Attributes (${activeTpl.attributes.length})
                         </h6>
                     </div>
+
+                    <!-- Interactive Option Chips for New Users -->
+                    <div class="d-flex flex-wrap gap-1.5 mb-2">
+                        <span class="badge bg-secondary bg-opacity-20 text-muted font-weight-normal small">Quick Add Chips:</span>
+                        <button type="button" class="btn btn-xs btn-outline-info chip-btn" data-chip="label-text">Label: Priority</button>
+                        <button type="button" class="btn btn-xs btn-outline-info chip-btn" data-chip="label-date">Label: Due Date</button>
+                        <button type="button" class="btn btn-xs btn-outline-info chip-btn" data-chip="relation-project">Relation: Project</button>
+                        <button type="button" class="btn btn-xs btn-outline-info chip-btn" data-chip="relation-client">Relation: Client</button>
+                    </div>
+
                     <table class="table table-sm table-borderless small m-0">
                         <thead>
                             <tr class="text-muted border-bottom">
@@ -180,6 +209,24 @@ export function renderTemplateStudio(
                 </div>
             `;
 
+            // Setup Quick Add Chips
+            editorBody.querySelectorAll('.chip-btn').forEach(btn => {
+                btn.addEventListener('click', (e: any) => {
+                    const chip = e.target.dataset.chip;
+                    if (chip === 'label-text') {
+                        activeTpl.attributes.push({ name: 'priority', type: 'label', dataType: 'select', options: ['low', 'medium', 'high'] });
+                    } else if (chip === 'label-date') {
+                        activeTpl.attributes.push({ name: 'dueDate', type: 'label', dataType: 'date' });
+                    } else if (chip === 'relation-project') {
+                        activeTpl.attributes.push({ name: 'project', type: 'relation', dataType: 'text' });
+                    } else if (chip === 'relation-client') {
+                        activeTpl.attributes.push({ name: 'client', type: 'relation', dataType: 'text' });
+                    }
+                    onSave();
+                    refresh();
+                });
+            });
+
             const addAttrBtn = editorBody.querySelector('.add-attr-btn') as HTMLButtonElement;
             addAttrBtn.addEventListener('click', () => showAddAttrModal(activeTpl));
 
@@ -204,12 +251,12 @@ export function renderTemplateStudio(
             editorCol.appendChild(editorCard);
             layoutRow.appendChild(editorCol);
 
-            // 3. Live Note Preview Column
+            // 3. LARGE Live Note Preview Column (5 cols)
             const previewCol = document.createElement('div');
-            previewCol.className = 'col-md-4';
+            previewCol.className = 'col-md-5';
 
             const previewCard = document.createElement('div');
-            previewCard.className = 'card border shadow-sm';
+            previewCard.className = 'card border shadow-sm h-100';
             previewCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
             previewCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
@@ -217,9 +264,9 @@ export function renderTemplateStudio(
             previewHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between';
             previewHeader.innerHTML = `
                 <h5 class="m-0 h6 font-weight-bold text-info d-flex align-items-center gap-2">
-                    <i class="bx bx-show"></i> Live Note Preview
+                    <i class="bx bx-show"></i> Large Live Note Preview
                 </h5>
-                <span class="badge bg-success bg-opacity-20 text-success">Active Note Model</span>
+                <span class="badge bg-success bg-opacity-20 text-success">Active Render Model</span>
             `;
             previewCard.appendChild(previewHeader);
 
@@ -229,28 +276,35 @@ export function renderTemplateStudio(
             const formattedTitle = templateEngine.formatTitle(activeTpl.id, 'Sample Note Title');
 
             previewBody.innerHTML = `
-                <div class="p-3 rounded border" style="background-color: var(--main-background-color, transparent);">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <i class="bx bx-${activeTpl.icon} h4 m-0 text-primary"></i>
-                        <h4 class="h6 m-0 font-weight-bold">${formattedTitle}</h4>
-                    </div>
-                    <div class="small text-muted mb-3">
-                        <i class="bx bx-folder"></i> Target Folder: <code>${activeTpl.noJournalClone ? '#projectRoot' : '#calendarRoot / Journal'}</code>
+                <div class="p-3.5 rounded border flex-grow-1 d-flex flex-column" style="background-color: var(--main-background-color, transparent);">
+                    <div class="d-flex align-items-center gap-2.5 mb-3 border-bottom pb-2">
+                        <i class="bx bx-${activeTpl.icon} h3 m-0 text-primary"></i>
+                        <div>
+                            <h4 class="h5 m-0 font-weight-bold">${formattedTitle}</h4>
+                            <div class="small text-muted mt-0.5">
+                                <i class="bx bx-folder"></i> Target Subtree: <code>${activeTpl.noJournalClone ? '#projectRoot' : '#calendarRoot / Journal'}</code>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Promoted Attributes Form Preview -->
-                    <div class="border-top pt-2 mb-3">
-                        <div class="small text-muted font-weight-bold mb-2"><i class="bx bx-slider-alt"></i> Promoted Form Controls</div>
-                        <div class="d-flex flex-column gap-2">
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="small text-muted font-weight-bold mb-2 d-flex align-items-center gap-1">
+                            <i class="bx bx-slider-alt"></i> Promoted Attribute Form
+                        </div>
+                        <div class="d-flex flex-column gap-2.5">
                             ${activeTpl.attributes.map(a => `
-                                <div class="d-flex align-items-center justify-content-between small">
-                                    <span class="text-muted">#${a.name}</span>
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--sub-background-color, transparent);">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary">#${a.name}</span>
+                                        <span class="small text-muted">(${a.type})</span>
+                                    </div>
                                     ${a.options ? `
-                                        <select class="form-select form-select-sm py-0" style="width: 140px; font-size: 11px;">
+                                        <select class="form-select form-select-sm py-0.5" style="width: 160px; font-size: 11.5px;">
                                             ${a.options.map(opt => `<option>${opt}</option>`).join('')}
                                         </select>
                                     ` : `
-                                        <input type="text" class="form-control form-control-sm py-0 px-2" value="${a.defaultValue ?? ''}" placeholder="Value" style="width: 140px; font-size: 11px;">
+                                        <input type="text" class="form-control form-control-sm py-0.5 px-2" value="${a.defaultValue ?? ''}" placeholder="Value..." style="width: 160px; font-size: 11.5px;">
                                     `}
                                 </div>
                             `).join('')}
@@ -258,10 +312,12 @@ export function renderTemplateStudio(
                     </div>
 
                     <!-- Content Skeleton Preview -->
-                    <div class="border-top pt-2">
-                        <div class="small text-muted font-weight-bold mb-2"><i class="bx bx-file-blank"></i> Note Body Skeleton</div>
-                        <div class="p-2.5 rounded border small font-monospace" style="background-color: var(--main-background-color, inherit); font-size: 11.5px; max-height: 180px; overflow-y: auto;">
-                            ${activeTpl.defaultContent || '<em class="text-muted">Empty note body</em>'}
+                    <div class="flex-grow-1 d-flex flex-column">
+                        <div class="small text-muted font-weight-bold mb-2 d-flex align-items-center gap-1">
+                            <i class="bx bx-file-blank"></i> Rendered Body Content Skeleton
+                        </div>
+                        <div class="p-3 rounded border flex-grow-1 font-monospace" style="background-color: var(--sub-background-color, transparent); font-size: 12px; min-height: 200px;">
+                            ${activeTpl.defaultContent || '<em class="text-muted">Empty note content skeleton body</em>'}
                         </div>
                     </div>
                 </div>

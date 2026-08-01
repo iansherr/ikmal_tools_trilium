@@ -1,6 +1,6 @@
 /**
  * YAML Specification Engine for Trilium Notes System
- * Dumps and parses full system specifications (Today layout, templates, relationships, IFTTT rules).
+ * Dumps and parses full system specifications (Today layout, templates, attributes, HTML content skeletons, relationships, IFTTT rules).
  */
 
 import { TodayLayoutConfig, TodayWidgetConfig } from './types.js';
@@ -8,6 +8,7 @@ import { TemplateEngine } from './templateEngine.js';
 import { RelationshipEngine } from './relationshipEngine.js';
 import { IftttEngine } from './iftttEngine.js';
 import { TodayEngine } from './todayEngine.js';
+import { TemplateDefinition } from './types.js';
 
 export interface NotesSystemYamlSpec {
     version: string;
@@ -15,9 +16,11 @@ export interface NotesSystemYamlSpec {
     homepage: TodayLayoutConfig;
     templates: Record<string, {
         title: string;
+        titlePattern?: string;
         icon: string;
         noJournalClone?: boolean;
-        fields: Array<{ name: string; type: string; default?: any }>;
+        attributes: Array<{ name: string; type: string; dataType: string; defaultValue?: any; options?: string[] }>;
+        defaultContent?: string;
     }>;
     relationships: {
         autoCloning: Array<{ parentType: string; childType: string }>;
@@ -48,9 +51,11 @@ export function dumpYamlSpec(
     for (const tpl of templateEngine.getAllTemplates()) {
         templatesMap[tpl.id] = {
             title: tpl.title,
+            titlePattern: tpl.titlePattern || '{title}',
             icon: tpl.icon,
             noJournalClone: Boolean(tpl.noJournalClone),
-            fields: tpl.fields || [],
+            attributes: tpl.attributes || [],
+            defaultContent: tpl.defaultContent || '',
         };
     }
 
@@ -81,9 +86,8 @@ export function dumpYamlSpec(
     };
 
     return `# ==============================================================================
-# Trilium Notes System — Package Specification (YAML)
-# Complete, editable specification containing Homepage layout, Templates,
-# Relationships, and IFTTT Automation Trees.
+# Trilium Notes System — Complete Package Specification (YAML)
+# Contains Homepage Grid, Templates + HTML Content Skeletons, Relationships & IFTTT Trees
 # ==============================================================================
 
 version: "${spec.version}"
@@ -108,11 +112,15 @@ ${spec.homepage.widgets.map(w => `    - id: "${w.id}"
 templates:
 ${Object.entries(spec.templates).map(([id, tpl]) => `  ${id}:
     title: "${tpl.title}"
+    titlePattern: "${tpl.titlePattern}"
     icon: "${tpl.icon}"
     noJournalClone: ${tpl.noJournalClone}
-    fields:
-${(tpl.fields || []).map(f => `      - name: "${f.name}"
-        type: "${f.type}"`).join('\n')}`).join('\n')}
+    attributes:
+${(tpl.attributes || []).map(a => `      - name: "${a.name}"
+        type: "${a.type}"
+        dataType: "${a.dataType}"${a.options ? `\n        options: [${a.options.map(o => `"${o}"`).join(', ')}]` : ''}`).join('\n')}
+    defaultContent: |
+      ${(tpl.defaultContent || '').replace(/\n/g, '\n      ')}`).join('\n')}
 
 relationships:
   autoCloning:
@@ -132,6 +140,15 @@ ${rule.actions.map(a => `      - actionType: "${a.actionType}"\n        target: 
 `;
 }
 
+export function exportTemplateAsHtml(template: TemplateDefinition): { filename: string; content: string } {
+    const filename = `${template.id}.html`;
+    const content = `<!-- Trilium Template: ${template.title} (${template.id}) -->\n` +
+        `<!-- Icon: ${template.icon} | Pattern: ${template.titlePattern} -->\n` +
+        `<!-- Promoted Attributes: ${template.attributes.map(a => '#' + a.name).join(', ')} -->\n\n` +
+        (template.defaultContent || '');
+    return { filename, content };
+}
+
 export function parseAndApplyYamlSpec(
     yamlString: string,
     todayEngine: TodayEngine,
@@ -143,7 +160,6 @@ export function parseAndApplyYamlSpec(
             return { success: false, message: 'Specification string is empty.' };
         }
 
-        // Basic YAML key-value extractor for specs
         const lines = yamlString.split('\n');
         let inHomepage = false;
         let inWidgets = false;
