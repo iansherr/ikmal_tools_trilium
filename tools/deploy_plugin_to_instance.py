@@ -52,7 +52,7 @@ def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy") -> None:
     else:
         print(f"  ✓ Found package manifest note: {pkg_manifest_note_id}")
 
-    # Set package manifest labels (including packageArtifact="manifest")
+    # Set package manifest labels
     api.set_label(pkg_manifest_note_id, "packageManaged", "")
     api.set_label(pkg_manifest_note_id, "packageOwner", pkg_owner)
     api.set_label(pkg_manifest_note_id, "packageVersion", manifest["version"])
@@ -74,46 +74,103 @@ def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy") -> None:
         title = artifact.get("title", artifact_id)
 
         if artifact_type == "render":
-            note_type = "render"
-            mime = None
-        elif artifact_type == "css":
-            note_type = "code"
-            mime = "text/css"
-        elif artifact_type in ("backend", "endpoint", "widget", "launcher", "frontend"):
-            note_type = "code"
-            mime = "application/javascript"
-        else:
-            note_type = "code"
-            mime = "text/plain"
+            # For render notes, create a parent render note + child code note (mime: application/javascript;env=frontend)
+            existing_renders = api.search(f'#packageArtifact="{artifact_id}"')
+            render_note_id = existing_renders[0]["noteId"] if existing_renders else None
 
-        existing_artifacts = api.search(f'#packageArtifact="{artifact_id}"')
-        art_note_id = existing_artifacts[0]["noteId"] if existing_artifacts else None
+            if not render_note_id:
+                render_note_id = api.create_note(
+                    parent_note_id=pkg_manifest_note_id,
+                    title=title,
+                    content="<div class='notes-system-root'></div>",
+                    note_type="render",
+                )
+                print(f"  + Created render container '{title}': {render_note_id}")
+            else:
+                api.set_content(render_note_id, "<div class='notes-system-root'></div>")
+                print(f"  ✓ Updated render container '{title}': {render_note_id}")
 
-        if not art_note_id:
-            art_note_id = api.create_note(
-                parent_note_id=pkg_manifest_note_id,
-                title=title,
-                content=code_content,
-                note_type=note_type,
-                mime=mime,
+            api.set_label(render_note_id, "packageManaged", "")
+            api.set_label(render_note_id, "packageOwner", pkg_owner)
+            api.set_label(render_note_id, "packageVersion", manifest["version"])
+            api.set_label(render_note_id, "packageArtifact", artifact_id)
+            api.set_label(render_note_id, "packageEnabled", "true")
+
+            # Check or create child script note
+            script_title = f"{title} (Script)"
+            existing_scripts = api.search(f'#packageArtifact="{artifact_id}-script"')
+            script_note_id = existing_scripts[0]["noteId"] if existing_scripts else None
+
+            script_body = (
+                code_content +
+                "\n\nif (typeof api !== 'undefined') {\n"
+                "    const $c = api.$container;\n"
+                "    const el = ($c && ($c[0] || $c)) || document.body;\n"
+                "    if (typeof initNotesSystemDashboard === 'function') {\n"
+                "        initNotesSystemDashboard(el);\n"
+                "    }\n"
+                "}\n"
             )
-            print(f"  + Created artifact '{title}' ({artifact_type}): {art_note_id}")
+
+            if not script_note_id:
+                script_note_id = api.create_note(
+                    parent_note_id=render_note_id,
+                    title=script_title,
+                    content=script_body,
+                    note_type="code",
+                    mime="application/javascript;env=frontend",
+                )
+                print(f"  + Created render script '{script_title}': {script_note_id}")
+            else:
+                api.set_content(script_note_id, script_body)
+                print(f"  ✓ Updated render script '{script_title}': {script_note_id}")
+
+            api.set_label(script_note_id, "packageManaged", "")
+            api.set_label(script_note_id, "packageOwner", pkg_owner)
+            api.set_label(script_note_id, "packageVersion", manifest["version"])
+            api.set_label(script_note_id, "packageArtifact", f"{artifact_id}-script")
+            api.set_label(script_note_id, "packageEnabled", "true")
+
+            # Link parent render note to child script note via ~renderNote relation
+            api.set_relation(render_note_id, "renderNote", script_note_id)
+
         else:
-            api.set_content(art_note_id, code_content)
-            print(f"  ✓ Updated artifact '{title}' ({artifact_type}): {art_note_id}")
+            if artifact_type == "css":
+                note_type = "code"
+                mime = "text/css"
+            elif artifact_type in ("backend", "endpoint", "widget", "launcher", "frontend"):
+                note_type = "code"
+                mime = "application/javascript"
+            else:
+                note_type = "code"
+                mime = "text/plain"
 
-        api.set_label(art_note_id, "packageManaged", "")
-        api.set_label(art_note_id, "packageOwner", pkg_owner)
-        api.set_label(art_note_id, "packageVersion", manifest["version"])
-        api.set_label(art_note_id, "packageArtifact", artifact_id)
-        api.set_label(art_note_id, "packageEnabled", "true")
+            existing_artifacts = api.search(f'#packageArtifact="{artifact_id}"')
+            art_note_id = existing_artifacts[0]["noteId"] if existing_artifacts else None
 
-        if artifact_type == "render":
-            api.set_label(art_note_id, "renderNote", "")
-        elif artifact_type == "css":
-            api.set_label(art_note_id, "appCss", "")
-        elif artifact_type == "backend" and artifact.get("activation") == "startup":
-            api.set_label(art_note_id, "run", "backendStartup")
+            if not art_note_id:
+                art_note_id = api.create_note(
+                    parent_note_id=pkg_manifest_note_id,
+                    title=title,
+                    content=code_content,
+                    note_type=note_type,
+                    mime=mime,
+                )
+                print(f"  + Created artifact '{title}' ({artifact_type}): {art_note_id}")
+            else:
+                api.set_content(art_note_id, code_content)
+                print(f"  ✓ Updated artifact '{title}' ({artifact_type}): {art_note_id}")
+
+            api.set_label(art_note_id, "packageManaged", "")
+            api.set_label(art_note_id, "packageOwner", pkg_owner)
+            api.set_label(art_note_id, "packageVersion", manifest["version"])
+            api.set_label(art_note_id, "packageArtifact", artifact_id)
+            api.set_label(art_note_id, "packageEnabled", "true")
+
+            if artifact_type == "css":
+                api.set_label(art_note_id, "appCss", "")
+            elif artifact_type == "backend" and artifact.get("activation") == "startup":
+                api.set_label(art_note_id, "run", "backendStartup")
 
     print("\n🎉 Plugin deployed successfully into Trilium instance with manifest label!")
 
