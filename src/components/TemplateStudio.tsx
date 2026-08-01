@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: True Nested Visual Tree View & Native Trilium Settings Proportions.
+ * Template Studio Component: Multi-Parent Tree Hierarchy, Scratch Notes, and Native Trilium UI Polish.
  * Styled natively with Trilium Boxicons and standard Trilium form components.
  */
 
@@ -22,16 +22,19 @@ export function renderTemplateStudio(
 
         // Header Banner (Trilium Settings Style)
         const header = document.createElement('div');
-        header.className = 'p-3 rounded border d-flex align-items-center justify-content-between';
+        header.className = 'p-3.5 rounded border d-flex align-items-center justify-content-between shadow-sm';
         header.style.backgroundColor = 'var(--sub-background-color, transparent)';
         header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
         header.innerHTML = `
             <div class="d-flex align-items-center gap-3">
                 <i class="bx bx-layer h3 m-0 text-primary"></i>
                 <div>
-                    <h2 class="h5 m-0 font-weight-bold">Template Studio & Relationship Tree</h2>
+                    <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
+                        Template Studio & Nested Hierarchy Tree
+                        <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
+                    </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure nested template schemas, parent relationship links, promoted attributes, and note previews.
+                        Configure nested template schemas, parent-child relations, promoted attributes, and live note preview.
                     </p>
                 </div>
             </div>
@@ -47,62 +50,81 @@ export function renderTemplateStudio(
         const layoutRow = document.createElement('div');
         layoutRow.className = 'row g-4';
 
-        // 1. Sidebar: True Nested Visual Tree View (Trilium Navigation Style)
+        // 1. Sidebar: True Multi-Parent Nested Visual Tree View (Trilium Navigation Style)
         const sidebarCol = document.createElement('div');
         sidebarCol.className = 'col-md-3';
 
         const sidebarCard = document.createElement('div');
-        sidebarCard.className = 'card border h-100';
+        sidebarCard.className = 'card border h-100 shadow-sm';
         sidebarCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
         sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
         const sidebarHeader = document.createElement('div');
-        sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center justify-content-between';
+        sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center justify-content-between p-3';
         sidebarHeader.innerHTML = `
-            <span class="d-flex align-items-center gap-1"><i class="bx bx-sitemap"></i> Nested Template Tree</span>
-            <span class="small text-muted font-weight-normal">Tree View</span>
+            <span class="d-flex align-items-center gap-1.5"><i class="bx bx-sitemap"></i> Nested Hierarchy Tree</span>
+            <span class="badge bg-primary bg-opacity-10 text-primary small">Multi-Parent</span>
         `;
         sidebarCard.appendChild(sidebarHeader);
 
         const treeContainer = document.createElement('div');
-        treeContainer.className = 'card-body p-2';
+        treeContainer.className = 'card-body p-2.5';
 
-        // Build True Nested Tree Node Structure
+        // Multi-Parent Nested Tree Structure (Audit aligned with src/)
         const treeNodes = [
             {
                 id: 'projectHub',
+                label: 'Project Hub',
                 children: [
                     {
                         id: 'story',
+                        label: 'Story Project',
                         children: [
-                            { id: 'edit', children: [] }
+                            { id: 'edit', label: 'Edit Package', children: [] },
+                            { id: 'reportingNotes', label: 'Reporting Notes', children: [] }
                         ]
                     },
-                    { id: 'reportingNotes', children: [] },
-                    { id: 'projectTask', children: [] },
-                    { id: 'emailDraft', children: [] }
+                    { id: 'projectTask', label: 'Project Task', children: [] },
+                    { id: 'meeting', label: 'Project Meeting', children: [] },
+                    { id: 'emailDraft', label: 'Email Draft', children: [] },
+                    { id: 'topic', label: 'Assigned Topic', children: [] }
                 ]
             },
             {
                 id: 'organization',
+                label: 'Organization',
                 children: [
+                    { id: 'person', label: 'Key Contact Person', children: [] },
                     {
                         id: 'meeting',
+                        label: 'Client Meeting',
                         children: [
-                            { id: 'meetingPrep', children: [] }
+                            { id: 'meetingPrep', label: 'Meeting Prep', children: [] }
                         ]
-                    },
-                    { id: 'person', children: [] }
+                    }
                 ]
             },
-            { id: 'task', children: [] },
-            { id: 'topic', children: [] }
+            {
+                id: 'task',
+                label: 'Standalone / Unassigned Tasks',
+                children: []
+            },
+            {
+                id: 'scratch',
+                label: 'Quick Scratch Note (Unassigned)',
+                children: []
+            },
+            {
+                id: 'topic',
+                label: 'Global Topic Index',
+                children: []
+            }
         ];
 
-        function renderTreeBranch(nodes: Array<{ id: string; children: any[] }>, depth = 0): HTMLElement {
+        function renderTreeBranch(nodes: Array<{ id: string; label?: string; children: any[] }>, depth = 0): HTMLElement {
             const ul = document.createElement('ul');
             ul.className = 'list-unstyled m-0 d-flex flex-column gap-1';
-            if (depth > 0) ul.style.paddingLeft = '1.25rem';
+            if (depth > 0) ul.style.paddingLeft = '1.1rem';
 
             for (const node of nodes) {
                 const tpl = templateEngine.getTemplate(node.id);
@@ -112,7 +134,7 @@ export function renderTemplateStudio(
                 const isSelected = tpl.id === selectedTemplateId;
 
                 const item = document.createElement('div');
-                item.className = `d-flex align-items-center justify-content-between p-2 rounded cursor-pointer transition-all ${isSelected ? 'bg-primary text-white font-weight-bold' : 'text-body'}`;
+                item.className = `d-flex align-items-center justify-content-between p-2 rounded cursor-pointer transition-all ${isSelected ? 'bg-primary text-white font-weight-bold shadow-xs' : 'text-body'}`;
                 item.style.cursor = 'pointer';
                 if (!isSelected) {
                     item.style.backgroundColor = 'transparent';
@@ -120,11 +142,11 @@ export function renderTemplateStudio(
 
                 item.innerHTML = `
                     <div class="d-flex align-items-center gap-2">
-                        ${depth > 0 ? '<i class="bx bx-subdirectory-right text-muted" style="font-size: 14px;"></i>' : ''}
+                        ${depth > 0 ? '<i class="bx bx-subdirectory-right text-muted" style="font-size: 13px;"></i>' : ''}
                         <i class="bx bx-${tpl.icon}"></i>
-                        <span class="small">${tpl.title}</span>
+                        <span class="small">${node.label || tpl.title}</span>
                     </div>
-                    ${isSelected ? '<span class="badge bg-white text-primary small">Active</span>' : ''}
+                    ${isSelected ? '<span class="badge bg-white text-primary small">Selected</span>' : ''}
                 `;
 
                 item.addEventListener('click', (e) => {
@@ -150,7 +172,7 @@ export function renderTemplateStudio(
         sidebarCol.appendChild(sidebarCard);
         layoutRow.appendChild(sidebarCol);
 
-        // 2. Editor Column (5 cols) with Native Trilium Component Proportions
+        // 2. Editor Column (5 cols) with Standard Trilium Form Component Proportions
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
 
         if (activeTpl) {
@@ -158,7 +180,7 @@ export function renderTemplateStudio(
             editorCol.className = 'col-md-5';
 
             const editorCard = document.createElement('div');
-            editorCard.className = 'card border';
+            editorCard.className = 'card border shadow-sm';
             editorCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
             editorCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
@@ -167,10 +189,10 @@ export function renderTemplateStudio(
             editorHeader.innerHTML = `
                 <h5 class="m-0 h6 font-weight-bold d-flex align-items-center gap-2">
                     <i class="bx bx-${activeTpl.icon} text-primary"></i>
-                    <span>Template: ${activeTpl.title}</span>
+                    <span>Template Schema: ${activeTpl.title}</span>
                 </h5>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary export-html-btn d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary export-html-btn d-flex align-items-center gap-1" title="Download template HTML file">
                         <i class="bx bx-download"></i> Export .html
                     </button>
                     <span class="badge ${activeTpl.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${activeTpl.isBuiltin ? 'Built-in' : 'Custom'}</span>
@@ -356,7 +378,7 @@ export function renderTemplateStudio(
             previewCol.className = 'col-md-4';
 
             const previewCard = document.createElement('div');
-            previewCard.className = 'card border h-100';
+            previewCard.className = 'card border h-100 shadow-sm';
             previewCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
             previewCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
@@ -411,7 +433,7 @@ export function renderTemplateStudio(
                     <!-- Multi-Parent Inherited Attributes & Topics -->
                     <div class="border-bottom pb-3 mb-3">
                         <div class="small text-info font-weight-bold mb-2 d-flex align-items-center gap-1">
-                            <i class="bx bx-git-repo-forked"></i> Inherited Parent Context
+                            <i class="bx bx-git-repo-forked"></i> Multi-Parent Inherited Context
                         </div>
                         <div class="d-flex flex-column gap-2 small text-muted">
                             <div class="d-flex align-items-center justify-content-between">

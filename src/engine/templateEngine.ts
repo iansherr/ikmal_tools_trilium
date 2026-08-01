@@ -15,7 +15,7 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         rootContainerMarker: 'taskRoot',
         titlePattern: '{title}',
         defaultContent: '<p>Task description and notes...</p>',
-        projectScoped: true,
+        projectScoped: false,
         isBuiltin: true,
         attributes: [
             { name: 'priority', type: 'label', dataType: 'select', options: ['high', 'medium', 'low'], defaultValue: 'medium', isPromoted: true, label: 'Priority' },
@@ -182,10 +182,38 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         relationships: [
             {
                 id: 'rel_edit_story',
-                name: 'Parent Story Draft',
+                name: 'Parent Story Project',
                 relationName: 'storyDraft',
                 targetTemplateId: 'story',
                 targetTemplateName: 'Story Project',
+                isMulti: false,
+                autoCloneToParent: true,
+                inheritTopics: true,
+                direction: 'parent',
+            },
+        ],
+    },
+    {
+        id: 'scratch',
+        marker: 'extScratch',
+        title: 'Scratch Note',
+        icon: 'file-blank',
+        category: 'drafts',
+        rootContainerMarker: 'unassignedRoot',
+        titlePattern: '{title}',
+        defaultContent: '<p>Quick scratchpad notes...</p>',
+        projectScoped: false,
+        isBuiltin: true,
+        attributes: [
+            { name: 'project', type: 'relation', dataType: 'relation', targetTemplateId: 'projectHub', isPromoted: true, label: 'Optional Project' },
+        ],
+        relationships: [
+            {
+                id: 'rel_scratch_project',
+                name: 'Project Hub',
+                relationName: 'project',
+                targetTemplateId: 'projectHub',
+                targetTemplateName: 'Project Hub',
                 isMulti: false,
                 autoCloneToParent: true,
                 inheritTopics: true,
@@ -293,7 +321,19 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         attributes: [
             { name: 'website', type: 'label', dataType: 'string', isPromoted: true, label: 'Website' },
         ],
-        relationships: [],
+        relationships: [
+            {
+                id: 'rel_org_person',
+                name: 'Key Contact Person',
+                relationName: 'keyContact',
+                targetTemplateId: 'person',
+                targetTemplateName: 'Person',
+                isMulti: true,
+                autoCloneToParent: false,
+                inheritTopics: true,
+                direction: 'child',
+            },
+        ],
     },
     {
         id: 'topic',
