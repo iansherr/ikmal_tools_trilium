@@ -1,5 +1,6 @@
 /**
- * Template Engine: Template registry, schema generator, parser & title formatter
+ * Template Engine: Template registry, schema generator, parser & title formatter.
+ * Contains 100% complete original template definitions, attributes, relations, and HTML content skeletons.
  */
 
 import { TemplateDefinition, PromotedAttributeDef, TemplateRelationshipDef } from './types.js';
@@ -17,7 +18,7 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         projectScoped: true,
         isBuiltin: true,
         attributes: [
-            { name: 'priority', type: 'label', dataType: 'select', options: ['high', 'medium', 'low'], isPromoted: true, label: 'Priority' },
+            { name: 'priority', type: 'label', dataType: 'select', options: ['high', 'medium', 'low'], defaultValue: 'medium', isPromoted: true, label: 'Priority' },
             { name: 'status', type: 'label', dataType: 'select', options: ['todo', 'in_progress', 'done', 'cancelled'], defaultValue: 'todo', isPromoted: true, label: 'Status' },
             { name: 'dueDate', type: 'label', dataType: 'date', isPromoted: true, label: 'Due Date' },
             { name: 'doneDate', type: 'label', dataType: 'date', isPromoted: true, label: 'Done Date' },
@@ -27,7 +28,37 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         relationships: [
             {
                 id: 'rel_task_project',
-                name: 'Project',
+                name: 'Project Hub',
+                relationName: 'project',
+                targetTemplateId: 'projectHub',
+                targetTemplateName: 'Project Hub',
+                isMulti: false,
+                autoCloneToParent: true,
+                inheritTopics: true,
+                direction: 'parent',
+            },
+        ],
+    },
+    {
+        id: 'projectTask',
+        marker: 'extTask',
+        title: 'Project Task',
+        icon: 'list-check',
+        category: 'work',
+        rootContainerMarker: 'taskRoot',
+        titlePattern: '{title}',
+        defaultContent: '<p>Project task details and sub-action items...</p>',
+        projectScoped: true,
+        isBuiltin: true,
+        attributes: [
+            { name: 'priority', type: 'label', dataType: 'select', options: ['high', 'medium', 'low'], defaultValue: 'medium', isPromoted: true, label: 'Priority' },
+            { name: 'status', type: 'label', dataType: 'select', options: ['todo', 'in_progress', 'done'], defaultValue: 'todo', isPromoted: true, label: 'Status' },
+            { name: 'dueDate', type: 'label', dataType: 'date', isPromoted: true, label: 'Due Date' },
+        ],
+        relationships: [
+            {
+                id: 'rel_projtask_project',
+                name: 'Project Hub',
                 relationName: 'project',
                 targetTemplateId: 'projectHub',
                 targetTemplateName: 'Project Hub',
@@ -53,11 +84,42 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
             { name: 'startDate', type: 'label', dataType: 'date', isPromoted: true, label: 'Start Date' },
             { name: 'startTime', type: 'label', dataType: 'string', isPromoted: true, label: 'Start Time' },
             { name: 'attendee', type: 'relation', dataType: 'relation', targetTemplateId: 'person', isPromoted: true, label: 'Attendees' },
+            { name: 'client', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'Client' },
+            { name: 'companyOnBehalf', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'On Behalf Of' },
         ],
         relationships: [
             {
                 id: 'rel_meeting_project',
-                name: 'Project',
+                name: 'Project Hub',
+                relationName: 'project',
+                targetTemplateId: 'projectHub',
+                targetTemplateName: 'Project Hub',
+                isMulti: false,
+                autoCloneToParent: true,
+                inheritTopics: true,
+                direction: 'parent',
+            },
+        ],
+    },
+    {
+        id: 'meetingPrep',
+        marker: 'extMeeting',
+        title: 'Meeting Prep',
+        icon: 'calendar-edit',
+        category: 'work',
+        rootContainerMarker: 'meetingRoot',
+        titlePattern: 'Meeting Prep: {title}',
+        defaultContent: '<h2>BACKGROUND</h2><p></p><h2>TALKING POINTS</h2><ul><li></li></ul><h2>QUESTIONS TO ASK</h2><ul><li></li></ul>',
+        projectScoped: true,
+        isBuiltin: true,
+        attributes: [
+            { name: 'attendee', type: 'relation', dataType: 'relation', targetTemplateId: 'person', isPromoted: true, label: 'Attendees' },
+            { name: 'client', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'Client' },
+        ],
+        relationships: [
+            {
+                id: 'rel_meetingprep_project',
+                name: 'Project Hub',
                 relationName: 'project',
                 targetTemplateId: 'projectHub',
                 targetTemplateName: 'Project Hub',
@@ -76,13 +138,15 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         category: 'drafts',
         rootContainerMarker: 'storyDraftRoot',
         titlePattern: '{title}',
-        defaultContent: '<h2>HED</h2><ul><li></li></ul><h2>DEK</h2><ul><li></li></ul><h2>STORYBODY</h2><p></p><p>--ENDIT--</p>',
+        defaultContent: '<h2>HED</h2><ul><li></li><li></li><li></li></ul><h2>DEK</h2><ul><li></li><li></li><li></li></ul><h2>BYLINE</h2><p>By Ian Sherr (+1 415.347.6397)</p><h2>STORYBODY</h2><p></p><p>--ENDIT--</p>',
         projectScoped: true,
         isBuiltin: true,
         attributes: [
             { name: 'status', type: 'label', dataType: 'select', options: ['drafting', 'review', 'published'], defaultValue: 'drafting', isPromoted: true, label: 'Status' },
             { name: 'workflow', type: 'label', dataType: 'string', defaultValue: 'project', isPromoted: true, label: 'Workflow' },
             { name: 'kind', type: 'label', dataType: 'string', defaultValue: 'project', isPromoted: true, label: 'Kind' },
+            { name: 'client', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'Client Organization' },
+            { name: 'writer', type: 'relation', dataType: 'relation', targetTemplateId: 'person', isPromoted: true, label: 'Writer / Reporter' },
         ],
         relationships: [
             {
@@ -106,13 +170,14 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         category: 'drafts',
         rootContainerMarker: 'storyDraftRoot',
         titlePattern: 'Edit: {title}',
-        defaultContent: '<h2>EDITORIAL NOTES & REVISIONS</h2><ul><li>[ ] Fact check quotes</li><li>[ ] Copy edit lead paragraph</li><li>[ ] Confirm headline & dek</li></ul><h2>EDITED DRAFT BODY</h2><p></p>',
+        defaultContent: '<h2>LINKS</h2><ul><li></li></ul><h2>OPEN QUESTIONS</h2><ul><li></li></ul><h2>EDITORIAL NOTES</h2><p></p><h2>REQUESTED CHANGES</h2><ul><li></li></ul><h2>HED</h2><ul><li></li><li></li><li></li></ul><h2>BYLINE</h2><p>By Ian Sherr (+1 415.347.6397)</p><h2>STORYBODY</h2><p></p><p>--ENDIT--</p><h2>WRITER RESPONSE</h2><p></p>',
         projectScoped: true,
         isBuiltin: true,
         attributes: [
             { name: 'status', type: 'label', dataType: 'select', options: ['editing', 'approved', 'returned'], defaultValue: 'editing', isPromoted: true, label: 'Status' },
             { name: 'workflow', type: 'label', dataType: 'string', defaultValue: 'edit', isPromoted: true, label: 'Workflow' },
             { name: 'round', type: 'label', dataType: 'string', defaultValue: 'Round 1 Edit', isPromoted: true, label: 'Round' },
+            { name: 'writer', type: 'relation', dataType: 'relation', targetTemplateId: 'person', isPromoted: true, label: 'Writer / Reporter' },
         ],
         relationships: [
             {
@@ -141,7 +206,8 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         attributes: [
             { name: 'status', type: 'label', dataType: 'select', options: ['active', 'archived', 'on_hold'], defaultValue: 'active', isPromoted: true, label: 'Status' },
             { name: 'kind', type: 'label', dataType: 'select', options: ['project', 'edit', 'client', 'internal'], isPromoted: true, label: 'Kind' },
-            { name: 'client', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'Client' },
+            { name: 'client', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'Client Organization' },
+            { name: 'companyOnBehalf', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'On Behalf Of' },
         ],
         relationships: [
             {
@@ -165,7 +231,7 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         category: 'work',
         rootContainerMarker: 'reportingRoot',
         titlePattern: '{title} (Reporting & Notes)',
-        defaultContent: '<h2>INTERVIEW TRANSCRIPTS & SOURCES</h2><ul><li></li></ul><h2>DOCUMENTATION & LINKS</h2><p></p>',
+        defaultContent: '<h2>LINKS</h2><ul><li></li></ul><h2>OPEN QUESTIONS</h2><ul><li></li></ul><h2>IDEA / ANGLE</h2><p></p><h2>REPORTING NOTES</h2><p></p><div class="reporting-note-actions-placeholder" data-reporting-note-actions="true"></div>',
         projectScoped: true,
         isBuiltin: true,
         attributes: [
@@ -264,7 +330,7 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         relationships: [
             {
                 id: 'rel_email_project',
-                name: 'Project',
+                name: 'Project Hub',
                 relationName: 'project',
                 targetTemplateId: 'projectHub',
                 targetTemplateName: 'Project Hub',
