@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: Ultra-Sleek Design with Rich Bootstrap Modals (No Browser Prompts).
+ * Template Studio Component: Ultra-Sleek Polish & Solid Opaque Modals.
  * Styled natively with Trilium Boxicons and standard Trilium design tokens.
  */
 
@@ -26,8 +26,8 @@ export function renderTemplateStudio(
         // 1. Sleek Header Banner
         const header = document.createElement('div');
         header.className = 'p-4 rounded-3 border d-flex align-items-center justify-content-between shadow-sm';
-        header.style.backgroundColor = 'var(--sub-background-color, transparent)';
-        header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
+        header.style.backgroundColor = 'var(--sub-background-color, rgba(255, 255, 255, 0.05))';
+        header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
         header.innerHTML = `
             <div class="d-flex align-items-center gap-3">
@@ -37,7 +37,7 @@ export function renderTemplateStudio(
                 <div>
                     <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
                         Template Studio & Behavioral Engine
-                        <span class="badge bg-secondary rounded-pill font-weight-normal small">v1.0.0</span>
+                        <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
                         Configure template schemas, parent-child links, automation rules, promoted attributes, and live note previews.
@@ -67,20 +67,20 @@ export function renderTemplateStudio(
         const layoutRow = document.createElement('div');
         layoutRow.className = 'row g-4';
 
-        // 2. Sidebar: Spacious Nested Tree View (3 Cols)
+        // 2. Sidebar: Nested Tree View (3 Cols)
         const sidebarCol = document.createElement('div');
         sidebarCol.className = 'col-md-3';
 
         const sidebarCard = document.createElement('div');
         sidebarCard.className = 'card border shadow-sm h-100 rounded-3';
         sidebarCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
-        sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
+        sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
         const sidebarHeader = document.createElement('div');
         sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center justify-content-between p-3.5';
         sidebarHeader.innerHTML = `
             <span class="d-flex align-items-center gap-2"><i class="bx bx-sitemap text-primary"></i> Template Hierarchy</span>
-            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">Tree</span>
+            <span class="badge bg-primary bg-opacity-10 text-primary small">Tree</span>
         `;
         sidebarCard.appendChild(sidebarHeader);
 
@@ -208,7 +208,7 @@ export function renderTemplateStudio(
         const workspaceCard = document.createElement('div');
         workspaceCard.className = 'card border shadow-sm h-100 rounded-3';
         workspaceCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
-        workspaceCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
+        workspaceCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
         // Workspace Header
         const mainHeader = document.createElement('div');
@@ -221,7 +221,7 @@ export function renderTemplateStudio(
                 <div>
                     <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
                         <span>${activeEditorTab === 'categories' ? 'Category Behaviors & Automations' : `Template: ${activeTpl?.title}`}</span>
-                        ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary rounded-pill font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
+                        ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
                     </h3>
                     <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure category root markers, journal cloning, topic inheritance, and category-wide rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
                 </div>
@@ -299,7 +299,7 @@ export function renderTemplateStudio(
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix & Automations (${cats.length})</h5>
-                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide rules.</p>
+                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide IFTTT rules.</p>
                 </div>
                 <button type="button" class="btn btn-sm btn-primary add-cat-btn d-flex align-items-center gap-1.5 shadow-xs">
                     <i class="bx bx-plus"></i> New Category Type
@@ -321,7 +321,7 @@ export function renderTemplateStudio(
                                         <code class="small text-muted">Category ID: ${c.id}</code>
                                     </div>
                                 </div>
-                                <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted rounded-pill px-3 py-1.5">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
+                                <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted px-3 py-1.5">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
                             </div>
 
                             <div class="row g-3 small mb-3">
@@ -348,7 +348,6 @@ export function renderTemplateStudio(
                                 </div>
                             </div>
 
-                            <!-- Embedded Category-Wide Automations Card Stack -->
                             <div class="border-top pt-3">
                                 <div class="d-flex align-items-center justify-content-between mb-2.5">
                                     <h6 class="font-weight-bold text-primary small m-0 d-flex align-items-center gap-1.5">
@@ -372,7 +371,7 @@ export function renderTemplateStudio(
                                                 <button type="button" class="btn btn-xs btn-outline-primary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
                                                     <i class="bx bx-edit-alt"></i> Edit Rule
                                                 </button>
-                                                <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted rounded-pill">${r.enabled ? 'Active' : 'Disabled'}</span>
+                                                <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted">${r.enabled ? 'Active' : 'Disabled'}</span>
                                             </div>
                                         </div>
                                     `).join('') : '<div class="text-muted tiny p-3 border rounded-3 text-center">No category-wide automation rules attached.</div>'}
@@ -518,9 +517,8 @@ export function renderTemplateStudio(
             <div class="d-flex flex-column gap-4">
                 <!-- Group 1: Global Scope Automations -->
                 <div>
-                    <div class="text-primary font-weight-bold small mb-2 d-flex align-items-center justify-content-between">
-                        <span class="d-flex align-items-center gap-1.5"><i class="bx bx-globe"></i> Global System Rules (${globalRules.length})</span>
-                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill tiny">Global Scope</span>
+                    <div class="text-primary font-weight-bold small mb-2 d-flex align-items-center gap-1.5">
+                        <i class="bx bx-globe"></i> Global System Rules (${globalRules.length})
                     </div>
                     <div class="d-flex flex-column gap-2">
                         ${globalRules.map(r => `
@@ -566,11 +564,10 @@ export function renderTemplateStudio(
                     </div>
                 </div>
 
-                <!-- Group 3: Template Scope Automations -->
+                <!-- Group 3: Template Scope Automations (CLEAN HEADER WITHOUT REDUNDANT GREEN PILL) -->
                 <div>
-                    <div class="text-success font-weight-bold small mb-2 d-flex align-items-center justify-content-between">
-                        <span class="d-flex align-items-center gap-1.5"><i class="bx bx-file"></i> Template Direct Rules (${parentRules.length + tplRules.length})</span>
-                        <span class="badge bg-success bg-opacity-20 text-success rounded-pill tiny">Template Scope</span>
+                    <div class="text-success font-weight-bold small mb-2 d-flex align-items-center gap-1.5">
+                        <i class="bx bx-file"></i> Template Direct Rules (${parentRules.length + tplRules.length})
                     </div>
                     <div class="d-flex flex-column gap-2">
                         ${parentRules.map((r, idx) => `
@@ -784,7 +781,7 @@ export function renderTemplateStudio(
                             <div class="d-flex flex-column gap-2.5">
                                 ${tpl.attributes.map(a => `
                                     <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
-                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">#${a.name}</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary">#${a.name}</span>
                                         ${a.options ? `
                                             <select class="form-select form-select-sm" style="width: 160px;">
                                                 ${a.options.map(opt => `<option>${opt}</option>`).join('')}
@@ -803,15 +800,15 @@ export function renderTemplateStudio(
                             <div class="d-flex flex-column gap-2.5 small text-muted">
                                 <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                                     <span>Parent 1 (Project Hub):</span>
-                                    <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill">~project</span>
+                                    <span class="badge bg-primary bg-opacity-20 text-primary">~project</span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                                     <span>Parent 2 (Client Organization):</span>
-                                    <span class="badge bg-info bg-opacity-20 text-info rounded-pill">~client</span>
+                                    <span class="badge bg-info bg-opacity-20 text-info">~client</span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                                     <span>Derived Topics (Dual Inherited):</span>
-                                    <span class="badge bg-success bg-opacity-20 text-success rounded-pill">#TechNews</span>
+                                    <span class="badge bg-success bg-opacity-20 text-success">#TechNews</span>
                                 </div>
                             </div>
                         </div>
@@ -828,15 +825,15 @@ export function renderTemplateStudio(
                     <div class="d-flex flex-column gap-2 small text-muted">
                         <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Global System Scope:</span>
-                            <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill">Auto-Clone to Project & Sync Derived Topics</span>
+                            <span class="badge bg-primary bg-opacity-20 text-primary">Auto-Clone to Project & Sync Derived Topics</span>
                         </div>
                         <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Category '${tpl.category}' Scope:</span>
-                            <span class="badge bg-info bg-opacity-20 text-info rounded-pill">${catRules.length} Category Rules Active</span>
+                            <span class="badge bg-info bg-opacity-20 text-info">${catRules.length} Category Rules Active</span>
                         </div>
                         <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Template '${tpl.title}' Scope:</span>
-                            <span class="badge bg-success bg-opacity-20 text-success rounded-pill">${tplRules.length} Template Rules Active</span>
+                            <span class="badge bg-success bg-opacity-20 text-success">${tplRules.length} Template Rules Active</span>
                         </div>
                     </div>
                 </div>
@@ -859,7 +856,47 @@ export function renderTemplateStudio(
         el.appendChild(previewWrapper);
     }
 
-    // --- RICH MODAL SYSTEM IMPLEMENTATION ---
+    // --- SOLID OPAQUE HIGH-CONTRAST MODAL SYSTEM ---
+
+    function createSolidModal(titleHtml: string, bodyHtml: string, footerButtonsHtml: string): { overlay: HTMLElement; content: HTMLElement } {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
+        overlay.style.zIndex = '1060';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.75)';
+        overlay.style.backdropFilter = 'blur(6px)';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'modal-dialog modal-dialog-centered';
+        dialog.style.width = '580px';
+        dialog.style.maxWidth = '90vw';
+
+        const content = document.createElement('div');
+        content.className = 'modal-content shadow-lg border rounded-3';
+        // Force 100% solid high-contrast background to eliminate transparency bleed
+        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
+        content.style.color = 'var(--main-text-color, #212529)';
+        content.style.borderColor = 'var(--border-color, rgba(128,128,128,0.25))';
+        content.style.opacity = '1';
+
+        content.innerHTML = `
+            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, rgba(0,0,0,0.03));">
+                ${titleHtml}
+                <button type="button" class="btn-close close-modal-btn" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 d-flex flex-column gap-3">
+                ${bodyHtml}
+            </div>
+            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2" style="background-color: var(--sub-background-color, rgba(0,0,0,0.03));">
+                ${footerButtonsHtml}
+            </div>
+        `;
+
+        content.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => overlay.remove()));
+        dialog.appendChild(content);
+        overlay.appendChild(dialog);
+
+        return { overlay, content };
+    }
 
     function openRuleEditorModal(
         wrapper: HTMLElement,
@@ -883,70 +920,54 @@ export function renderTemplateStudio(
             actions: [{ type: 'setLabel' as const, params: { labelName: 'processed', labelValue: 'true' } }],
         };
 
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
-        modalOverlay.style.zIndex = '1050';
-        modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
+        const title = `
+            <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2 m-0">
+                <i class="bx bx-bolt-circle text-primary fs-5"></i>
+                <span>${isEdit ? 'Deeplink Edit Automation Rule (IFTTT)' : 'Create New Automation Rule (IFTTT)'}</span>
+            </h5>
+        `;
 
-        const dialog = document.createElement('div');
-        dialog.className = 'modal-dialog modal-dialog-centered modal-lg';
-        dialog.style.width = '650px';
-
-        const content = document.createElement('div');
-        content.className = 'modal-content shadow-lg border-0 rounded-3';
-        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
-        content.style.color = 'var(--main-text-color, #333333)';
-
-        content.innerHTML = `
-            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between">
-                <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
-                    <i class="bx bx-bolt-circle text-primary fs-5"></i>
-                    <span>${isEdit ? 'Deeplink Edit Automation Rule (IFTTT)' : 'Create New Automation Rule (IFTTT)'}</span>
-                </h5>
-                <button type="button" class="btn-close close-modal-btn"></button>
+        const body = `
+            <div>
+                <label class="form-label font-weight-bold small">Rule Name</label>
+                <input type="text" id="rule-name-input" class="form-control form-control-sm" value="${rule.name}" placeholder="e.g. High Priority Task -> Due Soon Tag">
             </div>
-            <div class="modal-body p-4 d-flex flex-column gap-3">
-                <div>
-                    <label class="form-label font-weight-bold small">Rule Name</label>
-                    <input type="text" id="rule-name-input" class="form-control" value="${rule.name}" placeholder="e.g. High Priority Task -> Due Soon Tag">
-                </div>
 
-                <div>
-                    <label class="form-label font-weight-bold small">Description</label>
-                    <input type="text" id="rule-desc-input" class="form-control form-control-sm" value="${rule.description}" placeholder="Explain what this automation rule does...">
-                </div>
+            <div>
+                <label class="form-label font-weight-bold small">Description</label>
+                <input type="text" id="rule-desc-input" class="form-control form-control-sm" value="${rule.description}" placeholder="Explain what this automation rule does...">
+            </div>
 
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label font-weight-bold small">Trigger Event Type</label>
-                        <select id="rule-trigger-type" class="form-select form-select-sm">
-                            <option value="onNoteCreated" ${rule.trigger.type === 'onNoteCreated' ? 'selected' : ''}>onNoteCreated</option>
-                            <option value="onAttributeChanged" ${rule.trigger.type === 'onAttributeChanged' ? 'selected' : ''}>onAttributeChanged</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label font-weight-bold small">Rule Scope</label>
-                        <input type="text" class="form-control form-control-sm" disabled value="${rule.trigger.targetCategory ? `Category: ${rule.trigger.targetCategory}` : (rule.trigger.targetTemplateId ? `Template: ${rule.trigger.targetTemplateId}` : 'Global System Scope')}">
-                    </div>
-                </div>
-
-                <div class="border-top pt-3">
-                    <label class="form-label font-weight-bold small text-primary"><i class="bx bx-check-circle"></i> Executed Action Type</label>
-                    <select id="rule-action-type" class="form-select form-select-sm mb-2">
-                        <option value="cloneToContainer" ${rule.actions[0]?.type === 'cloneToContainer' ? 'selected' : ''}>cloneToContainer (Auto-clone under Parent Container)</option>
-                        <option value="setLabel" ${rule.actions[0]?.type === 'setLabel' ? 'selected' : ''}>setLabel (Set Label / Attribute Value)</option>
-                        <option value="syncDerivedTopics" ${rule.actions[0]?.type === 'syncDerivedTopics' ? 'selected' : ''}>syncDerivedTopics (Recalculate Topic Inheritance)</option>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold small">Trigger Event Type</label>
+                    <select id="rule-trigger-type" class="form-select form-select-sm">
+                        <option value="onNoteCreated" ${rule.trigger.type === 'onNoteCreated' ? 'selected' : ''}>onNoteCreated</option>
+                        <option value="onAttributeChanged" ${rule.trigger.type === 'onAttributeChanged' ? 'selected' : ''}>onAttributeChanged</option>
                     </select>
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold small">Rule Scope</label>
+                    <input type="text" class="form-control form-control-sm" disabled value="${rule.trigger.targetCategory ? `Category: ${rule.trigger.targetCategory}` : (rule.trigger.targetTemplateId ? `Template: ${rule.trigger.targetTemplateId}` : 'Global System Scope')}">
+                </div>
             </div>
-            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
-                <button type="button" class="btn btn-sm btn-primary save-rule-modal-btn px-4 font-weight-bold">Save Rule</button>
+
+            <div class="border-top pt-3">
+                <label class="form-label font-weight-bold small text-primary"><i class="bx bx-check-circle"></i> Executed Action Type</label>
+                <select id="rule-action-type" class="form-select form-select-sm mb-2">
+                    <option value="cloneToContainer" ${rule.actions[0]?.type === 'cloneToContainer' ? 'selected' : ''}>cloneToContainer (Auto-clone under Parent Container)</option>
+                    <option value="setLabel" ${rule.actions[0]?.type === 'setLabel' ? 'selected' : ''}>setLabel (Set Label / Attribute Value)</option>
+                    <option value="syncDerivedTopics" ${rule.actions[0]?.type === 'syncDerivedTopics' ? 'selected' : ''}>syncDerivedTopics (Recalculate Topic Inheritance)</option>
+                </select>
             </div>
         `;
 
-        const closeBtns = content.querySelectorAll('.close-modal-btn');
-        closeBtns.forEach(btn => btn.addEventListener('click', () => modalOverlay.remove()));
+        const footer = `
+            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+            <button type="button" class="btn btn-sm btn-primary save-rule-modal-btn px-4 font-weight-bold">Save Rule</button>
+        `;
+
+        const { overlay, content } = createSolidModal(title, body, footer);
 
         const saveBtn = content.querySelector('.save-rule-modal-btn') as HTMLButtonElement;
         saveBtn.addEventListener('click', () => {
@@ -962,13 +983,11 @@ export function renderTemplateStudio(
             rule.actions = [{ type: actionType, params: { labelName: 'processed', labelValue: 'true' } }];
 
             iftttEngine.registerRule(rule);
-            modalOverlay.remove();
+            overlay.remove();
             onSave();
         });
 
-        dialog.appendChild(content);
-        modalOverlay.appendChild(dialog);
-        wrapper.appendChild(modalOverlay);
+        wrapper.appendChild(overlay);
     }
 
     function openAddRelationshipModal(
@@ -994,59 +1013,43 @@ export function renderTemplateStudio(
 
         const allTemplates = engine.getAllTemplates();
 
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
-        modalOverlay.style.zIndex = '1050';
-        modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
+        const title = `
+            <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2 m-0">
+                <i class="bx bx-link text-primary fs-5"></i>
+                <span>${isEdit ? 'Edit Parent Link Rule' : 'Add Parent Relationship Link (IFTTT)'}</span>
+            </h5>
+        `;
 
-        const dialog = document.createElement('div');
-        dialog.className = 'modal-dialog modal-dialog-centered';
-        dialog.style.width = '550px';
-
-        const content = document.createElement('div');
-        content.className = 'modal-content shadow-lg border-0 rounded-3';
-        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
-        content.style.color = 'var(--main-text-color, #333333)';
-
-        content.innerHTML = `
-            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between">
-                <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
-                    <i class="bx bx-link text-primary fs-5"></i>
-                    <span>${isEdit ? 'Edit Parent Link Rule' : 'Add Parent Relationship Link (IFTTT)'}</span>
-                </h5>
-                <button type="button" class="btn-close close-modal-btn"></button>
+        const body = `
+            <div>
+                <label class="form-label font-weight-bold small">Relation Name (e.g. project, client, writer, attendee)</label>
+                <input type="text" id="rel-name-input" class="form-control form-control-sm" value="${rel.relationName}">
             </div>
-            <div class="modal-body p-4 d-flex flex-column gap-3">
-                <div>
-                    <label class="form-label font-weight-bold small">Relation Name (e.g. project, client, writer, attendee)</label>
-                    <input type="text" id="rel-name-input" class="form-control form-control-sm" value="${rel.relationName}">
-                </div>
 
-                <div>
-                    <label class="form-label font-weight-bold small">Target Parent Template</label>
-                    <select id="rel-target-input" class="form-select form-select-sm">
-                        ${allTemplates.map(t => `<option value="${t.id}" ${t.id === rel.targetTemplateId ? 'selected' : ''}>${t.title} (${t.id})</option>`).join('')}
-                    </select>
-                </div>
-
-                <div class="form-check form-switch pt-2">
-                    <input class="form-check-input" type="checkbox" id="rel-clone-check" ${rel.autoCloneToParent ? 'checked' : ''}>
-                    <label class="form-check-label font-weight-bold small">Auto-clone under Parent Container</label>
-                </div>
-
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="rel-topics-check" ${rel.inheritTopics ? 'checked' : ''}>
-                    <label class="form-check-label font-weight-bold small">Inherit Parent Topics & Client Metadata</label>
-                </div>
+            <div>
+                <label class="form-label font-weight-bold small">Target Parent Template</label>
+                <select id="rel-target-input" class="form-select form-select-sm">
+                    ${allTemplates.map(t => `<option value="${t.id}" ${t.id === rel.targetTemplateId ? 'selected' : ''}>${t.title} (${t.id})</option>`).join('')}
+                </select>
             </div>
-            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
-                <button type="button" class="btn btn-sm btn-primary save-rel-modal-btn px-4 font-weight-bold">Save Link Rule</button>
+
+            <div class="form-check form-switch pt-2">
+                <input class="form-check-input" type="checkbox" id="rel-clone-check" ${rel.autoCloneToParent ? 'checked' : ''}>
+                <label class="form-check-label font-weight-bold small">Auto-clone under Parent Container</label>
+            </div>
+
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="rel-topics-check" ${rel.inheritTopics ? 'checked' : ''}>
+                <label class="form-check-label font-weight-bold small">Inherit Parent Topics & Client Metadata</label>
             </div>
         `;
 
-        const closeBtns = content.querySelectorAll('.close-modal-btn');
-        closeBtns.forEach(btn => btn.addEventListener('click', () => modalOverlay.remove()));
+        const footer = `
+            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+            <button type="button" class="btn btn-sm btn-primary save-rel-modal-btn px-4 font-weight-bold">Save Link Rule</button>
+        `;
+
+        const { overlay, content } = createSolidModal(title, body, footer);
 
         const saveBtn = content.querySelector('.save-rel-modal-btn') as HTMLButtonElement;
         saveBtn.addEventListener('click', () => {
@@ -1082,193 +1085,151 @@ export function renderTemplateStudio(
                 ],
             });
 
-            modalOverlay.remove();
+            overlay.remove();
             if (onSave) onSave();
         });
 
-        dialog.appendChild(content);
-        modalOverlay.appendChild(dialog);
-        wrapper.appendChild(modalOverlay);
+        wrapper.appendChild(overlay);
     }
 
     function openNewTemplateModal(wrapper: HTMLElement, templateEngine: TemplateEngine, onSave: () => void) {
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
-        modalOverlay.style.zIndex = '1050';
-        modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
+        const title = `
+            <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2 m-0">
+                <i class="bx bx-plus text-primary fs-5"></i>
+                <span>Create New Template</span>
+            </h5>
+        `;
 
-        const dialog = document.createElement('div');
-        dialog.className = 'modal-dialog modal-dialog-centered';
-
-        const content = document.createElement('div');
-        content.className = 'modal-content shadow-lg border-0 rounded-3';
-        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
-
-        content.innerHTML = `
-            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between">
-                <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
-                    <i class="bx bx-plus text-primary fs-5"></i>
-                    <span>Create New Template</span>
-                </h5>
-                <button type="button" class="btn-close close-modal-btn"></button>
+        const body = `
+            <div>
+                <label class="form-label font-weight-bold small">Template Title</label>
+                <input type="text" id="new-tpl-title" class="form-control form-control-sm" placeholder="e.g. Research Brief">
             </div>
-            <div class="modal-body p-4 d-flex flex-column gap-3">
-                <div>
-                    <label class="form-label font-weight-bold small">Template Title</label>
-                    <input type="text" id="new-tpl-title" class="form-control form-control-sm" placeholder="e.g. Research Brief">
-                </div>
-                <div>
-                    <label class="form-label font-weight-bold small">Category Type</label>
-                    <select id="new-tpl-cat" class="form-select form-select-sm">
-                        <option value="work">Work & Project Scoped</option>
-                        <option value="drafts">Drafts & Editorial</option>
-                        <option value="people">People & Client Entities</option>
-                        <option value="system">System & Topic Index</option>
-                        <option value="custom">Custom Category</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
-                <button type="button" class="btn btn-sm btn-primary create-tpl-btn px-4 font-weight-bold">Create Template</button>
+            <div>
+                <label class="form-label font-weight-bold small">Category Type</label>
+                <select id="new-tpl-cat" class="form-select form-select-sm">
+                    <option value="work">Work & Project Scoped</option>
+                    <option value="drafts">Drafts & Editorial</option>
+                    <option value="people">People & Client Entities</option>
+                    <option value="system">System & Topic Index</option>
+                    <option value="custom">Custom Category</option>
+                </select>
             </div>
         `;
 
-        content.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => modalOverlay.remove()));
+        const footer = `
+            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+            <button type="button" class="btn btn-sm btn-primary create-tpl-btn px-4 font-weight-bold">Create Template</button>
+        `;
+
+        const { overlay, content } = createSolidModal(title, body, footer);
+
         const createBtn = content.querySelector('.create-tpl-btn') as HTMLButtonElement;
         createBtn.addEventListener('click', () => {
-            const title = (content.querySelector('#new-tpl-title') as HTMLInputElement).value;
-            if (!title) return;
+            const titleInput = (content.querySelector('#new-tpl-title') as HTMLInputElement).value;
+            if (!titleInput) return;
             const category = (content.querySelector('#new-tpl-cat') as HTMLSelectElement).value as any;
 
-            const id = title.toLowerCase().replace(/\s+/g, '-');
+            const id = titleInput.toLowerCase().replace(/\s+/g, '-');
             templateEngine.registerTemplate({
                 id,
-                marker: `ext${title.replace(/\s+/g, '')}`,
-                title,
+                marker: `ext${titleInput.replace(/\s+/g, '')}`,
+                title: titleInput,
                 category: category || 'work',
                 rootContainerMarker: 'projectRoot',
                 titlePattern: '{title}',
                 icon: 'file-blank',
                 attributes: [],
                 relationships: [],
-                defaultContent: `<h2>${title}</h2><p>Notes content...</p>`,
+                defaultContent: `<h2>${titleInput}</h2><p>Notes content...</p>`,
             });
-            modalOverlay.remove();
+            overlay.remove();
             onSave();
         });
 
-        dialog.appendChild(content);
-        modalOverlay.appendChild(dialog);
-        wrapper.appendChild(modalOverlay);
+        wrapper.appendChild(overlay);
     }
 
     function openNewCategoryModal(wrapper: HTMLElement, engine: TemplateEngine, onSave: () => void) {
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
-        modalOverlay.style.zIndex = '1050';
-        modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
+        const title = `
+            <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2 m-0">
+                <i class="bx bx-category text-primary fs-5"></i>
+                <span>Create New Category Type</span>
+            </h5>
+        `;
 
-        const dialog = document.createElement('div');
-        dialog.className = 'modal-dialog modal-dialog-centered';
-
-        const content = document.createElement('div');
-        content.className = 'modal-content shadow-lg border-0 rounded-3';
-        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
-
-        content.innerHTML = `
-            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between">
-                <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
-                    <i class="bx bx-category text-primary fs-5"></i>
-                    <span>Create New Category Type</span>
-                </h5>
-                <button type="button" class="btn-close close-modal-btn"></button>
+        const body = `
+            <div>
+                <label class="form-label font-weight-bold small">Category Title</label>
+                <input type="text" id="cat-title-input" class="form-control form-control-sm" placeholder="e.g. Legal Documents">
             </div>
-            <div class="modal-body p-4 d-flex flex-column gap-3">
-                <div>
-                    <label class="form-label font-weight-bold small">Category Title</label>
-                    <input type="text" id="cat-title-input" class="form-control form-control-sm" placeholder="e.g. Legal Documents">
-                </div>
-                <div>
-                    <label class="form-label font-weight-bold small">Description</label>
-                    <input type="text" id="cat-desc-input" class="form-control form-control-sm" placeholder="Contracts and legal agreements...">
-                </div>
-            </div>
-            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
-                <button type="button" class="btn btn-sm btn-primary create-cat-btn px-4 font-weight-bold">Create Category</button>
+            <div>
+                <label class="form-label font-weight-bold small">Description</label>
+                <input type="text" id="cat-desc-input" class="form-control form-control-sm" placeholder="Contracts and legal agreements...">
             </div>
         `;
 
-        content.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => modalOverlay.remove()));
+        const footer = `
+            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+            <button type="button" class="btn btn-sm btn-primary create-cat-btn px-4 font-weight-bold">Create Category</button>
+        `;
+
+        const { overlay, content } = createSolidModal(title, body, footer);
+
         const createBtn = content.querySelector('.create-cat-btn') as HTMLButtonElement;
         createBtn.addEventListener('click', () => {
-            const title = (content.querySelector('#cat-title-input') as HTMLInputElement).value;
-            if (!title) return;
+            const titleInput = (content.querySelector('#cat-title-input') as HTMLInputElement).value;
+            if (!titleInput) return;
             const description = (content.querySelector('#cat-desc-input') as HTMLInputElement).value || 'Custom category';
-            const id = title.toLowerCase().replace(/\s+/g, '-');
+            const id = titleInput.toLowerCase().replace(/\s+/g, '-');
 
-            engine.registerCategory({ id, title, description, icon: 'layer', defaultRootMarker: 'unassignedRoot', autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: false, isBuiltin: false });
-            modalOverlay.remove();
+            engine.registerCategory({ id, title: titleInput, description, icon: 'layer', defaultRootMarker: 'unassignedRoot', autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: false, isBuiltin: false });
+            overlay.remove();
             onSave();
         });
 
-        dialog.appendChild(content);
-        modalOverlay.appendChild(dialog);
-        wrapper.appendChild(modalOverlay);
+        wrapper.appendChild(overlay);
     }
 
     function openAddAttrModal(wrapper: HTMLElement, tpl: TemplateDefinition, engine: TemplateEngine, onSave: () => void) {
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
-        modalOverlay.style.zIndex = '1050';
-        modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
+        const title = `
+            <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2 m-0">
+                <i class="bx bx-list-check text-success fs-5"></i>
+                <span>Add Promoted Form Attribute</span>
+            </h5>
+        `;
 
-        const dialog = document.createElement('div');
-        dialog.className = 'modal-dialog modal-dialog-centered';
-
-        const content = document.createElement('div');
-        content.className = 'modal-content shadow-lg border-0 rounded-3';
-        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
-
-        content.innerHTML = `
-            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between">
-                <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
-                    <i class="bx bx-list-check text-success fs-5"></i>
-                    <span>Add Promoted Form Attribute</span>
-                </h5>
-                <button type="button" class="btn-close close-modal-btn"></button>
+        const body = `
+            <div>
+                <label class="form-label font-weight-bold small">Attribute Name (without #)</label>
+                <input type="text" id="attr-name-input" class="form-control form-control-sm" placeholder="e.g. priority, status, dueDate">
             </div>
-            <div class="modal-body p-4 d-flex flex-column gap-3">
-                <div>
-                    <label class="form-label font-weight-bold small">Attribute Name (without #)</label>
-                    <input type="text" id="attr-name-input" class="form-control form-control-sm" placeholder="e.g. priority, status, dueDate">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold small">Attribute Type</label>
+                    <select id="attr-type-input" class="form-select form-select-sm">
+                        <option value="label">Label (#)</option>
+                        <option value="relation">Relation (~)</option>
+                    </select>
                 </div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label font-weight-bold small">Attribute Type</label>
-                        <select id="attr-type-input" class="form-select form-select-sm">
-                            <option value="label">Label (#)</option>
-                            <option value="relation">Relation (~)</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label font-weight-bold small">Data Type</label>
-                        <select id="attr-datatype-input" class="form-select form-select-sm">
-                            <option value="text">Text</option>
-                            <option value="select">Select Options</option>
-                            <option value="date">Date</option>
-                        </select>
-                    </div>
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold small">Data Type</label>
+                    <select id="attr-datatype-input" class="form-select form-select-sm">
+                        <option value="text">Text</option>
+                        <option value="select">Select Options</option>
+                        <option value="date">Date</option>
+                    </select>
                 </div>
-            </div>
-            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
-                <button type="button" class="btn btn-sm btn-success create-attr-btn px-4 font-weight-bold">Save Attribute</button>
             </div>
         `;
 
-        content.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => modalOverlay.remove()));
+        const footer = `
+            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+            <button type="button" class="btn btn-sm btn-success create-attr-btn px-4 font-weight-bold">Save Attribute</button>
+        `;
+
+        const { overlay, content } = createSolidModal(title, body, footer);
+
         const createBtn = content.querySelector('.create-attr-btn') as HTMLButtonElement;
         createBtn.addEventListener('click', () => {
             const name = (content.querySelector('#attr-name-input') as HTMLInputElement).value;
@@ -1283,13 +1244,11 @@ export function renderTemplateStudio(
                 isPromoted: true,
             });
             engine.updateTemplate(tpl.id, tpl);
-            modalOverlay.remove();
+            overlay.remove();
             onSave();
         });
 
-        dialog.appendChild(content);
-        modalOverlay.appendChild(dialog);
-        wrapper.appendChild(modalOverlay);
+        wrapper.appendChild(overlay);
     }
 
     refresh();
