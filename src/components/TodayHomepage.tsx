@@ -1,5 +1,5 @@
 /**
- * Today Homepage Component: Editable & Organizable Dashboard View
+ * Today Homepage Component: Editable & Organizable Dashboard View with Kanban Board
  */
 
 import { TodayEngine } from '../engine/todayEngine.js';
@@ -20,7 +20,7 @@ export function renderTodayHomepage(
         const layout = todayEngine.getLayout();
         const widgets = todayEngine.getVisibleWidgets();
 
-        // 1. Header & Action Bar
+        // 1. Header & Quick Capture Bar
         const header = document.createElement('div');
         header.className = 'today-header d-flex align-items-center justify-content-between mb-4 p-3 border-bottom';
         header.style.background = 'var(--main-background-color, #1e1e2e)';
@@ -32,13 +32,12 @@ export function renderTodayHomepage(
         h1.innerHTML = '⚡ Today Homepage';
         const subtitle = document.createElement('p');
         subtitle.className = 'text-muted m-0 small';
-        subtitle.textContent = 'Your daily command center — fully customizable and component-driven.';
+        subtitle.textContent = 'Your daily command center — component-driven, customizable, with live Kanban.';
         titleBox.append(h1, subtitle);
 
         const actionsBox = document.createElement('div');
         actionsBox.className = 'd-flex align-items-center gap-2';
 
-        // Quick Launch Buttons
         const templates = templateEngine.getAllTemplates().filter(t => !t.noJournalClone);
         for (const tpl of templates.slice(0, 4)) {
             const btn = document.createElement('button');
@@ -49,7 +48,6 @@ export function renderTodayHomepage(
             actionsBox.appendChild(btn);
         }
 
-        // Edit Mode Toggle Button
         const editToggleBtn = document.createElement('button');
         editToggleBtn.type = 'button';
         editToggleBtn.className = `btn btn-sm ${isEditMode ? 'btn-success' : 'btn-secondary'}`;
@@ -63,7 +61,7 @@ export function renderTodayHomepage(
         header.append(titleBox, actionsBox);
         container.appendChild(header);
 
-        // 2. Customization Panel (shown in Edit Mode)
+        // 2. Customization Panel (Edit Mode)
         if (isEditMode) {
             const editPanel = document.createElement('div');
             editPanel.className = 'card mb-4 border-info';
@@ -72,7 +70,7 @@ export function renderTodayHomepage(
             editBody.className = 'card-body';
             editBody.innerHTML = `
                 <h5 class="card-title text-info"><i class="bx bx-slider-alt"></i> Customize Today Homepage Components</h5>
-                <p class="card-text text-muted small">Toggle component visibility, drag/reorder widgets, and change column layouts.</p>
+                <p class="card-text text-muted small">Toggle component visibility, drag/reorder widgets, and edit layout grid.</p>
             `;
 
             const widgetList = document.createElement('div');
@@ -119,7 +117,7 @@ export function renderTodayHomepage(
 
         for (const w of widgets) {
             const col = document.createElement('div');
-            col.className = w.colSpan === 2 ? 'col-md-8' : w.colSpan === 3 ? 'col-md-12' : 'col-md-4';
+            col.className = w.colSpan === 3 ? 'col-12' : w.colSpan === 2 ? 'col-md-8' : 'col-md-4';
 
             const card = document.createElement('div');
             card.className = 'card h-100 shadow-sm border-0';
@@ -144,10 +142,15 @@ export function renderTodayHomepage(
             const cardBody = document.createElement('div');
             cardBody.className = 'card-body p-3';
 
-            const emptyState = document.createElement('p');
-            emptyState.className = 'text-muted small m-0 text-center py-3';
-            emptyState.textContent = w.emptyMessage;
-            cardBody.appendChild(emptyState);
+            // Special Component: Kanban Board Widget
+            if (w.marker === 'kanbanBoard') {
+                renderKanbanBoard(cardBody, onQuickCapture);
+            } else {
+                const emptyState = document.createElement('p');
+                emptyState.className = 'text-muted small m-0 text-center py-3';
+                emptyState.textContent = w.emptyMessage;
+                cardBody.appendChild(emptyState);
+            }
 
             card.append(cardHeader, cardBody);
             col.appendChild(card);
@@ -158,4 +161,48 @@ export function renderTodayHomepage(
     }
 
     refresh();
+}
+
+/**
+ * Render Interactive Kanban Board Component
+ */
+function renderKanbanBoard(container: HTMLElement, onQuickCapture: (templateId: string) => void) {
+    const columns = [
+        { id: 'todo', title: '📋 To Do', badgeClass: 'badge-primary' },
+        { id: 'in_progress', title: '⚡ In Progress', badgeClass: 'badge-warning' },
+        { id: 'done', title: '✅ Done', badgeClass: 'badge-success' },
+    ];
+
+    const kanbanRow = document.createElement('div');
+    kanbanRow.className = 'row g-2';
+
+    for (const col of columns) {
+        const colDiv = document.createElement('div');
+        colDiv.className = 'col-md-4';
+
+        const colCard = document.createElement('div');
+        colCard.className = 'p-2 rounded border border-dark h-100';
+        colCard.style.backgroundColor = 'var(--main-background-color, #1e1e2e)';
+
+        const colHeader = document.createElement('div');
+        colHeader.className = 'd-flex align-items-center justify-content-between mb-2 pb-1 border-bottom border-dark';
+        colHeader.innerHTML = `
+            <span class="font-weight-bold small">${col.title}</span>
+            <span class="badge ${col.badgeClass}">0</span>
+        `;
+
+        const cardContainer = document.createElement('div');
+        cardContainer.className = 'd-flex flex-column gap-2 min-vh-20';
+
+        const emptyText = document.createElement('div');
+        emptyText.className = 'text-muted text-center py-4 extra-small';
+        emptyText.textContent = 'No tasks in column';
+        cardContainer.appendChild(emptyText);
+
+        colCard.append(colHeader, cardContainer);
+        colDiv.appendChild(colCard);
+        kanbanRow.appendChild(colDiv);
+    }
+
+    container.appendChild(kanbanRow);
 }

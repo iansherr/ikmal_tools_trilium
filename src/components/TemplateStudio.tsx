@@ -1,9 +1,10 @@
 /**
- * Template Studio Component: Interactive editor & easy creation studio for Trilium templates.
+ * Template Studio Component: Interactive editor & YAML / JSON settings loader for Trilium templates.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
 import { TemplateDefinition, PromotedAttributeDef, AttributeDataType } from '../engine/types.js';
+import { YamlParser } from '../engine/yamlParser.js';
 
 export function renderTemplateStudio(
     container: HTMLElement,
@@ -14,6 +15,78 @@ export function renderTemplateStudio(
 
     function refresh() {
         container.innerHTML = '';
+
+        // Top Action Bar: Declarative YAML / JSON Settings Loader
+        const actionBar = document.createElement('div');
+        actionBar.className = 'd-flex align-items-center justify-content-between p-3 mb-3 rounded border';
+        actionBar.style.backgroundColor = 'var(--sub-background-color, #252538)';
+        actionBar.innerHTML = `
+            <div>
+                <h6 class="m-0 font-weight-bold text-info"><i class="bx bx-cog"></i> Declarative YAML / JSON Settings Engine</h6>
+                <small class="text-muted">Import or export your entire notes system schema in YAML with inline comments (#).</small>
+            </div>
+        `;
+
+        const configBtns = document.createElement('div');
+        configBtns.className = 'd-flex gap-2';
+
+        const exportYamlBtn = document.createElement('button');
+        exportYamlBtn.type = 'button';
+        exportYamlBtn.className = 'btn btn-sm btn-outline-warning';
+        exportYamlBtn.innerHTML = '<i class="bx bx-download"></i> Export YAML Spec';
+        exportYamlBtn.addEventListener('click', () => {
+            const configData = {
+                name: "Custom Notes Setup",
+                version: "1.0.0",
+                templates: templateEngine.getAllTemplates(),
+            };
+            const yamlStr = `# Notes System Configuration (YAML)\n` + YamlParser.stringify(configData);
+            const blob = new Blob([yamlStr], { type: 'text/yaml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ians_notes_setup.yaml';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        const importYamlBtn = document.createElement('button');
+        importYamlBtn.type = 'button';
+        importYamlBtn.className = 'btn btn-sm btn-outline-success';
+        importYamlBtn.innerHTML = '<i class="bx bx-upload"></i> Import YAML / JSON Spec';
+        importYamlBtn.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.yaml,.yml,.json,.jsonc';
+            input.onchange = (e: any) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const parsed = YamlParser.parse(evt.target?.result as string);
+                        if (parsed && parsed.templates && Array.isArray(parsed.templates)) {
+                            for (const tpl of parsed.templates) {
+                                templateEngine.registerTemplate(tpl);
+                            }
+                            alert(`Loaded ${parsed.templates.length} templates from YAML specification!`);
+                            onSave();
+                            refresh();
+                        } else {
+                            alert('Invalid notes system configuration YAML.');
+                        }
+                    } catch (err: any) {
+                        alert(`Parse error: ${err.message}`);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        });
+
+        configBtns.append(exportYamlBtn, importYamlBtn);
+        actionBar.appendChild(configBtns);
+        container.appendChild(actionBar);
 
         const layoutRow = document.createElement('div');
         layoutRow.className = 'row g-3';
@@ -141,7 +214,6 @@ export function renderTemplateStudio(
             `;
             attrSection.appendChild(attrTable);
 
-            // Add Attribute Button
             const addAttrBtn = document.createElement('button');
             addAttrBtn.type = 'button';
             addAttrBtn.className = 'btn btn-xs btn-outline-success mt-2';
@@ -164,7 +236,6 @@ export function renderTemplateStudio(
 
             editorBody.appendChild(contentSection);
 
-            // Save Template Changes Button
             const saveBtnBox = document.createElement('div');
             saveBtnBox.className = 'mt-4 d-flex justify-content-end';
             const saveBtn = document.createElement('button');

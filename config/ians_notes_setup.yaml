@@ -1,0 +1,429 @@
+# ==============================================================================
+# Ian's Trilium Notes Setup — Declarative YAML Notes System Specification
+# ==============================================================================
+# This YAML package defines the entire component-driven notes system:
+#   1. Container Tree Skeleton
+#   2. Promoted Attribute Schemas & Templates
+#   3. Relationship Rules & Auto-Cloning Paths
+#   4. Today Homepage Grid Layout (with Kanban Board)
+#   5. IF-THIS-THEN-THAT (IFTTT) Automation Trees
+# ==============================================================================
+
+name: "Ian's Trilium Notes Setup"
+version: "1.0.0"
+description: >
+  Complete component-driven notes system with daily notes, tasks, meetings,
+  project hubs, topics, collections, and IFTTT trees.
+
+# ------------------------------------------------------------------------------
+# 1. ROOT CONTAINER TREE
+# Defines the structural hierarchy of notes in Trilium
+# ------------------------------------------------------------------------------
+containers:
+  - marker: calendarRoot
+    title: Journal
+    icon: calendar
+
+  - marker: todayRoot
+    title: Today
+    icon: home
+
+  - marker: projectRoot
+    title: Projects
+    icon: book
+    children:
+      - marker: activeProjectRoot
+        title: Active
+      - marker: archiveProjectRoot
+        title: Archive
+
+  - marker: meetingRoot
+    title: Meetings
+    icon: calendar-event
+
+  - marker: storyDraftRoot
+    title: Drafts
+    icon: news
+
+  - marker: emailRoot
+    title: Emails
+    icon: envelope
+
+  - marker: taskRoot
+    title: Tasks
+    icon: check-square
+
+  - marker: unassignedRoot
+    title: Unassigned
+    icon: folder
+
+  - marker: peopleRoot
+    title: People
+    icon: user
+
+  - marker: orgRoot
+    title: Organizations
+    icon: buildings
+
+  - marker: topicRoot
+    title: Topics
+    icon: purchase-tag
+
+  - marker: templateRoot
+    title: Templates
+    icon: layer
+
+# ------------------------------------------------------------------------------
+# 2. TEMPLATE DEFINITIONS & PROMOTED ATTRIBUTES
+# Promoted attributes render as a typed form UI at the top of Trilium notes
+# ------------------------------------------------------------------------------
+templates:
+  # Daily Journal Note
+  - id: dailyNote
+    marker: extDailyNote
+    title: Daily Note
+    icon: calendar
+    category: daily
+    rootContainerMarker: calendarRoot
+    titlePattern: "YYYY-MM-DD - dddd"
+    defaultContent: |
+      <h2>TASKS & TODOS</h2>
+      <ul><li>[ ] </li></ul>
+      <h2>JOURNAL & NOTES</h2>
+      <p></p>
+    attributes: []
+    relationships: []
+
+  # Standalone & Project Task Template
+  - id: task
+    marker: extTask
+    title: Task
+    icon: check-square
+    category: work
+    rootContainerMarker: taskRoot
+    titlePattern: "{title}"
+    defaultContent: "<p>Task description and details...</p>"
+    projectScoped: true
+    attributes:
+      - name: dueDate
+        type: label
+        dataType: date
+        isPromoted: true
+        label: Due
+      - name: priority
+        type: label
+        dataType: select
+        options: [high, medium, low]
+        isPromoted: true
+        label: Priority
+      - name: status
+        type: label
+        dataType: select
+        options: [todo, in_progress, done, cancelled]
+        defaultValue: todo
+        isPromoted: true
+        label: Status
+      - name: doneDate
+        type: label
+        dataType: date
+        isPromoted: true
+        label: Done
+      - name: duration
+        type: label
+        dataType: string
+        isPromoted: true
+        label: Duration
+      - name: complexity
+        type: label
+        dataType: select
+        options: [simple, multi]
+        isPromoted: true
+        label: Complexity
+    relationships:
+      - id: rel_task_project
+        name: Project
+        relationName: project
+        targetTemplateId: projectHub
+        targetTemplateName: Project Hub
+        isMulti: false
+        autoCloneToParent: true    # Auto-clones task under target project
+        inheritTopics: true        # Inherits topics from project
+        direction: parent
+
+  # Meeting Note Template
+  - id: meeting
+    marker: extMeeting
+    title: Meeting
+    icon: calendar-event
+    category: work
+    rootContainerMarker: meetingRoot
+    titlePattern: "Meeting: {title}"
+    defaultContent: |
+      <h2>AGENDA</h2><ul><li></li></ul>
+      <h2>NOTES</h2><p></p>
+      <h2>ACTION ITEMS</h2><ul><li>[ ] </li></ul>
+    projectScoped: true
+    attributes:
+      - name: startDate
+        type: label
+        dataType: date
+        isPromoted: true
+        label: Start Date
+      - name: startTime
+        type: label
+        dataType: string
+        isPromoted: true
+        label: Start Time
+      - name: attendee
+        type: relation
+        dataType: relation
+        targetTemplateId: person
+        isPromoted: true
+        label: Attendees
+    relationships:
+      - id: rel_meeting_project
+        name: Project
+        relationName: project
+        targetTemplateId: projectHub
+        targetTemplateName: Project Hub
+        isMulti: false
+        autoCloneToParent: true
+        inheritTopics: true
+        direction: parent
+
+  # Project Hub Template
+  - id: projectHub
+    marker: extProjectHub
+    title: Project Hub
+    icon: book
+    category: work
+    rootContainerMarker: projectRoot
+    titlePattern: "{title}"
+    defaultContent: "<h2>OVERVIEW</h2><p></p><h2>GOALS</h2><ul><li></li></ul>"
+    attributes:
+      - name: status
+        type: label
+        dataType: select
+        options: [active, archived, on_hold]
+        defaultValue: active
+        isPromoted: true
+        label: Status
+      - name: kind
+        type: label
+        dataType: select
+        options: [project, client, internal]
+        isPromoted: true
+        label: Kind
+      - name: client
+        type: relation
+        dataType: relation
+        targetTemplateId: organization
+        isPromoted: true
+        label: Client
+      - name: onBehalfOf
+        type: relation
+        dataType: relation
+        targetTemplateId: organization
+        isPromoted: true
+        label: On behalf of
+    relationships:
+      - id: rel_project_client
+        name: Client Organization
+        relationName: client
+        targetTemplateId: organization
+        targetTemplateName: Organization
+        isMulti: false
+        autoCloneToParent: false
+        inheritTopics: true
+        direction: parent
+
+  # Person Template
+  - id: person
+    marker: extPerson
+    title: Person
+    icon: user
+    category: people
+    rootContainerMarker: peopleRoot
+    titlePattern: "{title}"
+    defaultContent: "<h2>CONTACT INFO</h2><p></p><h2>NOTES</h2><p></p>"
+    attributes:
+      - name: email
+        type: label
+        dataType: string
+        isPromoted: true
+        label: Email
+      - name: phone
+        type: label
+        dataType: string
+        isPromoted: true
+        label: Phone
+      - name: organization
+        type: relation
+        dataType: relation
+        targetTemplateId: organization
+        isPromoted: true
+        label: Organization
+    relationships:
+      - id: rel_person_org
+        name: Organization
+        relationName: organization
+        targetTemplateId: organization
+        targetTemplateName: Organization
+        isMulti: false
+        autoCloneToParent: true
+        inheritTopics: true
+        direction: parent
+
+  # Organization Template
+  - id: organization
+    marker: extOrganization
+    title: Organization
+    icon: buildings
+    category: people
+    rootContainerMarker: orgRoot
+    titlePattern: "{title}"
+    defaultContent: "<h2>ABOUT</h2><p></p><h2>KEY CONTACTS</h2><ul><li></li></ul>"
+    attributes:
+      - name: website
+        type: label
+        dataType: string
+        isPromoted: true
+        label: Website
+    relationships: []
+
+  # Topic Category Template
+  - id: topic
+    marker: extTopic
+    title: Topic
+    icon: purchase-tag
+    category: system
+    rootContainerMarker: topicRoot
+    titlePattern: "{title}"
+    defaultContent: "<h2>DESCRIPTION</h2><p></p>"
+    noJournalClone: true
+    attributes:
+      - name: aliasOf
+        type: relation
+        dataType: relation
+        targetTemplateId: topic
+        isPromoted: true
+        label: Canonical topic
+    relationships: []
+
+# ------------------------------------------------------------------------------
+# 3. TODAY HOMEPAGE LAYOUT CONFIGURATION
+# Defines component visibility, order, grid column spans, and widget settings
+# ------------------------------------------------------------------------------
+todayLayout:
+  journalWidthPercent: 65
+  showQuickCaptureBar: true
+  widgets:
+    - id: kanbanBoard
+      title: Task Kanban Board
+      marker: kanbanBoard
+      visible: true
+      order: 1
+      colSpan: 3
+      columns:
+        - [Status, status]
+        - [Priority, priority]
+        - [Project, project]
+      emptyMessage: "No tasks on the board."
+      actionType: task
+      actionLabel: "New Task"
+
+    - id: openTasks
+      title: Open Tasks
+      marker: openTasks
+      visible: true
+      order: 2
+      colSpan: 2
+      columns:
+        - [Due, dueDate]
+        - [Priority, priority]
+        - [Project, project]
+      emptyMessage: "No open tasks. All caught up!"
+      actionType: task
+      actionLabel: "New Task"
+
+    - id: overdue
+      title: Overdue Work
+      marker: overdue
+      visible: true
+      order: 3
+      colSpan: 1
+      columns:
+        - [Due, dueDate]
+        - [Priority, priority]
+        - [Project, project]
+      emptyMessage: "No overdue tasks."
+      actionType: task
+      actionLabel: "New Task"
+
+    - id: activeProjects
+      title: Active Projects
+      marker: activeProjects
+      visible: true
+      order: 4
+      colSpan: 1
+      columns:
+        - [Kind, kind]
+        - [Status, status]
+      emptyMessage: "No active projects."
+      actionType: projectHub
+      actionLabel: "New Project"
+
+# ------------------------------------------------------------------------------
+# 4. IF-THIS-THEN-THAT (IFTTT) AUTOMATION TREES
+# Trigger-Condition-Action trees for workflow automation
+# ------------------------------------------------------------------------------
+iftttRules:
+  - id: rule_task_done_date
+    name: "Auto-Set Task Done Date"
+    description: "When a Task status is marked as done, automatically record the current date in #doneDate."
+    enabled: true
+    trigger:
+      type: onAttributeChanged
+      targetTemplateId: task
+      attributeName: status
+    conditions:
+      - field: status
+        operator: equals
+        value: done
+    actions:
+      - type: setLabel
+        params:
+          labelName: doneDate
+          labelValue: "{TODAY}"
+
+  - id: rule_project_autoclone
+    name: "Auto-Clone to Project Container"
+    description: "When a note is created with a ~project relation, automatically clone it under the target Project Hub container note."
+    enabled: true
+    trigger:
+      type: onNoteCreated
+    conditions:
+      - field: project
+        operator: isSet
+        value: true
+    actions:
+      - type: cloneToContainer
+        params:
+          relationName: project
+
+  - id: rule_high_priority_highlight
+    name: "Highlight High Priority Tasks"
+    description: "When a Task priority is set to high, highlight it with color."
+    enabled: true
+    trigger:
+      type: onAttributeChanged
+      attributeName: priority
+    conditions:
+      - field: priority
+        operator: equals
+        value: high
+    actions:
+      - type: setLabel
+        params:
+          labelName: color
+          labelValue: "#e74c3c"
