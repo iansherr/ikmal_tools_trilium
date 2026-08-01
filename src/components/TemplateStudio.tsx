@@ -1,15 +1,17 @@
 /**
- * Template Studio Component: Category Type Editor with Interactive Behavior Controls.
+ * Template Studio Component: Integrated IFTTT Automations inside Category & Template Editors.
  * Styled natively with Trilium Boxicons and standard Trilium form components.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
-import { TemplateDefinition, PromotedAttributeDef, TemplateRelationshipDef, TemplateCategoryDef } from '../engine/types.js';
+import { IftttEngine } from '../engine/iftttEngine.js';
+import { TemplateDefinition, PromotedAttributeDef, TemplateRelationshipDef, TemplateCategoryDef, IftttRuleDef } from '../engine/types.js';
 import { exportTemplateAsHtml } from '../engine/yamlSpec.js';
 
 export function renderTemplateStudio(
     container: HTMLElement,
     templateEngine: TemplateEngine,
+    iftttEngine: IftttEngine,
     onSave: () => void
 ): void {
     let selectedTemplateId: string = templateEngine.getAllTemplates()[0]?.id || 'story';
@@ -35,17 +37,17 @@ export function renderTemplateStudio(
                 </div>
                 <div>
                     <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        Template Studio & Category Types
+                        Template Studio & Integrated Automations
                         <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure template category types, behavioral defaults, parent-child relations, promoted attributes, and note previews.
+                        Configure template category behaviors, parent-child relations, promoted attributes, embedded IFTTT rules, and note previews.
                     </p>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-sm btn-outline-primary manage-cats-btn px-3 py-2 d-flex align-items-center gap-1.5 shadow-xs">
-                    <i class="bx bx-category fs-6"></i> Category Type Behaviors
+                    <i class="bx bx-category fs-6"></i> Category Behaviors & Rules
                 </button>
                 <button type="button" class="btn btn-sm btn-primary new-template-btn px-3 py-2 d-flex align-items-center gap-1.5 shadow-xs">
                     <i class="bx bx-plus fs-6"></i> New Template
@@ -221,10 +223,10 @@ export function renderTemplateStudio(
                 </div>
                 <div>
                     <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        <span>${activeEditorTab === 'categories' ? 'Category Type Behaviors' : `Template: ${activeTpl?.title}`}</span>
+                        <span>${activeEditorTab === 'categories' ? 'Category Behaviors & Automations' : `Template: ${activeTpl?.title}`}</span>
                         ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
                     </h3>
-                    <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure container roots, journal cloning, topic inheritance, and project scoping' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
+                    <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure category root markers, journal cloning, topic inheritance, and category-wide IFTTT rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3">
@@ -262,9 +264,9 @@ export function renderTemplateStudio(
         workspaceBody.className = 'card-body p-4';
 
         if (activeEditorTab === 'categories') {
-            renderCategoryTypeEditorView(workspaceBody, templateEngine, () => { onSave(); refresh(); });
+            renderCategoryTypeEditorView(workspaceBody, templateEngine, iftttEngine, () => { onSave(); refresh(); });
         } else if (activeEditorTab === 'editor' && activeTpl) {
-            renderSchemaEditorView(workspaceBody, activeTpl, templateEngine);
+            renderSchemaEditorView(workspaceBody, activeTpl, templateEngine, iftttEngine);
         } else if (activeTpl) {
             renderLivePreviewView(workspaceBody, activeTpl, templateEngine);
         }
@@ -277,72 +279,124 @@ export function renderTemplateStudio(
         container.appendChild(wrapper);
     }
 
-    function renderCategoryTypeEditorView(el: HTMLElement, engine: TemplateEngine, onSave: () => void) {
+    function renderCategoryTypeEditorView(el: HTMLElement, engine: TemplateEngine, iftttEngine: IftttEngine, onSave: () => void) {
         const catWrapper = document.createElement('div');
         catWrapper.className = 'd-flex flex-column gap-4';
 
         const cats = engine.getAllCategories();
+        const allRules = iftttEngine.getAllRules();
 
         catWrapper.innerHTML = `
             <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix (${cats.length})</h5>
-                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and project scoping for each category.</p>
+                    <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix & Rules (${cats.length})</h5>
+                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide IFTTT rules for each category.</p>
                 </div>
                 <button type="button" class="btn btn-sm btn-primary add-cat-btn d-flex align-items-center gap-1">
                     <i class="bx bx-plus"></i> Add New Category Type
                 </button>
             </div>
 
-            <div class="d-flex flex-column gap-3">
-                ${cats.map(c => `
-                    <div class="card border p-3.5" style="background-color: var(--main-background-color, transparent);">
-                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
-                                    <i class="bx bx-${c.icon} fs-5"></i>
+            <div class="d-flex flex-column gap-4">
+                ${cats.map(c => {
+                    const catRules = allRules.filter(r => r.trigger.targetCategory === c.id);
+                    return `
+                        <div class="card border p-3.5" style="background-color: var(--main-background-color, transparent);">
+                            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
+                                        <i class="bx bx-${c.icon} fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="font-weight-bold m-0">${c.title}</h6>
+                                        <code class="small">Category ID: ${c.id}</code>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h6 class="font-weight-bold m-0">${c.title}</h6>
-                                    <code class="small">Category ID: ${c.id}</code>
-                                </div>
+                                <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
                             </div>
-                            <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
-                        </div>
 
-                        <div class="row g-3 small">
-                            <div class="col-md-4">
-                                <label class="form-label font-weight-bold text-muted">Default Root Container</label>
-                                <input type="text" class="form-control form-control-sm cat-root-input" data-cat-id="${c.id}" value="${c.defaultRootMarker || 'projectRoot'}">
-                            </div>
-                            <div class="col-md-8">
-                                <label class="form-label font-weight-bold text-muted">Behavior Toggles</label>
-                                <div class="d-flex flex-wrap gap-4 pt-1">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input cat-journal-check" type="checkbox" data-cat-id="${c.id}" ${c.autoJournalClone !== false ? 'checked' : ''}>
-                                        <label class="form-check-label">Daily Journal Clone</label>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input cat-topic-check" type="checkbox" data-cat-id="${c.id}" ${c.inheritParentTopics !== false ? 'checked' : ''}>
-                                        <label class="form-check-label">Inherit Parent Topics</label>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input cat-project-check" type="checkbox" data-cat-id="${c.id}" ${c.projectScopedDefault ? 'checked' : ''}>
-                                        <label class="form-check-label">Project Scoped</label>
+                            <div class="row g-3 small mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label font-weight-bold text-muted">Default Root Container</label>
+                                    <input type="text" class="form-control form-control-sm cat-root-input" data-cat-id="${c.id}" value="${c.defaultRootMarker || 'projectRoot'}">
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label font-weight-bold text-muted">Behavior Toggles</label>
+                                    <div class="d-flex flex-wrap gap-4 pt-1">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input cat-journal-check" type="checkbox" data-cat-id="${c.id}" ${c.autoJournalClone !== false ? 'checked' : ''}>
+                                            <label class="form-check-label">Daily Journal Clone</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input cat-topic-check" type="checkbox" data-cat-id="${c.id}" ${c.inheritParentTopics !== false ? 'checked' : ''}>
+                                            <label class="form-check-label">Inherit Parent Topics</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input cat-project-check" type="checkbox" data-cat-id="${c.id}" ${c.projectScopedDefault ? 'checked' : ''}>
+                                            <label class="form-check-label">Project Scoped</label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Embedded Category-Wide IFTTT Rules -->
+                            <div class="border-top pt-3">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 class="font-weight-bold text-warning small m-0 d-flex align-items-center gap-1.5">
+                                        <i class="bx bx-git-commit"></i> Category-Wide Automation Rules (${catRules.length})
+                                    </h6>
+                                    <button type="button" class="btn btn-xs btn-outline-warning add-cat-rule-btn d-flex align-items-center gap-1" data-cat-id="${c.id}">
+                                        <i class="bx bx-plus"></i> Add Category Rule
+                                    </button>
+                                </div>
+                                <div class="d-flex flex-column gap-2">
+                                    ${catRules.length > 0 ? catRules.map(r => `
+                                        <div class="p-2.5 rounded border small d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
+                                            <div>
+                                                <strong><i class="bx bx-bolt-circle text-warning"></i> ${r.name}</strong>
+                                                <div class="text-muted tiny">Trigger: <code>${r.trigger.type}</code> • Actions: <code>${r.actions.map(a => a.type).join(', ')}</code></div>
+                                            </div>
+                                            <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted">${r.enabled ? 'Enabled' : 'Disabled'}</span>
+                                        </div>
+                                    `).join('') : '<div class="text-muted tiny p-2 border rounded text-center">No category-wide IFTTT rules attached.</div>'}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                `).join('')}
+                    `;
+                }).join('')}
             </div>
 
             <div class="d-flex justify-content-end pt-2">
                 <button type="button" class="btn btn-primary px-4 py-2 font-weight-bold shadow-sm save-cats-btn d-flex align-items-center gap-1.5">
-                    <i class="bx bx-save fs-6"></i> Save Category Behaviors
+                    <i class="bx bx-save fs-6"></i> Save Category Behaviors & Rules
                 </button>
             </div>
         `;
+
+        catWrapper.querySelectorAll('.add-cat-rule-btn').forEach(btn => {
+            btn.addEventListener('click', (e: any) => {
+                const catId = e.currentTarget.dataset.catId;
+                const name = prompt(`Rule Name for Category '${catId}':`);
+                if (!name) return;
+                const attrName = prompt('Attribute name trigger (optional, e.g. status, priority):');
+
+                iftttEngine.registerRule({
+                    id: `cat_rule_${catId}_${Date.now()}`,
+                    name,
+                    description: `Category-wide rule for all templates in '${catId}'.`,
+                    enabled: true,
+                    isBuiltin: false,
+                    trigger: {
+                        type: attrName ? 'onAttributeChanged' : 'onNoteCreated',
+                        targetCategory: catId,
+                        attributeName: attrName || undefined,
+                    },
+                    conditions: [],
+                    actions: [{ type: 'setLabel', params: { labelName: 'processed', labelValue: 'true' } }],
+                });
+                onSave();
+            });
+        });
 
         const addCatBtn = catWrapper.querySelector('.add-cat-btn') as HTMLButtonElement;
         addCatBtn.addEventListener('click', () => {
@@ -375,11 +429,12 @@ export function renderTemplateStudio(
         el.appendChild(catWrapper);
     }
 
-    function renderSchemaEditorView(el: HTMLElement, tpl: TemplateDefinition, engine: TemplateEngine) {
+    function renderSchemaEditorView(el: HTMLElement, tpl: TemplateDefinition, engine: TemplateEngine, iftttEngine: IftttEngine) {
         const formWrapper = document.createElement('div');
         formWrapper.className = 'd-flex flex-column gap-4';
 
         const categories = engine.getAllCategories();
+        const tplRules = iftttEngine.getAllRules().filter(r => r.trigger.targetTemplateId === tpl.id);
 
         // 1. Basic Template Settings & Category Type
         const basicCard = document.createElement('div');
@@ -460,7 +515,59 @@ export function renderTemplateStudio(
 
         formWrapper.appendChild(relCard);
 
-        // 3. Promoted Attributes
+        // 3. Embedded Template-Specific IFTTT Automation Rules
+        const tplIftttCard = document.createElement('div');
+        tplIftttCard.className = 'card border p-3.5';
+        tplIftttCard.style.backgroundColor = 'var(--main-background-color, transparent)';
+        tplIftttCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
+
+        tplIftttCard.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="font-weight-bold text-warning m-0 d-flex align-items-center gap-2">
+                    <i class="bx bx-git-commit"></i> Template-Specific IFTTT Automations (${tplRules.length})
+                </h6>
+                <button type="button" class="btn btn-sm btn-outline-warning add-tpl-rule-btn d-flex align-items-center gap-1">
+                    <i class="bx bx-plus"></i> Add Template Rule
+                </button>
+            </div>
+            <div class="d-flex flex-column gap-2">
+                ${tplRules.length > 0 ? tplRules.map(r => `
+                    <div class="p-3 rounded border d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
+                        <div>
+                            <strong class="text-body"><i class="bx bx-bolt-circle text-warning"></i> ${r.name}</strong>
+                            <div class="text-muted small mt-1">Trigger: <code>${r.trigger.type}</code> • Actions: <code>${r.actions.map(a => a.type).join(', ')}</code></div>
+                        </div>
+                        <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted">${r.enabled ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+                `).join('') : '<div class="p-3 text-center text-muted small border rounded">No template-specific automation rules attached.</div>'}
+            </div>
+        `;
+
+        const addTplRuleBtn = tplIftttCard.querySelector('.add-tpl-rule-btn') as HTMLButtonElement;
+        addTplRuleBtn.addEventListener('click', () => {
+            const name = prompt(`Automation Rule Name for '${tpl.title}':`);
+            if (!name) return;
+            const attrName = prompt('Attribute name trigger (optional, e.g. status, priority):');
+
+            iftttEngine.registerRule({
+                id: `tpl_rule_${tpl.id}_${Date.now()}`,
+                name,
+                description: `Template-specific automation rule for '${tpl.title}'.`,
+                enabled: true,
+                isBuiltin: false,
+                trigger: {
+                    type: attrName ? 'onAttributeChanged' : 'onNoteCreated',
+                    targetTemplateId: tpl.id,
+                    attributeName: attrName || undefined,
+                },
+                conditions: [],
+                actions: [{ type: 'setLabel', params: { labelName: 'processed', labelValue: 'true' } }],
+            });
+        });
+
+        formWrapper.appendChild(tplIftttCard);
+
+        // 4. Promoted Attributes
         const attrCard = document.createElement('div');
         attrCard.className = 'card border p-3.5';
         attrCard.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -502,7 +609,7 @@ export function renderTemplateStudio(
 
         formWrapper.appendChild(attrCard);
 
-        // 4. HTML Content Skeleton
+        // 5. HTML Content Skeleton
         const skeletonCard = document.createElement('div');
         skeletonCard.className = 'card border p-3.5';
         skeletonCard.style.backgroundColor = 'var(--main-background-color, transparent)';

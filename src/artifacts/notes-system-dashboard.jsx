@@ -80,9 +80,10 @@ export function initNotesSystemDashboard(containerEl) {
                 });
             });
         } else if (activeTab === 'templates') {
-            renderTemplateStudio(contentArea, templateEngine, () => {
-                console.log('Templates updated!');
+            renderTemplateStudio(contentArea, templateEngine, iftttEngine, () => {
+                console.log('Templates & Automations updated!');
             });
+
         } else if (activeTab === 'relationships') {
             renderRelationshipManager(contentArea, templateEngine, relationshipEngine, () => {
                 console.log('Relationships updated!');
