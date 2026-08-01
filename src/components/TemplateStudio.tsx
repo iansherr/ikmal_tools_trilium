@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: 3-Tier IFTTT Automation Inheritance (Global, Category-wide, Template-specific)
+ * Template Studio Component: Unified Template Behaviors & Automation Rules.
  * Styled natively with Trilium Boxicons and standard Trilium form components.
  */
 
@@ -37,11 +37,11 @@ export function renderTemplateStudio(
                 </div>
                 <div>
                     <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        Template Studio & 3-Tier Automation Inheritance
+                        Template Studio & Behavioral Engine
                         <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure templates with 3-tier IFTTT automation inheritance (Global System ➔ Category-Wide ➔ Template-Specific).
+                        Configure template schemas, parent relationship links, 3-tier IFTTT automation rules, promoted attributes, and live note preview.
                     </p>
                 </div>
             </div>
@@ -233,7 +233,7 @@ export function renderTemplateStudio(
                 <ul class="nav nav-pills bg-body bg-opacity-50 p-1 rounded border">
                     <li class="nav-item">
                         <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'editor' ? 'active font-weight-bold' : ''} editor-tab-btn" type="button">
-                            <i class="bx bx-edit-alt"></i> Schema Editor
+                            <i class="bx bx-edit-alt"></i> Schema & Behaviors
                         </button>
                     </li>
                     <li class="nav-item">
@@ -243,7 +243,7 @@ export function renderTemplateStudio(
                     </li>
                     <li class="nav-item">
                         <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'categories' ? 'active font-weight-bold' : ''} categories-tab-btn" type="button">
-                            <i class="bx bx-category"></i> Category Behaviors
+                            <i class="bx bx-category"></i> Category Matrix
                         </button>
                     </li>
                 </ul>
@@ -474,40 +474,75 @@ export function renderTemplateStudio(
         `;
         formWrapper.appendChild(basicCard);
 
-        // 2. Parent Relationship Rules
-        const relCard = document.createElement('div');
-        relCard.className = 'card border p-3.5';
-        relCard.style.backgroundColor = 'var(--main-background-color, transparent)';
-        relCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
+        // 2. UNIFIED Template Behaviors & Automation Rules (Relationships + IFTTT)
+        const behaviorCard = document.createElement('div');
+        behaviorCard.className = 'card border p-3.5';
+        behaviorCard.style.backgroundColor = 'var(--main-background-color, transparent)';
+        behaviorCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
 
-        relCard.innerHTML = `
-            <div class="d-flex align-items-center justify-content-between mb-3">
+        behaviorCard.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
                 <h6 class="font-weight-bold text-info m-0 d-flex align-items-center gap-2">
-                    <i class="bx bx-git-repo-forked"></i> Parent Relationship Links (${tpl.relationships.length})
+                    <i class="bx bx-git-repo-forked"></i> Template Behaviors & Data Flow Rules
                 </h6>
                 <button type="button" class="btn btn-sm btn-outline-info add-rel-rule-btn d-flex align-items-center gap-1">
                     <i class="bx bx-plus"></i> Add Parent Link
                 </button>
             </div>
-            <div class="d-flex flex-column gap-2">
-                ${tpl.relationships.length > 0 ? tpl.relationships.map((r, idx) => `
-                    <div class="p-3 rounded border d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
-                        <div>
-                            <strong class="text-body"><i class="bx bx-right-arrow-alt text-success"></i> <code>~${r.relationName}</code> &rarr; ${r.targetTemplateName}</strong>
-                            <div class="text-muted small mt-1">Auto-clone to Parent: <strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong> • Inherit Topics/Client: <strong>${r.inheritTopics ? 'Yes' : 'No'}</strong></div>
+
+            <!-- Parent Relationship Links & Auto-Cloning -->
+            <div class="mb-4">
+                <div class="text-muted small font-weight-bold mb-2"><i class="bx bx-link"></i> Parent Relationship Links & Auto-Cloning Rules (${tpl.relationships.length})</div>
+                <div class="d-flex flex-column gap-2">
+                    ${tpl.relationships.length > 0 ? tpl.relationships.map((r, idx) => `
+                        <div class="p-3 rounded border d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
+                            <div>
+                                <strong class="text-body"><i class="bx bx-right-arrow-alt text-success"></i> <code>~${r.relationName}</code> &rarr; ${r.targetTemplateName}</strong>
+                                <div class="text-muted small mt-1">Auto-clone to Parent: <strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong> • Inherit Topics/Client: <strong>${r.inheritTopics ? 'Yes' : 'No'}</strong></div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
+                                <i class="bx bx-trash"></i> Delete
+                            </button>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
-                            <i class="bx bx-trash"></i> Delete
-                        </button>
-                    </div>
-                `).join('') : '<div class="p-3 text-center text-muted small border rounded">Root template (No parent link required).</div>'}
+                    `).join('') : '<div class="p-3 text-center text-muted small border rounded">Root template (No parent link required).</div>'}
+                </div>
+            </div>
+
+            <!-- 3-Tier IFTTT Automation Stack -->
+            <div>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="text-warning small font-weight-bold"><i class="bx bx-git-commit"></i> 3-Tier IFTTT Automation Stack</div>
+                    <button type="button" class="btn btn-xs btn-outline-warning add-tpl-rule-btn d-flex align-items-center gap-1">
+                        <i class="bx bx-plus"></i> Add Template Rule
+                    </button>
+                </div>
+                <div class="d-flex flex-column gap-2">
+                    ${globalRules.map(r => `
+                        <div class="p-2 rounded border tiny d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
+                            <span><i class="bx bx-globe text-primary"></i> <strong>Tier 1 (Global):</strong> ${r.name}</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">Global</span>
+                        </div>
+                    `).join('')}
+                    ${catRules.map(r => `
+                        <div class="p-2 rounded border tiny d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
+                            <span><i class="bx bx-category text-info"></i> <strong>Tier 2 (Category '${tpl.category}'):</strong> ${r.name}</span>
+                            <span class="badge bg-info bg-opacity-20 text-info">Category</span>
+                        </div>
+                    `).join('')}
+                    ${tplRules.length > 0 ? tplRules.map(r => `
+                        <div class="p-2 rounded border tiny d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
+                            <span><i class="bx bx-file text-success"></i> <strong>Tier 3 (Template Direct):</strong> ${r.name}</span>
+                            <span class="badge bg-success bg-opacity-20 text-success">Template Direct</span>
+                        </div>
+                    `).join('') : '<div class="p-2 text-center text-muted tiny border rounded">No template-specific automation rules.</div>'}
+                </div>
             </div>
         `;
 
-        const addRelBtn = relCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
+        const addRelBtn = behaviorCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
         addRelBtn.addEventListener('click', () => showAddRelationshipModal(tpl, engine));
 
-        relCard.querySelectorAll('.del-rel-btn').forEach(btn => {
+        behaviorCard.querySelectorAll('.del-rel-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const idx = Number(e.currentTarget.dataset.relIdx);
                 tpl.relationships.splice(idx, 1);
@@ -515,71 +550,7 @@ export function renderTemplateStudio(
             });
         });
 
-        formWrapper.appendChild(relCard);
-
-        // 3. 3-Tier IFTTT Automation Inheritance Stack
-        const tplIftttCard = document.createElement('div');
-        tplIftttCard.className = 'card border p-3.5';
-        tplIftttCard.style.backgroundColor = 'var(--main-background-color, transparent)';
-        tplIftttCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
-
-        tplIftttCard.innerHTML = `
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h6 class="font-weight-bold text-warning m-0 d-flex align-items-center gap-2">
-                    <i class="bx bx-git-commit"></i> 3-Tier IFTTT Automation Inheritance Stack
-                </h6>
-                <button type="button" class="btn btn-sm btn-outline-warning add-tpl-rule-btn d-flex align-items-center gap-1">
-                    <i class="bx bx-plus"></i> Add Template Rule
-                </button>
-            </div>
-
-            <!-- Tier 1: Global System Rules (Inherited) -->
-            <div class="mb-3">
-                <div class="text-muted small font-weight-bold mb-1.5 d-flex align-items-center gap-1">
-                    <i class="bx bx-globe"></i> Tier 1: Global System Automations (Inherited)
-                </div>
-                <div class="d-flex flex-column gap-1.5">
-                    ${globalRules.map(r => `
-                        <div class="p-2 rounded border tiny d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
-                            <span><i class="bx bx-bolt-circle text-primary"></i> ${r.name}</span>
-                            <span class="badge bg-primary bg-opacity-10 text-primary">Global</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-
-            <!-- Tier 2: Category-Wide Rules (Inherited) -->
-            <div class="mb-3">
-                <div class="text-info small font-weight-bold mb-1.5 d-flex align-items-center gap-1">
-                    <i class="bx bx-category"></i> Tier 2: Category Automations (Inherited from '${tpl.category}')
-                </div>
-                <div class="d-flex flex-column gap-1.5">
-                    ${catRules.length > 0 ? catRules.map(r => `
-                        <div class="p-2 rounded border tiny d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
-                            <span><i class="bx bx-bolt-circle text-info"></i> ${r.name}</span>
-                            <span class="badge bg-info bg-opacity-20 text-info">Category</span>
-                        </div>
-                    `).join('') : '<div class="text-muted tiny p-2 border rounded">No category-wide rules.</div>'}
-                </div>
-            </div>
-
-            <!-- Tier 3: Template-Specific Rules (Direct) -->
-            <div>
-                <div class="text-success small font-weight-bold mb-1.5 d-flex align-items-center gap-1">
-                    <i class="bx bx-file"></i> Tier 3: Template-Specific Automations (Direct)
-                </div>
-                <div class="d-flex flex-column gap-1.5">
-                    ${tplRules.length > 0 ? tplRules.map(r => `
-                        <div class="p-2 rounded border tiny d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
-                            <span><i class="bx bx-bolt-circle text-success"></i> ${r.name}</span>
-                            <span class="badge bg-success bg-opacity-20 text-success">Template Direct</span>
-                        </div>
-                    `).join('') : '<div class="text-muted tiny p-2 border rounded">No template-specific rules.</div>'}
-                </div>
-            </div>
-        `;
-
-        const addTplRuleBtn = tplIftttCard.querySelector('.add-tpl-rule-btn') as HTMLButtonElement;
+        const addTplRuleBtn = behaviorCard.querySelector('.add-tpl-rule-btn') as HTMLButtonElement;
         addTplRuleBtn.addEventListener('click', () => {
             const name = prompt(`Automation Rule Name for '${tpl.title}':`);
             if (!name) return;
@@ -601,9 +572,9 @@ export function renderTemplateStudio(
             });
         });
 
-        formWrapper.appendChild(tplIftttCard);
+        formWrapper.appendChild(behaviorCard);
 
-        // 4. Promoted Attributes
+        // 3. Promoted Attributes
         const attrCard = document.createElement('div');
         attrCard.className = 'card border p-3.5';
         attrCard.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -645,7 +616,7 @@ export function renderTemplateStudio(
 
         formWrapper.appendChild(attrCard);
 
-        // 5. HTML Content Skeleton
+        // 4. HTML Content Skeleton
         const skeletonCard = document.createElement('div');
         skeletonCard.className = 'card border p-3.5';
         skeletonCard.style.backgroundColor = 'var(--main-background-color, transparent)';
