@@ -5,27 +5,10 @@
 import { IftttRuleDef, IftttCondition, IftttAction, TriggerType } from './types.js';
 
 export const BUILTIN_IFTTT_RULES: IftttRuleDef[] = [
-    {
-        id: 'rule_task_done_date',
-        name: 'Auto-Set Task Done Date',
-        description: 'When a Task status is marked as done, automatically record the current date in #doneDate.',
-        enabled: true,
-        isBuiltin: true,
-        trigger: {
-            type: 'onAttributeChanged',
-            targetTemplateId: 'task',
-            attributeName: 'status',
-        },
-        conditions: [
-            { field: 'status', operator: 'equals', value: 'done' },
-        ],
-        actions: [
-            { type: 'setLabel', params: { labelName: 'doneDate', labelValue: '{TODAY}' } },
-        ],
-    },
+    // 1. Global System Rules
     {
         id: 'rule_project_autoclone',
-        name: 'Auto-Clone to Project Container',
+        name: 'Global -> Auto-Clone to Parent Container',
         description: 'When a note is created with a ~project relation, automatically clone it under the target Project Hub container note.',
         enabled: true,
         isBuiltin: true,
@@ -40,25 +23,8 @@ export const BUILTIN_IFTTT_RULES: IftttRuleDef[] = [
         ],
     },
     {
-        id: 'rule_high_priority_highlight',
-        name: 'Highlight High Priority Tasks',
-        description: 'When a Task priority is set to high, highlight it with color.',
-        enabled: true,
-        isBuiltin: true,
-        trigger: {
-            type: 'onAttributeChanged',
-            attributeName: 'priority',
-        },
-        conditions: [
-            { field: 'priority', operator: 'equals', value: 'high' },
-        ],
-        actions: [
-            { type: 'setLabel', params: { labelName: 'color', labelValue: '#e74c3c' } },
-        ],
-    },
-    {
         id: 'rule_derived_topic_sync',
-        name: 'Sync Derived Topics',
+        name: 'Global -> Sync Derived Topics',
         description: 'When a note is created or linked to a project/client, automatically recalculate and set derived topics.',
         enabled: true,
         isBuiltin: true,
@@ -70,22 +36,86 @@ export const BUILTIN_IFTTT_RULES: IftttRuleDef[] = [
             { type: 'syncDerivedTopics', params: {} },
         ],
     },
+
+    // 2. Category-Wide Rules (Work, Drafts, People)
+    {
+        id: 'rule_work_category_done_date',
+        name: 'Work Category -> Record Completion Date',
+        description: 'Applies to ALL notes in the Work category. When status is marked done, automatically sets #doneDate.',
+        enabled: true,
+        isBuiltin: true,
+        trigger: {
+            type: 'onAttributeChanged',
+            targetCategory: 'work',
+            attributeName: 'status',
+        },
+        conditions: [
+            { field: 'status', operator: 'equals', value: 'done' },
+        ],
+        actions: [
+            { type: 'setLabel', params: { labelName: 'doneDate', labelValue: '{TODAY}' } },
+        ],
+    },
+    {
+        id: 'rule_drafts_category_editorial_round',
+        name: 'Drafts Category -> Auto-Sync Review Round',
+        description: 'Applies to ALL notes in the Drafts category (story, edit, emailDraft, scratch). Syncs editorial review round.',
+        enabled: true,
+        isBuiltin: true,
+        trigger: {
+            type: 'onNoteCreated',
+            targetCategory: 'drafts',
+        },
+        conditions: [],
+        actions: [
+            { type: 'setLabel', params: { labelName: 'round', labelValue: 'Round 1 Review' } },
+        ],
+    },
+    {
+        id: 'rule_people_category_followup',
+        name: 'People Category -> Auto-Tag Contact Follow-up',
+        description: 'Applies to ALL notes in People category (person, organization). Auto-tags contact entries when followUpDate is set.',
+        enabled: true,
+        isBuiltin: true,
+        trigger: {
+            type: 'onAttributeChanged',
+            targetCategory: 'people',
+            attributeName: 'followUpDate',
+        },
+        conditions: [],
+        actions: [
+            { type: 'setLabel', params: { labelName: 'followUpNeeded', labelValue: 'true' } },
+        ],
+    },
+
+    // 3. Template-Specific Rules
+    {
+        id: 'rule_task_done_date',
+        name: 'Task Template -> High Priority Highlight',
+        description: 'When a Task priority is set to high, highlight it with color.',
+        enabled: true,
+        isBuiltin: true,
+        trigger: {
+            type: 'onAttributeChanged',
+            targetTemplateId: 'task',
+            attributeName: 'priority',
+        },
+        conditions: [
+            { field: 'priority', operator: 'equals', value: 'high' },
+        ],
+        actions: [
+            { type: 'setLabel', params: { labelName: 'color', labelValue: '#e74c3c' } },
+        ],
+    },
 ];
 
 export interface NoteContext {
     noteId: string;
     title: string;
-    templateId?: string;
+    templateId: string;
     category?: string;
     attributes: Record<string, any>;
-    relations: Record<string, string | string[]>;
-}
-
-export interface RuleExecutionResult {
-    ruleId: string;
-    ruleName: string;
-    matched: boolean;
-    executedActions: IftttAction[];
+    relations: Record<string, string[]>;
 }
 
 export class IftttEngine {
@@ -93,134 +123,86 @@ export class IftttEngine {
 
     constructor(initialRules: IftttRuleDef[] = BUILTIN_IFTTT_RULES) {
         for (const rule of initialRules) {
-            this.rules.set(rule.id, JSON.parse(JSON.stringify(rule)));
+            this.rules.set(rule.id, rule);
         }
+    }
+
+    public registerRule(rule: IftttRuleDef): void {
+        this.rules.set(rule.id, rule);
+    }
+
+    public getRule(ruleId: string): IftttRuleDef | undefined {
+        return this.rules.get(ruleId);
     }
 
     public getAllRules(): IftttRuleDef[] {
         return Array.from(this.rules.values());
     }
 
-    public getRule(id: string): IftttRuleDef | undefined {
-        return this.rules.get(id);
+    public toggleRule(ruleId: string, enabled: boolean): void {
+        const rule = this.rules.get(ruleId);
+        if (rule) {
+            rule.enabled = enabled;
+        }
     }
 
-    public registerRule(rule: IftttRuleDef): void {
-        this.rules.set(rule.id, JSON.parse(JSON.stringify(rule)));
-    }
-
-    public updateRule(id: string, updates: Partial<IftttRuleDef>): IftttRuleDef {
-        const existing = this.rules.get(id);
-        if (!existing) throw new Error(`Rule with id '${id}' not found`);
-        const updated = { ...existing, ...updates, id };
-        this.rules.set(id, updated);
-        return updated;
-    }
-
-    public toggleRule(id: string, enabled?: boolean): boolean {
-        const rule = this.rules.get(id);
-        if (!rule) return false;
-        rule.enabled = enabled !== undefined ? enabled : !rule.enabled;
-        return rule.enabled;
-    }
-
-    public deleteRule(id: string): boolean {
-        const rule = this.rules.get(id);
-        if (!rule) return false;
-        if (rule.isBuiltin) throw new Error(`Cannot delete built-in rule '${id}'`);
-        return this.rules.delete(id);
+    public deleteRule(ruleId: string): boolean {
+        return this.rules.delete(ruleId);
     }
 
     public evaluateEvent(
         eventType: TriggerType,
         context: NoteContext,
         changedAttribute?: string
-    ): RuleExecutionResult[] {
-        const results: RuleExecutionResult[] = [];
+    ): IftttAction[] {
+        const triggeredActions: IftttAction[] = [];
 
         for (const rule of this.rules.values()) {
             if (!rule.enabled) continue;
 
-            // 1. Trigger matching
             if (rule.trigger.type !== eventType) continue;
-
-            if (rule.trigger.targetCategory && rule.trigger.targetCategory !== context.category) {
-                continue;
-            }
 
             if (rule.trigger.targetTemplateId && rule.trigger.targetTemplateId !== context.templateId) {
                 continue;
             }
 
-            if (eventType === 'onAttributeChanged' && rule.trigger.attributeName && rule.trigger.attributeName !== changedAttribute) {
+            if (rule.trigger.targetCategory && context.category && rule.trigger.targetCategory !== context.category) {
                 continue;
             }
 
+            if (rule.trigger.attributeName && rule.trigger.attributeName !== changedAttribute) {
+                continue;
+            }
 
-            // 2. Conditions matching
-            const conditionsMet = this.evaluateConditions(rule.conditions, context);
-
-            if (conditionsMet) {
-                const processedActions = rule.actions.map(action => this.processActionTemplates(action, context));
-                results.push({
-                    ruleId: rule.id,
-                    ruleName: rule.name,
-                    matched: true,
-                    executedActions: processedActions,
-                });
+            if (this.checkConditions(rule.conditions, context)) {
+                triggeredActions.push(...rule.actions);
             }
         }
 
-        return results;
+        return triggeredActions;
     }
 
-    private evaluateConditions(conditions: IftttCondition[], context: NoteContext): boolean {
+    private checkConditions(conditions: IftttCondition[], context: NoteContext): boolean {
         for (const cond of conditions) {
-            const fieldValue = context.attributes[cond.field] ?? context.relations[cond.field] ?? (context as any)[cond.field];
+            const val = context.attributes[cond.field] ?? context.relations[cond.field];
 
             switch (cond.operator) {
                 case 'equals':
-                    if (fieldValue !== cond.value) return false;
+                    if (val !== cond.value) return false;
                     break;
                 case 'notEquals':
-                    if (fieldValue === cond.value) return false;
+                    if (val === cond.value) return false;
                     break;
                 case 'contains':
-                    if (typeof fieldValue === 'string' && !fieldValue.includes(String(cond.value))) return false;
-                    if (Array.isArray(fieldValue) && !fieldValue.includes(cond.value)) return false;
+                    if (typeof val === 'string' && !val.includes(String(cond.value))) return false;
+                    if (Array.isArray(val) && !val.includes(cond.value)) return false;
                     break;
                 case 'isSet':
-                    const isSet = fieldValue !== undefined && fieldValue !== null && fieldValue !== '';
-                    if (isSet !== Boolean(cond.value)) return false;
-                    break;
-                case 'isEmpty':
-                    const isEmpty = fieldValue === undefined || fieldValue === null || fieldValue === '' || (Array.isArray(fieldValue) && fieldValue.length === 0);
-                    if (isEmpty !== Boolean(cond.value)) return false;
-                    break;
-                case 'greaterThan':
-                    if (Number(fieldValue) <= Number(cond.value)) return false;
-                    break;
-                case 'lessThan':
-                    if (Number(fieldValue) >= Number(cond.value)) return false;
+                    if (cond.value && (val === undefined || val === null || val === '')) return false;
+                    if (!cond.value && val !== undefined && val !== null && val !== '') return false;
                     break;
             }
         }
         return true;
-    }
-
-    private processActionTemplates(action: IftttAction, context: NoteContext): IftttAction {
-        const actionCopy: IftttAction = JSON.parse(JSON.stringify(action));
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        for (const key of Object.keys(actionCopy.params)) {
-            if (typeof actionCopy.params[key] === 'string') {
-                actionCopy.params[key] = actionCopy.params[key]
-                    .replace('{TODAY}', todayStr)
-                    .replace('{NOTE_TITLE}', context.title)
-                    .replace('{NOTE_ID}', context.noteId);
-            }
-        }
-
-        return actionCopy;
     }
 }

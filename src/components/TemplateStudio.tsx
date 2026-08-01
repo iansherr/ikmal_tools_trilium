@@ -624,13 +624,20 @@ export function renderTemplateStudio(
             });
         });
 
-        behaviorCard.querySelectorAll('.edit-global-rules-btn, .edit-rule-btn').forEach(btn => {
+        behaviorCard.querySelectorAll('.edit-global-rules-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                openRuleEditorModal(wrapper, iftttEngine, {}, () => switchTab('preview'));
+            });
+        });
+
+        behaviorCard.querySelectorAll('.edit-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const ruleId = e.currentTarget.dataset.ruleId;
                 const rule = ruleId ? iftttEngine.getRule(ruleId) : undefined;
                 openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab('preview'));
             });
         });
+
 
         behaviorCard.querySelectorAll('.edit-parent-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
