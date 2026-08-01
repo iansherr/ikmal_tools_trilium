@@ -1,12 +1,12 @@
 {
-  "id": "iansherr/notes-system",
+  "id": "iansherr/ikmal_tools",
   "version": "1.0.0",
   "name": "Ikmal Notes for Trilium",
   "description": "Component-driven, editable, and organizable notes system layer for Trilium Notes with Today Homepage, Template Studio, and If/Then Automation Rules.",
   "author": "Ian Sherr",
   "maintainer": "Ian Sherr",
-  "repository": "https://github.com/iansherr/trilium_notes",
-  "homepage": "https://github.com/iansherr/trilium_notes",
+  "repository": "https://github.com/iansherr/ikmal_tools",
+  "homepage": "https://github.com/iansherr/ikmal_tools",
   "license": "MIT",
   "maintenance": "active",
   "securityStatus": "reviewed",
@@ -133,6 +133,14 @@
       "integrity": "sha256-uVqTMFNMBR1uuNE+iR0hUb9TOuQdlk/RvIR2LPjPotc=",
       "title": "Ikmal Notes for Trilium: Header Launcher Bar & Hotkey",
       "activation": "manual"
+    },
+    {
+      "id": "notes-system-word-count",
+      "type": "launcher",
+      "source": "src/artifacts/notes-system-word-count.js",
+      "integrity": "sha256-JU64v8uFef+UWPHi9bG1PQ5ONpg1cdlaVsZaHnHP7Q4=",
+      "title": "Ikmal Notes for Trilium: Live Editor Status Bar Word Count",
+      "activation": "startup"
     },
     {
       "id": "notes-system-css",

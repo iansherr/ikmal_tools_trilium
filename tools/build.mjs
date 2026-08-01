@@ -45,6 +45,9 @@ try {
     console.log('🔨 Bundling launcher artifact...');
     execSync('npx esbuild src/artifacts/notes-system-launcher.js --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-launcher.js', { stdio: 'inherit' });
 
+    console.log('🔨 Bundling word count status bar artifact...');
+    execSync('npx esbuild src/artifacts/notes-system-word-count.js --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-word-count.js', { stdio: 'inherit' });
+
     console.log('🔨 Copying CSS stylesheet...');
     fs.copyFileSync(path.join(rootDir, 'src', 'artifacts', 'notes-system.css'), path.join(distArtifactsDir, 'notes-system.css'));
 } catch (err) {
