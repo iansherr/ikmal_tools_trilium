@@ -33,6 +33,15 @@ try {
     console.log('🔨 Bundling standalone quick capture toolbar artifact...');
     execSync('npx esbuild src/artifacts/notes-system-quick-capture.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-quick-capture.js', { stdio: 'inherit' });
 
+    console.log('🔨 Bundling standalone weather render artifact...');
+    execSync('npx esbuild src/artifacts/notes-system-weather.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-weather.js', { stdio: 'inherit' });
+
+    console.log('🔨 Bundling standalone on-this-day render artifact...');
+    execSync('npx esbuild src/artifacts/notes-system-on-this-day.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-on-this-day.js', { stdio: 'inherit' });
+
+    console.log('🔨 Bundling standalone stale-notes render artifact...');
+    execSync('npx esbuild src/artifacts/notes-system-stale-notes.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-stale-notes.js', { stdio: 'inherit' });
+
     console.log('🔨 Bundling launcher artifact...');
     execSync('npx esbuild src/artifacts/notes-system-launcher.js --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-launcher.js', { stdio: 'inherit' });
 

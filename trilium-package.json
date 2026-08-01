@@ -1,7 +1,7 @@
 {
   "id": "iansherr/notes-system",
   "version": "1.0.0",
-  "name": "Trilium Notes System & Template Studio",
+  "name": "Ikmal Tools & Notes System",
   "description": "Component-driven, editable, and organizable notes system layer for Trilium Notes with Today Homepage, Template Studio, and If/Then Automation Rules.",
   "author": "Ian Sherr",
   "maintainer": "Ian Sherr",
@@ -74,7 +74,7 @@
       "id": "notes-system-dashboard",
       "type": "render",
       "source": "src/artifacts/notes-system-dashboard.jsx",
-      "integrity": "sha256-U8RwrLMaEiAQd9kR08ALKuzpFcc5NheP88zImKfIYCA=",
+      "integrity": "sha256-y5MoHpSYR5HWLnKH5G2GoOcOquoikTm4/HRxAQzlxYA=",
       "title": "Notes System & Today Homepage",
       "activation": "manual"
     },
@@ -99,7 +99,31 @@
       "type": "render",
       "source": "src/artifacts/notes-system-quick-capture.jsx",
       "integrity": "sha256-gETHAwgGf9D+nHgY6G9qvaOnxwvmrU/1FzvouCHnYoo=",
-      "title": "Standalone Quick Capture Toolbar",
+      "title": "Ikmal Standalone Quick Capture Toolbar",
+      "activation": "manual"
+    },
+    {
+      "id": "notes-system-weather",
+      "type": "render",
+      "source": "src/artifacts/notes-system-weather.jsx",
+      "integrity": "sha256-qF2+elcB2I1Ws7qPw2+ZKU7m2mpq421ZVpYS08UjaL4=",
+      "title": "Ikmal Standalone Weather & Climate Card",
+      "activation": "manual"
+    },
+    {
+      "id": "notes-system-on-this-day",
+      "type": "render",
+      "source": "src/artifacts/notes-system-on-this-day.jsx",
+      "integrity": "sha256-3mo5oS93Ri/98/lhwJITNSxQrBHWlRJnIf8ppPveC4E=",
+      "title": "Ikmal Standalone Time Machine (On This Day)",
+      "activation": "manual"
+    },
+    {
+      "id": "notes-system-stale-notes",
+      "type": "render",
+      "source": "src/artifacts/notes-system-stale-notes.jsx",
+      "integrity": "sha256-yB/9Y0evzeUMSntprKTXVXDU+GrVcRqnXNaU9Ez2iz8=",
+      "title": "Ikmal Standalone Stale Notes Reviewer",
       "activation": "manual"
     },
     {

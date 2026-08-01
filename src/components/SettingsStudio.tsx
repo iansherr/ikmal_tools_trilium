@@ -14,7 +14,7 @@ import { IfThenRuleEngine } from '../engine/ifThenRuleEngine.js';
 import { AutomationSettings, SettingsEngine } from '../engine/settingsEngine.js';
 import { saveAutomationSetting } from '../engine/packagePersistence.js';
 import { dumpYamlSpec, parseAndApplyYamlSpec } from '../engine/yamlSpec.js';
-import { escapeHtml, pageHeader, row, section, switchRow } from './nativeUi.js';
+import { escapeHtml, iconAction, listItem, pageHeader, row, section, switchRow } from './nativeUi.js';
 
 export function renderSettingsStudio(
     container: HTMLElement,
@@ -42,6 +42,7 @@ export function renderSettingsStudio(
         }));
 
         renderPreferences(wrapper);
+        renderIkmalToolsCatalog(wrapper);
         renderYamlSpecification(wrapper);
 
         container.appendChild(wrapper);
@@ -119,6 +120,30 @@ export function renderSettingsStudio(
             description: 'Word count target for the Writing Goal progress bar and activity heatmap on the Today Homepage.',
             htmlFor: 'writing-goal-input',
         }));
+    }
+
+    function renderIkmalToolsCatalog(parent: HTMLElement) {
+        const { card } = section(parent, {
+            title: 'Ikmal Micro-Tools Suite',
+            description: 'Standalone render note artifacts declared in this package. Link or clone any of these notes into daily notes or project hubs to embed them independently.',
+        });
+
+        const microTools = [
+            { id: 'notes-system-kanban', title: 'Ikmal Task Kanban Board', icon: 'bx-layout', desc: 'Live task board sorted by todo, in progress, and completed columns.' },
+            { id: 'notes-system-insights', title: 'Ikmal Writing & Productivity Insights', icon: 'bx-target-lock', desc: 'Daily word count goal progress, 30-day activity heatmap, and moon phase.' },
+            { id: 'notes-system-quick-capture', title: 'Ikmal Quick Capture Toolbar', icon: 'bx-plus-circle', desc: '1-click note creation toolbar for tasks, meetings, and story packages.' },
+            { id: 'notes-system-weather', title: 'Ikmal Weather & Climate Card', icon: 'bx-sun', desc: 'Open-Meteo weather forecast, temperature, daylight hours, and moon phase.' },
+            { id: 'notes-system-on-this-day', title: 'Ikmal Time Machine (On This Day)', icon: 'bx-history', desc: 'Notes created on the exact calendar day in previous years.' },
+            { id: 'notes-system-stale-notes', title: 'Ikmal Stale Note Reviewer', icon: 'bx-time-five', desc: 'Active notes unmodified longer than the configured threshold.' },
+        ];
+
+        for (const tool of microTools) {
+            card.appendChild(listItem({
+                icon: tool.icon,
+                title: tool.title,
+                description: tool.desc,
+            }));
+        }
     }
 
     function applySetting<K extends keyof AutomationSettings>(key: K, value: AutomationSettings[K]): void {
