@@ -1,6 +1,6 @@
 /**
- * Template Studio Component: Parent Relationships as Native IFTTT Automation Rules.
- * Styled natively with Trilium Boxicons and standard Trilium form components.
+ * Template Studio Component: Completely Unified IFTTT Automation List with Direct Interactive Navigation Links.
+ * Styled natively with Trilium Boxicons and standard Trilium design tokens.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
@@ -37,11 +37,11 @@ export function renderTemplateStudio(
                 </div>
                 <div>
                     <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        Template Studio & Automations Engine
+                        Template Studio & Behavioral Engine
                         <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure template schemas, parent relationship automations, IFTTT rules, promoted attributes, and note previews.
+                        Configure template schemas, unified IFTTT automation rules, parent relationships, promoted attributes, and note previews.
                     </p>
                 </div>
             </div>
@@ -296,7 +296,7 @@ export function renderTemplateStudio(
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix & Automations (${cats.length})</h5>
-                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide rules for each category.</p>
+                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide IFTTT rules for each category.</p>
                 </div>
                 <button type="button" class="btn btn-sm btn-primary add-cat-btn d-flex align-items-center gap-1">
                     <i class="bx bx-plus"></i> Add New Category Type
@@ -349,7 +349,7 @@ export function renderTemplateStudio(
                             <div class="border-top pt-3">
                                 <div class="d-flex align-items-center justify-content-between mb-2.5">
                                     <h6 class="font-weight-bold text-primary small m-0 d-flex align-items-center gap-1.5">
-                                        <i class="bx bx-git-commit"></i> Category Automations & Rules (${catRules.length})
+                                        <i class="bx bx-git-commit"></i> Category Automation Rules (${catRules.length})
                                     </h6>
                                     <button type="button" class="btn btn-xs btn-outline-primary add-cat-rule-btn d-flex align-items-center gap-1" data-cat-id="${c.id}">
                                         <i class="bx bx-plus"></i> Add Category Rule
@@ -489,7 +489,7 @@ export function renderTemplateStudio(
         `;
         formWrapper.appendChild(basicCard);
 
-        // 2. UNIFIED Automations Engine Card (Parent Relationships ARE IFTTT Rules!)
+        // 2. COMPLETELY UNIFIED AUTOMATION RULES (IFTTT) CARD
         const behaviorCard = document.createElement('div');
         behaviorCard.className = 'card border p-4 shadow-sm';
         behaviorCard.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -497,94 +497,94 @@ export function renderTemplateStudio(
 
         behaviorCard.innerHTML = `
             <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2.5">
-                <h6 class="font-weight-bold text-primary m-0 d-flex align-items-center gap-2">
-                    <i class="bx bx-git-commit"></i> Automations & Relationship Rules
-                </h6>
+                <div>
+                    <h6 class="font-weight-bold text-primary m-0 d-flex align-items-center gap-2">
+                        <i class="bx bx-git-commit"></i> Automation Rules (IFTTT)
+                    </h6>
+                    <p class="text-muted tiny m-0 mt-0.5">Parent relationship links, auto-cloning, metadata inheritance, and custom logic rules.</p>
+                </div>
                 <div class="d-flex align-items-center gap-2">
                     <button type="button" class="btn btn-sm btn-outline-primary add-rel-rule-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-link"></i> Add Parent Link Rule
+                        <i class="bx bx-link"></i> Add Parent Link (IFTTT)
                     </button>
                     <button type="button" class="btn btn-sm btn-primary add-tpl-rule-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-plus"></i> Add Custom Rule
+                        <i class="bx bx-plus"></i> Add Custom Rule (IFTTT)
                     </button>
                 </div>
             </div>
 
-            <!-- Parent Relationship Automations -->
-            <div class="mb-4">
-                <div class="text-muted small font-weight-bold mb-2.5 d-flex align-items-center gap-1.5">
-                    <i class="bx bx-link text-primary"></i> Parent Relationship Automations (${tpl.relationships.length})
-                </div>
-                <div class="d-flex flex-column gap-2">
-                    ${tpl.relationships.length > 0 ? tpl.relationships.map((r, idx) => `
-                        <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                            <div class="d-flex align-items-center gap-2.5">
-                                <i class="bx bx-right-arrow-alt text-success fs-5"></i>
-                                <div>
-                                    <strong class="text-body">IF note has <code>~${r.relationName}</code> &rarr; THEN Link to ${r.targetTemplateName}</strong>
-                                    <div class="text-muted tiny mt-0.5">Actions: Auto-clone to Parent Container (<strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong>) • Inherit Parent Topics & Client (<strong>${r.inheritTopics ? 'Yes' : 'No'}</strong>)</div>
-                                </div>
+            <!-- Single Unified Rule List -->
+            <div class="d-flex flex-column gap-2.5">
+                <!-- Parent Link IFTTT Rules -->
+                ${tpl.relationships.map((r, idx) => `
+                    <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <i class="bx bx-link text-primary fs-5"></i>
+                            <div>
+                                <strong class="text-body">IFTTT Rule: Parent Link <code>~${r.relationName}</code> &rarr; ${r.targetTemplateName}</strong>
+                                <div class="text-muted tiny mt-0.5">Actions: Auto-clone to Parent (<strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong>) • Inherit Topics & Client (<strong>${r.inheritTopics ? 'Yes' : 'No'}</strong>)</div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
-                                <i class="bx bx-trash"></i> Delete
-                            </button>
                         </div>
-                    `).join('') : '<div class="p-3 text-center text-muted small border rounded">Root template (No parent link required).</div>'}
-                </div>
-            </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
+                            <i class="bx bx-trash"></i> Delete
+                        </button>
+                    </div>
+                `).join('')}
 
-            <!-- Custom Automation Rules Stack -->
-            <div>
-                <div class="text-muted small font-weight-bold mb-2.5 d-flex align-items-center gap-1.5">
-                    <i class="bx bx-bolt-circle text-primary"></i> Inherited & Direct Automation Rules
-                </div>
-                <div class="d-flex flex-column gap-2">
-                    ${globalRules.map(r => `
-                        <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                            <div class="d-flex align-items-center gap-2.5">
-                                <i class="bx bx-globe text-primary fs-5"></i>
-                                <div>
-                                    <strong class="text-body">${r.name}</strong>
-                                    <div class="text-muted tiny mt-0.5">System-wide automation rule</div>
-                                </div>
+                <!-- Global System IFTTT Rules (Inherited) -->
+                ${globalRules.map(r => `
+                    <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <i class="bx bx-globe text-primary fs-5"></i>
+                            <div>
+                                <strong class="text-body">Global IFTTT Rule: ${r.name}</strong>
+                                <div class="text-muted tiny mt-0.5">System-wide rule (Inherited across all notes)</div>
                             </div>
-                            <span class="badge bg-primary bg-opacity-10 text-primary">Global Rule</span>
                         </div>
-                    `).join('')}
+                        <span class="badge bg-primary bg-opacity-10 text-primary">Global Rule</span>
+                    </div>
+                `).join('')}
 
-                    ${catRules.map(r => `
-                        <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                            <div class="d-flex align-items-center gap-2.5">
-                                <i class="bx bx-category text-info fs-5"></i>
-                                <div>
-                                    <strong class="text-body">${r.name}</strong>
-                                    <div class="text-muted tiny mt-0.5">Category rule for '${tpl.category}'</div>
-                                </div>
+                <!-- Category IFTTT Rules (Inherited from Category) -->
+                ${catRules.map(r => `
+                    <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <i class="bx bx-category text-info fs-5"></i>
+                            <div>
+                                <strong class="text-body">Category IFTTT Rule: ${r.name}</strong>
+                                <div class="text-muted tiny mt-0.5">Inherited from Category '${tpl.category}'</div>
                             </div>
-                            <button type="button" class="btn btn-xs btn-outline-info edit-cat-rules-btn px-2 py-1">
-                                <i class="bx bx-edit-alt"></i> Edit Category Rules
-                            </button>
                         </div>
-                    `).join('')}
+                        <button type="button" class="btn btn-xs btn-outline-info edit-cat-rules-btn px-2.5 py-1.5 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
+                            <i class="bx bx-edit-alt"></i> Edit Category Rules
+                        </button>
+                    </div>
+                `).join('')}
 
-                    ${tplRules.length > 0 ? tplRules.map(r => `
-                        <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                            <div class="d-flex align-items-center gap-2.5">
-                                <i class="bx bx-file text-success fs-5"></i>
-                                <div>
-                                    <strong class="text-body">${r.name}</strong>
-                                    <div class="text-muted tiny mt-0.5">Template-specific automation rule</div>
-                                </div>
+                <!-- Template-Specific Custom IFTTT Rules -->
+                ${tplRules.map(r => `
+                    <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <i class="bx bx-bolt-circle text-success fs-5"></i>
+                            <div>
+                                <strong class="text-body">Template IFTTT Rule: ${r.name}</strong>
+                                <div class="text-muted tiny mt-0.5">Direct template rule for '${tpl.title}'</div>
                             </div>
-                            <span class="badge bg-success bg-opacity-20 text-success">Template Direct Rule</span>
                         </div>
-                    `).join('') : '<div class="p-3 text-center text-muted tiny border rounded">No template-specific automation rules.</div>'}
-                </div>
+                        <span class="badge bg-success bg-opacity-20 text-success">Template Rule</span>
+                    </div>
+                `).join('')}
+
+                ${tpl.relationships.length === 0 && catRules.length === 0 && tplRules.length === 0 ? '<div class="p-3 text-center text-muted tiny border rounded">No template-specific automation rules.</div>' : ''}
             </div>
         `;
 
+        // Clickable navigation back to Category Matrix Editor
         behaviorCard.querySelectorAll('.edit-cat-rules-btn').forEach(btn => {
-            btn.addEventListener('click', () => switchTab('categories'));
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchTab('categories');
+            });
         });
 
         const addRelBtn = behaviorCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
@@ -776,12 +776,12 @@ export function renderTemplateStudio(
                     </div>
                 </div>
 
-                <!-- Automation Stack Preview -->
+                <!-- Automation Stack Preview with Clickable Button -->
                 <div class="card border p-3.5 mb-4 shadow-xs" style="background-color: var(--sub-background-color, transparent);">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="font-weight-bold text-primary small m-0"><i class="bx bx-git-commit"></i> Active Automations & Rules</h6>
-                        <button type="button" class="btn btn-xs btn-outline-info edit-cat-nav-btn">
-                            <i class="bx bx-category"></i> Edit Category Behaviors
+                        <h6 class="font-weight-bold text-primary small m-0"><i class="bx bx-git-commit"></i> Active Automation Rules (IFTTT)</h6>
+                        <button type="button" class="btn btn-xs btn-outline-info edit-cat-nav-btn font-weight-bold px-2.5 py-1">
+                            <i class="bx bx-category"></i> Edit Category Rules
                         </button>
                     </div>
                     <div class="d-flex flex-column gap-2 small text-muted">
@@ -810,7 +810,10 @@ export function renderTemplateStudio(
         `;
 
         const editCatNavBtn = previewWrapper.querySelector('.edit-cat-nav-btn') as HTMLButtonElement;
-        editCatNavBtn.addEventListener('click', () => switchTab('categories'));
+        editCatNavBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchTab('categories');
+        });
 
         el.appendChild(previewWrapper);
     }
@@ -837,11 +840,10 @@ export function renderTemplateStudio(
 
         engine.addRelationship(tpl.id, newRel);
 
-        // Also register an explicit IFTTT Automation Rule!
         if (iftttEngine) {
             iftttEngine.registerRule({
                 id: `rule_rel_${tpl.id}_${relName}`,
-                name: `Link & Auto-Clone ~${relName} -> ${targetTpl ? targetTpl.title : targetId}`,
+                name: `Parent Link ~${relName} -> ${targetTpl ? targetTpl.title : targetId}`,
                 description: `IF note has ~${relName} relation -> THEN link to ${targetTpl ? targetTpl.title : targetId}, auto-clone to parent container, and inherit parent topics.`,
                 enabled: true,
                 isBuiltin: false,
