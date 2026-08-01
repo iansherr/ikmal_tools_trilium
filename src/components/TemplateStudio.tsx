@@ -1,6 +1,6 @@
 /**
- * Template Studio Component: Unified Parent Relationships & IFTTT Automations as Gorgeous Rule Cards.
- * Styled natively with Trilium Boxicons and standard Trilium design tokens.
+ * Template Studio Component: Parent Relationships as Native IFTTT Automation Rules.
+ * Styled natively with Trilium Boxicons and standard Trilium form components.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
@@ -41,7 +41,7 @@ export function renderTemplateStudio(
                         <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure template schemas, parent relationship links, automation rules, promoted attributes, and note previews.
+                        Configure template schemas, parent relationship automations, IFTTT rules, promoted attributes, and note previews.
                     </p>
                 </div>
             </div>
@@ -358,7 +358,7 @@ export function renderTemplateStudio(
                                 <div class="d-flex flex-column gap-2">
                                     ${catRules.length > 0 ? catRules.map(r => `
                                         <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                                            <div class="d-flex align-items-center gap-2">
+                                            <div class="d-flex align-items-center gap-2.5">
                                                 <i class="bx bx-bolt-circle text-primary fs-5"></i>
                                                 <div>
                                                     <strong class="text-body">${r.name}</strong>
@@ -489,7 +489,7 @@ export function renderTemplateStudio(
         `;
         formWrapper.appendChild(basicCard);
 
-        // 2. UNIFIED Automations & Parent Relationship Rules Card
+        // 2. UNIFIED Automations Engine Card (Parent Relationships ARE IFTTT Rules!)
         const behaviorCard = document.createElement('div');
         behaviorCard.className = 'card border p-4 shadow-sm';
         behaviorCard.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -498,22 +498,22 @@ export function renderTemplateStudio(
         behaviorCard.innerHTML = `
             <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2.5">
                 <h6 class="font-weight-bold text-primary m-0 d-flex align-items-center gap-2">
-                    <i class="bx bx-git-repo-forked"></i> Automations & Parent Relationship Rules
+                    <i class="bx bx-git-commit"></i> Automations & Relationship Rules
                 </h6>
                 <div class="d-flex align-items-center gap-2">
                     <button type="button" class="btn btn-sm btn-outline-primary add-rel-rule-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-plus"></i> Add Parent Link
+                        <i class="bx bx-link"></i> Add Parent Link Rule
                     </button>
                     <button type="button" class="btn btn-sm btn-primary add-tpl-rule-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-plus"></i> Add Template Rule
+                        <i class="bx bx-plus"></i> Add Custom Rule
                     </button>
                 </div>
             </div>
 
-            <!-- Parent Relationship Links -->
+            <!-- Parent Relationship Automations -->
             <div class="mb-4">
                 <div class="text-muted small font-weight-bold mb-2.5 d-flex align-items-center gap-1.5">
-                    <i class="bx bx-link text-primary"></i> Parent Relationship Links (${tpl.relationships.length})
+                    <i class="bx bx-link text-primary"></i> Parent Relationship Automations (${tpl.relationships.length})
                 </div>
                 <div class="d-flex flex-column gap-2">
                     ${tpl.relationships.length > 0 ? tpl.relationships.map((r, idx) => `
@@ -521,8 +521,8 @@ export function renderTemplateStudio(
                             <div class="d-flex align-items-center gap-2.5">
                                 <i class="bx bx-right-arrow-alt text-success fs-5"></i>
                                 <div>
-                                    <strong class="text-body"><code>~${r.relationName}</code> &rarr; ${r.targetTemplateName}</strong>
-                                    <div class="text-muted tiny mt-0.5">Auto-clone to Parent: <strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong> • Inherit Topics/Client: <strong>${r.inheritTopics ? 'Yes' : 'No'}</strong></div>
+                                    <strong class="text-body">IF note has <code>~${r.relationName}</code> &rarr; THEN Link to ${r.targetTemplateName}</strong>
+                                    <div class="text-muted tiny mt-0.5">Actions: Auto-clone to Parent Container (<strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong>) • Inherit Parent Topics & Client (<strong>${r.inheritTopics ? 'Yes' : 'No'}</strong>)</div>
                                 </div>
                             </div>
                             <button type="button" class="btn btn-sm btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
@@ -533,10 +533,10 @@ export function renderTemplateStudio(
                 </div>
             </div>
 
-            <!-- Automation Rules Stack -->
+            <!-- Custom Automation Rules Stack -->
             <div>
                 <div class="text-muted small font-weight-bold mb-2.5 d-flex align-items-center gap-1.5">
-                    <i class="bx bx-git-commit text-primary"></i> Active Automation Rules
+                    <i class="bx bx-bolt-circle text-primary"></i> Inherited & Direct Automation Rules
                 </div>
                 <div class="d-flex flex-column gap-2">
                     ${globalRules.map(r => `
@@ -545,7 +545,7 @@ export function renderTemplateStudio(
                                 <i class="bx bx-globe text-primary fs-5"></i>
                                 <div>
                                     <strong class="text-body">${r.name}</strong>
-                                    <div class="text-muted tiny mt-0.5">Global system-wide automation rule</div>
+                                    <div class="text-muted tiny mt-0.5">System-wide automation rule</div>
                                 </div>
                             </div>
                             <span class="badge bg-primary bg-opacity-10 text-primary">Global Rule</span>
@@ -588,7 +588,7 @@ export function renderTemplateStudio(
         });
 
         const addRelBtn = behaviorCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
-        addRelBtn.addEventListener('click', () => showAddRelationshipModal(tpl, engine));
+        addRelBtn.addEventListener('click', () => showAddRelationshipModal(tpl, engine, iftttEngine));
 
         behaviorCard.querySelectorAll('.del-rel-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
@@ -815,7 +815,7 @@ export function renderTemplateStudio(
         el.appendChild(previewWrapper);
     }
 
-    function showAddRelationshipModal(tpl: TemplateDefinition, engine: TemplateEngine) {
+    function showAddRelationshipModal(tpl: TemplateDefinition, engine: TemplateEngine, iftttEngine?: IftttEngine) {
         const relName = prompt('Enter relation name (e.g. project, client, organization, writer, attendee):');
         if (!relName) return;
         const allTemplates = engine.getAllTemplates();
@@ -836,6 +836,23 @@ export function renderTemplateStudio(
         };
 
         engine.addRelationship(tpl.id, newRel);
+
+        // Also register an explicit IFTTT Automation Rule!
+        if (iftttEngine) {
+            iftttEngine.registerRule({
+                id: `rule_rel_${tpl.id}_${relName}`,
+                name: `Link & Auto-Clone ~${relName} -> ${targetTpl ? targetTpl.title : targetId}`,
+                description: `IF note has ~${relName} relation -> THEN link to ${targetTpl ? targetTpl.title : targetId}, auto-clone to parent container, and inherit parent topics.`,
+                enabled: true,
+                isBuiltin: false,
+                trigger: { type: 'onNoteCreated', targetTemplateId: tpl.id },
+                conditions: [{ field: relName, operator: 'isSet', value: true }],
+                actions: [
+                    { type: 'cloneToContainer', params: { relationName: relName } },
+                    { type: 'syncDerivedTopics', params: {} },
+                ],
+            });
+        }
     }
 
     function showCreateTemplateModal() {
