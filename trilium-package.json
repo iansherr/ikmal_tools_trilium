@@ -87,10 +87,26 @@
       "activation": "manual"
     },
     {
+      "id": "notes-system-insights",
+      "type": "render",
+      "source": "src/artifacts/notes-system-insights.jsx",
+      "integrity": "sha256-lfZS1EhGzLPIQ1Z+rJnpMClse8/GtQ2DBOTaL6sBQCs=",
+      "title": "Standalone Productivity & Writing Insights",
+      "activation": "manual"
+    },
+    {
+      "id": "notes-system-quick-capture",
+      "type": "render",
+      "source": "src/artifacts/notes-system-quick-capture.jsx",
+      "integrity": "sha256-gETHAwgGf9D+nHgY6G9qvaOnxwvmrU/1FzvouCHnYoo=",
+      "title": "Standalone Quick Capture Toolbar",
+      "activation": "manual"
+    },
+    {
       "id": "notes-system-launcher",
       "type": "launcher",
       "source": "src/artifacts/notes-system-launcher.js",
-      "integrity": "sha256-Atu75RL5lRVC5m7Rcc6bW0LvYqIFTDQvHqZqw/0dpLg=",
+      "integrity": "sha256-uVqTMFNMBR1uuNE+iR0hUb9TOuQdlk/RvIR2LPjPotc=",
       "title": "Notes Launcher Bar",
       "activation": "manual"
     },
