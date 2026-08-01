@@ -152,16 +152,20 @@ export async function showQuickCaptureModal(
 
     // Relation pickers are real controls, not markup, so they carry their own
     // state the same way nativeUi's other composite fields do.
-    const relPickers = new Map<string, ComboboxHandle>();
+    const relPickers = new Map<string, ComboboxHandle<any>>();
     const relForm = modal.querySelector('.rel-form');
     for (const rel of template.relationships) {
         const candidates = relationCandidates.get(rel.relationName) ?? [];
         const field = document.createElement('div');
         field.className = 'ns-field mb-2';
-        field.innerHTML = `<label class="form-label tiny text-muted font-weight-bold">~${escapeHtml(rel.relationName)} &rarr; ${escapeHtml(rel.targetTemplateName)}</label>`;
+        const labelText = rel.isMulti
+            ? `~${escapeHtml(rel.relationName)} (multi) &rarr; ${escapeHtml(rel.targetTemplateName)}`
+            : `~${escapeHtml(rel.relationName)} &rarr; ${escapeHtml(rel.targetTemplateName)}`;
+        field.innerHTML = `<label class="form-label tiny text-muted font-weight-bold">${labelText}</label>`;
         const picker = searchableSelect({
             id: `rel-${rel.relationName}`,
-            value: '',
+            value: rel.isMulti ? [] : '',
+            isMulti: rel.isMulti,
             placeholder: candidates.length ? `Search ${rel.targetTemplateName}…` : `No existing ${rel.targetTemplateName} notes found`,
             options: candidates.map((n) => ({ value: n.noteId, label: n.title })),
         });
@@ -184,10 +188,12 @@ export async function showQuickCaptureModal(
             if (attrName) attributes[attrName] = input.value;
         });
 
-        const relations: Record<string, string> = {};
+        const relations: Record<string, string | string[]> = {};
         for (const [relationName, picker] of relPickers) {
             const value = picker.getValue();
-            if (value) relations[relationName] = value;
+            if (value && (Array.isArray(value) ? value.length > 0 : true)) {
+                relations[relationName] = value;
+            }
         }
 
         const plan = noteCreationEngine.planNoteCreation({

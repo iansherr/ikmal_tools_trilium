@@ -73,12 +73,8 @@ to `src/components/` or `src/artifacts/`.
       inside Trilium, with the same sample-data-outside-Trilium fallback as
       every other note-driven Today widget.
 
-## Known-incomplete surfaces (see `ROADMAP.md` for detail)
-
-- [ ] Derived topic inheritance is computed (`inheritedTopicSources`) but
-      never turned into a label/relation on the created note.
-- [ ] Multi-value parent-link relationships (`isMulti: true`) only ever get
-      one target from the Quick Capture picker.
+- [x] Derived topic inheritance: `noteMaterializer.ts` fetches parent note topics and calls `applyDerivedTopics` (via `RelationshipEngine.computeDerivedTopics`), appending derived topic relation attributes (`~topic`) to the note prior to creation.
+- [x] Multi-value parent-link relationships (`isMulti: true`): `searchableSelect` in `nativeUi.ts` supports multi-select with interactive pill tags, allowing Quick Capture to select and pass multiple target note IDs for multi-target parent relations and auto-cloning.
 
 ## Verification method
 

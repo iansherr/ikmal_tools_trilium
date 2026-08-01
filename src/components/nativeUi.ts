@@ -354,11 +354,11 @@ export interface ComboboxOption {
     description?: string;
 }
 
-export interface ComboboxHandle {
+export interface ComboboxHandle<T extends string | string[] = string | string[]> {
     /** Mount this in place of a `<select>`. */
     el: HTMLElement;
-    getValue: () => string;
-    setValue: (value: string) => void;
+    getValue: () => T;
+    setValue: (value: T) => void;
 }
 
 /**
@@ -388,9 +388,36 @@ export function fuzzyScore(query: string, text: string): number | null {
     return 1000 + gaps;
 }
 
+export function searchableSelect(opts: {
+    id: string;
+    options: ComboboxOption[];
+    value?: string[];
+    isMulti: true;
+    placeholder?: string;
+    onChange?: (value: string[]) => void;
+}): ComboboxHandle<string[]>;
+
+export function searchableSelect(opts: {
+    id: string;
+    options: ComboboxOption[];
+    value?: string;
+    isMulti?: false;
+    placeholder?: string;
+    onChange?: (value: string) => void;
+}): ComboboxHandle<string>;
+
+export function searchableSelect(opts: {
+    id: string;
+    options: ComboboxOption[];
+    value?: string | string[];
+    isMulti?: boolean;
+    placeholder?: string;
+    onChange?: (value: string | string[]) => void;
+}): ComboboxHandle<string | string[]>;
+
 /**
- * A text input with a filtered dropdown of options, for picking one value out
- * of a list too long to scan as a native `<select>`. Still a closed picker,
+ * A text input with a filtered dropdown of options, for picking one or more values
+ * out of a list too long to scan as a native `<select>`. Still a closed picker,
  * not a free-text field: blurring without a valid selection snaps the input
  * back to the current value's label rather than accepting arbitrary text.
  */
@@ -398,17 +425,30 @@ export function searchableSelect({
     id,
     options,
     value,
+    isMulti,
     placeholder,
     onChange,
 }: {
     id: string;
     options: ComboboxOption[];
-    value: string;
+    value?: string | string[];
+    isMulti?: boolean;
     placeholder?: string;
-    onChange?: (value: string) => void;
-}): ComboboxHandle {
+    onChange?: (value: any) => void;
+}): ComboboxHandle<any> {
     const wrapper = document.createElement('div');
     wrapper.className = 'ns-combobox';
+
+    let selectedValues: string[] = isMulti
+        ? (Array.isArray(value) ? [...value] : (value ? [value] : []))
+        : [];
+    let selectedValue: string = isMulti
+        ? ''
+        : (typeof value === 'string' ? value : (Array.isArray(value) && value.length > 0 ? value[0] : ''));
+
+    const tagsContainer = document.createElement('div');
+    tagsContainer.className = 'ns-combobox-tags';
+    if (!isMulti) tagsContainer.style.display = 'none';
 
     const input = document.createElement('input');
     input.type = 'text';
@@ -425,13 +465,34 @@ export function searchableSelect({
     panel.setAttribute('role', 'listbox');
     panel.hidden = true;
 
-    wrapper.append(input, panel);
+    wrapper.append(tagsContainer, input, panel);
 
-    let selectedValue = value;
     let visible: ComboboxOption[] = [];
     let highlighted = -1;
 
-    const labelFor = (v: string) => options.find((o) => o.value === v)?.label ?? '';
+    const labelFor = (v: string) => options.find((o) => o.value === v)?.label ?? v;
+
+    function renderTags() {
+        if (!isMulti) return;
+        tagsContainer.innerHTML = '';
+        for (const val of selectedValues) {
+            const tag = document.createElement('span');
+            tag.className = 'ns-combobox-tag';
+            tag.innerHTML = `<span>${escapeHtml(labelFor(val))}</span><i class="bx bx-x ns-remove-tag" data-val="${escapeHtml(val)}"></i>`;
+            tag.querySelector('.ns-remove-tag')?.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                removeValue(val);
+            });
+            tagsContainer.appendChild(tag);
+        }
+    }
+
+    function removeValue(val: string) {
+        selectedValues = selectedValues.filter((v) => v !== val);
+        renderTags();
+        onChange?.([...selectedValues]);
+    }
 
     function highlight(index: number) {
         highlighted = index;
@@ -445,10 +506,20 @@ export function searchableSelect({
     }
 
     function selectOption(option: ComboboxOption) {
-        selectedValue = option.value;
-        input.value = option.label;
-        closePanel();
-        onChange?.(option.value);
+        if (isMulti) {
+            if (!selectedValues.includes(option.value)) {
+                selectedValues.push(option.value);
+                renderTags();
+                onChange?.([...selectedValues]);
+            }
+            input.value = '';
+            closePanel();
+        } else {
+            selectedValue = option.value;
+            input.value = option.label;
+            closePanel();
+            onChange?.(option.value);
+        }
     }
 
     function renderPanel(query: string) {
@@ -468,9 +539,10 @@ export function searchableSelect({
         } else {
             for (const option of visible) {
                 const item = document.createElement('div');
-                item.className = 'ns-combobox-option';
+                const isSelected = isMulti ? selectedValues.includes(option.value) : selectedValue === option.value;
+                item.className = `ns-combobox-option${isSelected ? ' is-selected' : ''}`;
                 item.setAttribute('role', 'option');
-                item.innerHTML = `<span>${escapeHtml(option.label)}</span>${option.description ? `<span class="ns-meta">${escapeHtml(option.description)}</span>` : ''}`;
+                item.innerHTML = `<span>${escapeHtml(option.label)}${isSelected ? ' <i class="bx bx-check text-success"></i>' : ''}</span>${option.description ? `<span class="ns-meta">${escapeHtml(option.description)}</span>` : ''}`;
                 // mousedown fires before the input's blur handler, so the click
                 // registers before closePanel() would otherwise swallow it.
                 item.addEventListener('mousedown', (e) => {
@@ -494,13 +566,21 @@ export function searchableSelect({
     input.addEventListener('input', () => renderPanel(input.value));
 
     input.addEventListener('blur', () => {
-        input.value = labelFor(selectedValue);
+        if (isMulti) {
+            input.value = '';
+        } else {
+            input.value = labelFor(selectedValue);
+        }
         closePanel();
     });
 
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            input.value = labelFor(selectedValue);
+            if (isMulti) {
+                input.value = '';
+            } else {
+                input.value = labelFor(selectedValue);
+            }
             closePanel();
             input.blur();
         } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -515,14 +595,25 @@ export function searchableSelect({
         }
     });
 
-    input.value = labelFor(selectedValue);
+    if (isMulti) {
+        renderTags();
+        input.value = '';
+    } else {
+        input.value = labelFor(selectedValue);
+    }
 
     return {
         el: wrapper,
-        getValue: () => selectedValue,
-        setValue: (v: string) => {
-            selectedValue = v;
-            input.value = labelFor(v);
+        getValue: () => (isMulti ? [...selectedValues] : selectedValue),
+        setValue: (v: string | string[]) => {
+            if (isMulti) {
+                selectedValues = Array.isArray(v) ? [...v] : (v ? [v] : []);
+                renderTags();
+                input.value = '';
+            } else {
+                selectedValue = typeof v === 'string' ? v : (v[0] ?? '');
+                input.value = labelFor(selectedValue);
+            }
         },
     };
 }

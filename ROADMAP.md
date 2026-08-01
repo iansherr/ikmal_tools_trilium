@@ -3,24 +3,10 @@
 Known gaps in the current package, in rough priority order. Nothing here is
 scheduled — this is a punch list, not a commitment.
 
-## Derived topic inheritance is computed but never applied
+## Resolved Gaps
 
-`NoteCreationEngine.planNoteCreation()` computes `inheritedTopicSources` (the
-notes a new note should inherit topics from, when `enableDerivedTopics` is
-on) and `RelationshipEngine.computeDerivedTopics()` exists to merge them —
-but nothing in the plan or in `noteMaterializer.ts` ever calls it or turns
-the result into a label/relation on the note. The setting toggles, the
-computation runs, and the result goes nowhere. Fixing this needs: reading
-each source note's own topics (a search/read Quick Capture doesn't currently
-do), merging via `computeDerivedTopics`, and adding the merged set to
-`buildAttributeRows`'s output before the note is created.
-
-## Multi-value parent-link relationships only ever get one target
-
-`TemplateRelationshipDef.isMulti` exists (a template can declare a
-relationship that allows several targets), but the Quick Capture picker
-(`searchableSelect`) only ever selects one value. A multi-valued relationship
-quietly behaves as single-valued until the picker gains multi-select.
+- [x] **Derived topic inheritance applied to created notes**: `noteMaterializer.ts` fetches parent note topics and calls `applyDerivedTopics` (via `RelationshipEngine.computeDerivedTopics`), appending derived topic relation attributes (`~topic`) to `buildAttributeRows` prior to note materialization.
+- [x] **Multi-value parent-link relationships (`isMulti: true`)**: `searchableSelect` in `nativeUi.ts` now supports `isMulti: true` with interactive pill tags, and Quick Capture harvests multi-selected target note IDs to form multi-target parent relations and auto-clone destinations.
 
 ## The custom HTTP endpoint and backend script were removed, not fixed
 

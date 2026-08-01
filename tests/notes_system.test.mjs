@@ -5,7 +5,7 @@ import { RelationshipEngine } from '../dist/engine/relationshipEngine.js';
 import { IfThenRuleEngine } from '../dist/engine/ifThenRuleEngine.js';
 import { TodayEngine } from '../dist/engine/todayEngine.js';
 import { NoteCreationEngine } from '../dist/engine/noteCreationEngine.js';
-import { buildAttributeRows } from '../dist/engine/noteMaterializer.js';
+import { buildAttributeRows, applyDerivedTopics } from '../dist/engine/noteMaterializer.js';
 import { SettingsEngine, DEFAULT_AUTOMATION_SETTINGS } from '../dist/engine/settingsEngine.js';
 import { loadAutomationSettings, saveAutomationSetting, loadYamlSpecification, saveYamlSpecification } from '../dist/engine/packagePersistence.js';
 import { dumpYamlSpec, parseAndApplyYamlSpec } from '../dist/engine/yamlSpec.js';
@@ -582,3 +582,52 @@ test('chaos: NoteCreationEngine rejects an unknown template rather than crashing
 
     assert.throws(() => engine.planNoteCreation({ type: '__does_not_exist__', title: 'x' }), /Unknown note template/);
 });
+
+test('applyDerivedTopics populates inherited topics into plan relations and buildAttributeRows', () => {
+    const tplEngine = new TemplateEngine();
+    const relEngine = new RelationshipEngine(tplEngine);
+    const ifThenRuleEngine = new IfThenRuleEngine();
+    const settingsEngine = new SettingsEngine({ enableDerivedTopics: true });
+
+    const engine = new NoteCreationEngine(tplEngine, relEngine, ifThenRuleEngine, settingsEngine);
+    const plan = engine.planNoteCreation({
+        type: 'task',
+        title: 'Perform security patch',
+        relations: { project: 'proj_beta_456' },
+    });
+
+    assert.deepEqual(plan.inheritedTopicSources, ['proj_beta_456']);
+
+    const parentTopicMap = {
+        proj_beta_456: ['topic_sec', 'topic_infra'],
+    };
+
+    applyDerivedTopics(plan, parentTopicMap, relEngine);
+
+    const topicRelations = plan.relationsToCreate.filter((r) => r.name === 'topic');
+    assert.equal(topicRelations.length, 2);
+    assert.deepEqual(topicRelations.map((r) => r.value).sort(), ['topic_infra', 'topic_sec']);
+
+    const rows = buildAttributeRows(plan);
+    const topicRows = rows.filter((r) => r.type === 'relation' && r.name === 'topic');
+    assert.equal(topicRows.length, 2);
+});
+
+test('Multi-value relationships support multiple target note IDs in plan and auto-clone', () => {
+    const tplEngine = new TemplateEngine();
+    const relEngine = new RelationshipEngine(tplEngine);
+    const ifThenRuleEngine = new IfThenRuleEngine();
+
+    const engine = new NoteCreationEngine(tplEngine, relEngine, ifThenRuleEngine);
+    const plan = engine.planNoteCreation({
+        type: 'task',
+        title: 'Cross-project sync',
+        relations: { project: ['proj_alpha', 'proj_beta'] },
+    });
+
+    assert.deepEqual(plan.autoCloneContainers, ['proj_alpha', 'proj_beta']);
+    const projectRelations = plan.relationsToCreate.filter((r) => r.name === 'project');
+    assert.equal(projectRelations.length, 2);
+    assert.deepEqual(projectRelations.map((r) => r.value), ['proj_alpha', 'proj_beta']);
+});
+

@@ -13,10 +13,14 @@
  */
 
 import { NoteCreationPlan } from './noteCreationEngine.js';
+import { RelationshipEngine } from './relationshipEngine.js';
+import { TemplateEngine } from './templateEngine.js';
 
 interface TriliumFNote {
     noteId: string;
     title: string;
+    attributes?: Array<{ type?: 'label' | 'relation'; name: string; value?: string; targetNoteId?: string }>;
+    getRelations?: (name: string) => Array<{ targetNoteId?: string; value?: string }>;
 }
 
 interface CreateNoteOpts {
@@ -30,6 +34,7 @@ interface CreateNoteOpts {
 interface TriliumFrontendApi {
     searchForNote(searchString: string): Promise<TriliumFNote | null>;
     searchForNotes(searchString: string): Promise<TriliumFNote[]>;
+    getNote?(noteId: string): Promise<TriliumFNote | null>;
     createNote(parentNotePath: string, opts?: CreateNoteOpts): Promise<{ note: TriliumFNote | null }>;
     getTodayNote(): Promise<TriliumFNote | null>;
 }
@@ -37,6 +42,62 @@ interface TriliumFrontendApi {
 function triliumApi(): TriliumFrontendApi | null {
     const a = (globalThis as any).api;
     return a && typeof a.createNote === 'function' ? a : null;
+}
+
+async function fetchNoteTopics(api: TriliumFrontendApi, noteId: string): Promise<string[]> {
+    try {
+        if (typeof api.getNote !== 'function') return [];
+        const note = await api.getNote(noteId);
+        if (!note) return [];
+        const topics: string[] = [];
+
+        if (typeof note.getRelations === 'function') {
+            const rels = note.getRelations('topic') || [];
+            for (const rel of rels) {
+                const targetId = rel.targetNoteId || rel.value;
+                if (targetId) topics.push(targetId);
+            }
+        }
+
+        if (Array.isArray(note.attributes)) {
+            for (const attr of note.attributes) {
+                if (attr.name === 'topic') {
+                    const targetId = attr.targetNoteId || attr.value;
+                    if (targetId && !topics.includes(targetId)) {
+                        topics.push(targetId);
+                    }
+                }
+            }
+        }
+
+        return topics;
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Merges derived topics into the plan's relationsToCreate array using RelationshipEngine.
+ * Pure/isolated logic so it can be called and tested independently.
+ */
+export function applyDerivedTopics(
+    plan: NoteCreationPlan,
+    parentTopicMap: Record<string, string[]>,
+    relEngine: RelationshipEngine = new RelationshipEngine(new TemplateEngine())
+): void {
+    if (!plan.inheritedTopicSources || plan.inheritedTopicSources.length === 0) return;
+
+    const explicitTopicIds = plan.relationsToCreate
+        .filter((r) => r.name === 'topic')
+        .map((r) => r.value);
+
+    const derivedRes = relEngine.computeDerivedTopics(explicitTopicIds, parentTopicMap);
+
+    for (const derivedTopicId of derivedRes.derivedTopics) {
+        if (!plan.relationsToCreate.some((r) => r.name === 'topic' && r.value === derivedTopicId)) {
+            plan.relationsToCreate.push({ name: 'topic', value: derivedTopicId });
+        }
+    }
 }
 
 async function cloneNoteToParentNote(childNoteId: string, parentNoteId: string): Promise<void> {
@@ -100,9 +161,26 @@ async function resolveParentNoteId(api: TriliumFrontendApi, plan: NoteCreationPl
     return container.noteId;
 }
 
-export async function materializeNoteCreation(plan: NoteCreationPlan): Promise<MaterializeResult> {
+export async function materializeNoteCreation(
+    plan: NoteCreationPlan,
+    options?: {
+        relationshipEngine?: RelationshipEngine;
+        topicFetcher?: (noteId: string) => Promise<string[]>;
+    }
+): Promise<MaterializeResult> {
     const api = triliumApi();
     if (!api) throw new Error('Not running inside Trilium.');
+
+    if (plan.inheritedTopicSources && plan.inheritedTopicSources.length > 0) {
+        const parentTopicMap: Record<string, string[]> = {};
+        for (const sourceId of plan.inheritedTopicSources) {
+            parentTopicMap[sourceId] = options?.topicFetcher
+                ? await options.topicFetcher(sourceId)
+                : await fetchNoteTopics(api, sourceId);
+        }
+        const relEngine = options?.relationshipEngine ?? new RelationshipEngine(new TemplateEngine());
+        applyDerivedTopics(plan, parentTopicMap, relEngine);
+    }
 
     const parentNoteId = await resolveParentNoteId(api, plan);
 
