@@ -1,6 +1,6 @@
 /**
- * Template Studio Component: Unified Automations, Clean Headings, and Clickable Navigation Links.
- * Styled natively with Trilium Boxicons and standard Trilium form components.
+ * Template Studio Component: Unified Parent Relationships & IFTTT Automations as Gorgeous Rule Cards.
+ * Styled natively with Trilium Boxicons and standard Trilium design tokens.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
@@ -37,11 +37,11 @@ export function renderTemplateStudio(
                 </div>
                 <div>
                     <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        Template Studio & Behavioral Engine
+                        Template Studio & Automations Engine
                         <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure template schemas, parent-child links, automation rules, promoted attributes, and note previews.
+                        Configure template schemas, parent relationship links, automation rules, promoted attributes, and note previews.
                     </p>
                 </div>
             </div>
@@ -226,7 +226,7 @@ export function renderTemplateStudio(
                         <span>${activeEditorTab === 'categories' ? 'Category Behaviors & Automations' : `Template: ${activeTpl?.title}`}</span>
                         ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
                     </h3>
-                    <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure category root markers, journal cloning, topic inheritance, and category-wide IFTTT rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
+                    <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure category root markers, journal cloning, topic inheritance, and category-wide rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3">
@@ -295,8 +295,8 @@ export function renderTemplateStudio(
         catWrapper.innerHTML = `
             <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix & Rules (${cats.length})</h5>
-                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide automation rules.</p>
+                    <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix & Automations (${cats.length})</h5>
+                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide rules for each category.</p>
                 </div>
                 <button type="button" class="btn btn-sm btn-primary add-cat-btn d-flex align-items-center gap-1">
                     <i class="bx bx-plus"></i> Add New Category Type
@@ -307,18 +307,18 @@ export function renderTemplateStudio(
                 ${cats.map(c => {
                     const catRules = allRules.filter(r => r.trigger.targetCategory === c.id);
                     return `
-                        <div class="card border p-3.5" style="background-color: var(--main-background-color, transparent);">
+                        <div class="card border p-4 shadow-sm" style="background-color: var(--main-background-color, transparent); border-radius: 10px;">
                             <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-                                <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center gap-2.5">
                                     <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
-                                        <i class="bx bx-${c.icon} fs-5"></i>
+                                        <i class="bx bx-${c.icon} fs-4"></i>
                                     </div>
                                     <div>
                                         <h6 class="font-weight-bold m-0">${c.title}</h6>
-                                        <code class="small">Category ID: ${c.id}</code>
+                                        <code class="small text-muted">Category ID: ${c.id}</code>
                                     </div>
                                 </div>
-                                <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
+                                <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted px-2.5 py-1">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
                             </div>
 
                             <div class="row g-3 small mb-3">
@@ -345,26 +345,29 @@ export function renderTemplateStudio(
                                 </div>
                             </div>
 
-                            <!-- Embedded Category-Wide Automations -->
+                            <!-- Embedded Category-Wide Automations Card Stack -->
                             <div class="border-top pt-3">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <h6 class="font-weight-bold text-warning small m-0 d-flex align-items-center gap-1.5">
+                                <div class="d-flex align-items-center justify-content-between mb-2.5">
+                                    <h6 class="font-weight-bold text-primary small m-0 d-flex align-items-center gap-1.5">
                                         <i class="bx bx-git-commit"></i> Category Automations & Rules (${catRules.length})
                                     </h6>
-                                    <button type="button" class="btn btn-xs btn-outline-warning add-cat-rule-btn d-flex align-items-center gap-1" data-cat-id="${c.id}">
+                                    <button type="button" class="btn btn-xs btn-outline-primary add-cat-rule-btn d-flex align-items-center gap-1" data-cat-id="${c.id}">
                                         <i class="bx bx-plus"></i> Add Category Rule
                                     </button>
                                 </div>
                                 <div class="d-flex flex-column gap-2">
                                     ${catRules.length > 0 ? catRules.map(r => `
-                                        <div class="p-2.5 rounded border small d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
-                                            <div>
-                                                <strong><i class="bx bx-bolt-circle text-warning"></i> ${r.name}</strong>
-                                                <div class="text-muted tiny">Trigger: <code>${r.trigger.type}</code> • Actions: <code>${r.actions.map(a => a.type).join(', ')}</code></div>
+                                        <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bx bx-bolt-circle text-primary fs-5"></i>
+                                                <div>
+                                                    <strong class="text-body">${r.name}</strong>
+                                                    <div class="text-muted tiny mt-0.5">Trigger: <code>${r.trigger.type}</code> • Actions: <code>${r.actions.map(a => a.type).join(', ')}</code></div>
+                                                </div>
                                             </div>
-                                            <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted">${r.enabled ? 'Enabled' : 'Disabled'}</span>
+                                            <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted">${r.enabled ? 'Active' : 'Disabled'}</span>
                                         </div>
-                                    `).join('') : '<div class="text-muted tiny p-2 border rounded text-center">No category-wide automation rules attached.</div>'}
+                                    `).join('') : '<div class="text-muted tiny p-3 border rounded text-center">No category-wide automation rules attached.</div>'}
                                 </div>
                             </div>
                         </div>
@@ -452,7 +455,7 @@ export function renderTemplateStudio(
 
         // 1. Basic Template Settings & Category Type
         const basicCard = document.createElement('div');
-        basicCard.className = 'card border p-3.5';
+        basicCard.className = 'card border p-3.5 shadow-sm';
         basicCard.style.backgroundColor = 'var(--main-background-color, transparent)';
         basicCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
 
@@ -486,31 +489,41 @@ export function renderTemplateStudio(
         `;
         formWrapper.appendChild(basicCard);
 
-        // 2. Automations & Data Flow Rules (Parent Links + IFTTT with Clickable Inheritance Links!)
+        // 2. UNIFIED Automations & Parent Relationship Rules Card
         const behaviorCard = document.createElement('div');
-        behaviorCard.className = 'card border p-3.5';
+        behaviorCard.className = 'card border p-4 shadow-sm';
         behaviorCard.style.backgroundColor = 'var(--main-background-color, transparent)';
         behaviorCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
 
         behaviorCard.innerHTML = `
-            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-                <h6 class="font-weight-bold text-info m-0 d-flex align-items-center gap-2">
-                    <i class="bx bx-git-repo-forked"></i> Automations & Data Flow Rules
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2.5">
+                <h6 class="font-weight-bold text-primary m-0 d-flex align-items-center gap-2">
+                    <i class="bx bx-git-repo-forked"></i> Automations & Parent Relationship Rules
                 </h6>
-                <button type="button" class="btn btn-sm btn-outline-info add-rel-rule-btn d-flex align-items-center gap-1">
-                    <i class="bx bx-plus"></i> Add Parent Link
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary add-rel-rule-btn d-flex align-items-center gap-1">
+                        <i class="bx bx-plus"></i> Add Parent Link
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary add-tpl-rule-btn d-flex align-items-center gap-1">
+                        <i class="bx bx-plus"></i> Add Template Rule
+                    </button>
+                </div>
             </div>
 
             <!-- Parent Relationship Links -->
             <div class="mb-4">
-                <div class="text-muted small font-weight-bold mb-2"><i class="bx bx-link"></i> Parent Relationship Links (${tpl.relationships.length})</div>
+                <div class="text-muted small font-weight-bold mb-2.5 d-flex align-items-center gap-1.5">
+                    <i class="bx bx-link text-primary"></i> Parent Relationship Links (${tpl.relationships.length})
+                </div>
                 <div class="d-flex flex-column gap-2">
                     ${tpl.relationships.length > 0 ? tpl.relationships.map((r, idx) => `
-                        <div class="p-3 rounded border d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
-                            <div>
-                                <strong class="text-body"><i class="bx bx-right-arrow-alt text-success"></i> <code>~${r.relationName}</code> &rarr; ${r.targetTemplateName}</strong>
-                                <div class="text-muted small mt-1">Auto-clone to Parent: <strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong> • Inherit Topics/Client: <strong>${r.inheritTopics ? 'Yes' : 'No'}</strong></div>
+                        <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <i class="bx bx-right-arrow-alt text-success fs-5"></i>
+                                <div>
+                                    <strong class="text-body"><code>~${r.relationName}</code> &rarr; ${r.targetTemplateName}</strong>
+                                    <div class="text-muted tiny mt-0.5">Auto-clone to Parent: <strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong> • Inherit Topics/Client: <strong>${r.inheritTopics ? 'Yes' : 'No'}</strong></div>
+                                </div>
                             </div>
                             <button type="button" class="btn btn-sm btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
                                 <i class="bx bx-trash"></i> Delete
@@ -520,46 +533,52 @@ export function renderTemplateStudio(
                 </div>
             </div>
 
-            <!-- Automation Rules with Clickable Links to Edit Categories -->
+            <!-- Automation Rules Stack -->
             <div>
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="text-warning small font-weight-bold"><i class="bx bx-git-commit"></i> Active Automation Stack</div>
-                    <button type="button" class="btn btn-xs btn-outline-warning add-tpl-rule-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-plus"></i> Add Template Rule
-                    </button>
+                <div class="text-muted small font-weight-bold mb-2.5 d-flex align-items-center gap-1.5">
+                    <i class="bx bx-git-commit text-primary"></i> Active Automation Rules
                 </div>
                 <div class="d-flex flex-column gap-2">
                     ${globalRules.map(r => `
-                        <div class="p-2.5 rounded border small d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
-                            <div>
-                                <span><i class="bx bx-globe text-primary"></i> ${r.name}</span>
-                                <div class="text-muted tiny">System-wide automation rule</div>
+                        <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <i class="bx bx-globe text-primary fs-5"></i>
+                                <div>
+                                    <strong class="text-body">${r.name}</strong>
+                                    <div class="text-muted tiny mt-0.5">Global system-wide automation rule</div>
+                                </div>
                             </div>
                             <span class="badge bg-primary bg-opacity-10 text-primary">Global Rule</span>
                         </div>
                     `).join('')}
 
                     ${catRules.map(r => `
-                        <div class="p-2.5 rounded border small d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
-                            <div>
-                                <span><i class="bx bx-category text-info"></i> ${r.name}</span>
-                                <div class="text-muted tiny">Inherited from category '${tpl.category}'</div>
+                        <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <i class="bx bx-category text-info fs-5"></i>
+                                <div>
+                                    <strong class="text-body">${r.name}</strong>
+                                    <div class="text-muted tiny mt-0.5">Category rule for '${tpl.category}'</div>
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-xs btn-link p-0 text-info edit-cat-rules-btn">
+                            <button type="button" class="btn btn-xs btn-outline-info edit-cat-rules-btn px-2 py-1">
                                 <i class="bx bx-edit-alt"></i> Edit Category Rules
                             </button>
                         </div>
                     `).join('')}
 
                     ${tplRules.length > 0 ? tplRules.map(r => `
-                        <div class="p-2.5 rounded border small d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
-                            <div>
-                                <span><i class="bx bx-file text-success"></i> ${r.name}</span>
-                                <div class="text-muted tiny">Template-specific automation rule</div>
+                        <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <i class="bx bx-file text-success fs-5"></i>
+                                <div>
+                                    <strong class="text-body">${r.name}</strong>
+                                    <div class="text-muted tiny mt-0.5">Template-specific automation rule</div>
+                                </div>
                             </div>
-                            <span class="badge bg-success bg-opacity-20 text-success">Template Rule</span>
+                            <span class="badge bg-success bg-opacity-20 text-success">Template Direct Rule</span>
                         </div>
-                    `).join('') : '<div class="p-2 text-center text-muted tiny border rounded">No template-specific automation rules.</div>'}
+                    `).join('') : '<div class="p-3 text-center text-muted tiny border rounded">No template-specific automation rules.</div>'}
                 </div>
             </div>
         `;
@@ -605,7 +624,7 @@ export function renderTemplateStudio(
 
         // 3. Promoted Attributes
         const attrCard = document.createElement('div');
-        attrCard.className = 'card border p-3.5';
+        attrCard.className = 'card border p-3.5 shadow-sm';
         attrCard.style.backgroundColor = 'var(--main-background-color, transparent)';
         attrCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
 
@@ -647,7 +666,7 @@ export function renderTemplateStudio(
 
         // 4. HTML Content Skeleton
         const skeletonCard = document.createElement('div');
-        skeletonCard.className = 'card border p-3.5';
+        skeletonCard.className = 'card border p-3.5 shadow-sm';
         skeletonCard.style.backgroundColor = 'var(--main-background-color, transparent)';
         skeletonCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
 
@@ -718,7 +737,7 @@ export function renderTemplateStudio(
 
                 <div class="row g-4 mb-4">
                     <div class="col-md-6">
-                        <div class="card border p-3.5 h-100" style="background-color: var(--sub-background-color, transparent);">
+                        <div class="card border p-3.5 h-100 shadow-xs" style="background-color: var(--sub-background-color, transparent);">
                             <h6 class="font-weight-bold text-muted small mb-3"><i class="bx bx-slider-alt"></i> Direct Form Attributes</h6>
                             <div class="d-flex flex-column gap-2.5">
                                 ${tpl.attributes.map(a => `
@@ -737,7 +756,7 @@ export function renderTemplateStudio(
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card border p-3.5 h-100" style="background-color: var(--sub-background-color, transparent);">
+                        <div class="card border p-3.5 h-100 shadow-xs" style="background-color: var(--sub-background-color, transparent);">
                             <h6 class="font-weight-bold text-info small mb-3"><i class="bx bx-git-repo-forked"></i> Multi-Parent Inherited Context</h6>
                             <div class="d-flex flex-column gap-2.5 small text-muted">
                                 <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
@@ -757,11 +776,11 @@ export function renderTemplateStudio(
                     </div>
                 </div>
 
-                <!-- Automation Stack Preview with Clickable Navigation -->
-                <div class="card border p-3.5 mb-4" style="background-color: var(--sub-background-color, transparent);">
+                <!-- Automation Stack Preview -->
+                <div class="card border p-3.5 mb-4 shadow-xs" style="background-color: var(--sub-background-color, transparent);">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="font-weight-bold text-warning small m-0"><i class="bx bx-git-commit"></i> Active Automation Stack</h6>
-                        <button type="button" class="btn btn-xs btn-link p-0 text-info edit-cat-nav-btn">
+                        <h6 class="font-weight-bold text-primary small m-0"><i class="bx bx-git-commit"></i> Active Automations & Rules</h6>
+                        <button type="button" class="btn btn-xs btn-outline-info edit-cat-nav-btn">
                             <i class="bx bx-category"></i> Edit Category Behaviors
                         </button>
                     </div>
