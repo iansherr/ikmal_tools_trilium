@@ -1,24 +1,26 @@
 /**
  * Note Creation Engine: Unified pipeline for note instantiation, title formatting,
  * relation mapping, auto-cloning, and IFTTT trigger execution.
+ * Faithfully implements original startStory logic for 'story' (mode: project) vs 'edit' (mode: edit).
  */
 
 import { TemplateEngine } from './templateEngine.js';
 import { RelationshipEngine } from './relationshipEngine.js';
 import { IftttEngine } from './iftttEngine.js';
-import { PromotedAttributeDef } from './types.js';
 
 export interface NoteCreationRequest {
-    type: string; // Template ID (e.g. task, meeting, projectHub, custom_tpl)
+    type: string; // Template ID (e.g. task, meeting, projectHub, story, edit)
     title: string;
     attributes?: Record<string, any>;
     relations?: Record<string, string | string[]>;
     targetContainerId?: string;
     date?: Date;
+    mode?: 'project' | 'edit';
 }
 
 export interface NoteCreationPlan {
     templateId: string;
+    mode?: 'project' | 'edit';
     formattedTitle: string;
     rootContainerMarker: string;
     targetContainerId?: string;
@@ -28,6 +30,7 @@ export interface NoteCreationPlan {
     autoCloneContainers: string[];
     inheritedTopicSources: string[];
     executedIftttRules: Array<{ ruleId: string; ruleName: string }>;
+    childNotesToCreate?: Array<{ title: string; templateId: string; labels: Array<{ name: string; value: string }> }>;
 }
 
 export class NoteCreationEngine {
@@ -38,7 +41,11 @@ export class NoteCreationEngine {
     ) {}
 
     public planNoteCreation(request: NoteCreationRequest): NoteCreationPlan {
-        const template = this.templateEngine.getTemplate(request.type);
+        const isStoryOrEdit = request.type === 'story' || request.type === 'edit';
+        const templateId = isStoryOrEdit ? 'story' : request.type;
+        const mode: 'project' | 'edit' = request.mode || (request.type === 'edit' ? 'edit' : 'project');
+
+        const template = this.templateEngine.getTemplate(templateId);
         if (!template) {
             throw new Error(`Unknown note template type: '${request.type}'`);
         }
@@ -47,6 +54,7 @@ export class NoteCreationEngine {
         const formattedTitle = this.templateEngine.formatTitle(template.id, request.title, date);
         const labelsToCreate: Array<{ name: string; value: string }> = [];
         const relationsToCreate: Array<{ name: string; value: string }> = [];
+        const childNotesToCreate: Array<{ title: string; templateId: string; labels: Array<{ name: string; value: string }> }> = [];
 
         // 1. Process Promoted Attributes
         const attrValues = request.attributes || {};
@@ -66,6 +74,26 @@ export class NoteCreationEngine {
 
         // Add template marker label
         labelsToCreate.push({ name: template.marker, value: '' });
+
+        // Original Bespoke System Contract for Story vs Edit:
+        if (isStoryOrEdit) {
+            // Set workflow mode and status labels
+            labelsToCreate.push({ name: 'workflow', value: mode });
+            labelsToCreate.push({ name: 'status', value: mode === 'edit' ? 'editing' : 'drafting' });
+            labelsToCreate.push({ name: 'kind', value: mode });
+
+            if (mode === 'project') {
+                // New Story creates a dedicated Reporting Notes child note
+                childNotesToCreate.push({
+                    title: `${request.title} (Reporting & Notes)`,
+                    templateId: 'reportingNotes',
+                    labels: [
+                        { name: 'extReportingNotes', value: '' },
+                        { name: 'status', value: 'active' },
+                    ],
+                });
+            }
+        }
 
         // 2. Process Relationships & Auto-Cloning via RelationshipEngine
         const relValues = request.relations || {};
@@ -109,6 +137,7 @@ export class NoteCreationEngine {
 
         return {
             templateId: template.id,
+            mode: isStoryOrEdit ? mode : undefined,
             formattedTitle,
             rootContainerMarker: template.rootContainerMarker,
             targetContainerId: request.targetContainerId,
@@ -118,6 +147,7 @@ export class NoteCreationEngine {
             autoCloneContainers,
             inheritedTopicSources,
             executedIftttRules,
+            childNotesToCreate,
         };
     }
 }
