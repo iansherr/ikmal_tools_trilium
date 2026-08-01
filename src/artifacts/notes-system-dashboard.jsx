@@ -1,6 +1,6 @@
 /**
  * Notes System Dashboard Entrypoint (JSX Render Note)
- * Combines Today Homepage, Template Studio, Relationship Manager, and IFTTT Automation Tree.
+ * Combines Today Homepage, Template Studio, Relationship Manager, IFTTT Automation Tree, and Package Settings.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
@@ -12,6 +12,7 @@ import { renderTodayHomepage } from '../components/TodayHomepage.js';
 import { renderTemplateStudio } from '../components/TemplateStudio.js';
 import { renderRelationshipManager } from '../components/RelationshipManager.js';
 import { renderIftttRuleTree } from '../components/IftttRuleTree.js';
+import { renderSettingsStudio } from '../components/SettingsStudio.js';
 
 export function initNotesSystemDashboard(containerEl) {
     const templateEngine = new TemplateEngine();
@@ -41,6 +42,7 @@ export function initNotesSystemDashboard(containerEl) {
             { id: 'templates', label: '📐 Template Studio', icon: 'layer' },
             { id: 'relationships', label: '🔗 Relationship Tree', icon: 'git-repo-forked' },
             { id: 'ifttt', label: '🤖 IFTTT Automation Rules', icon: 'git-commit' },
+            { id: 'settings', label: '⚙️ Settings & Components', icon: 'cog' },
         ];
 
         for (const t of tabs) {
@@ -86,6 +88,10 @@ export function initNotesSystemDashboard(containerEl) {
         } else if (activeTab === 'ifttt') {
             renderIftttRuleTree(contentArea, iftttEngine, () => {
                 console.log('IFTTT rules updated!');
+            });
+        } else if (activeTab === 'settings') {
+            renderSettingsStudio(contentArea, todayEngine, templateEngine, (jsonString) => {
+                console.log('Package settings saved:', jsonString);
             });
         }
 
