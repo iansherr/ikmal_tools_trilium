@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: Clean Boxicon Styling (No Emojis), Interactive Active/Inactive Rule Toggle Buttons.
+ * Template Studio Component: 100% Accurate Trilium Reference-Linking Terminology (No 'Clone' jargon).
  * Styled natively with Trilium Boxicons and standard Trilium design tokens.
  */
 
@@ -223,7 +223,7 @@ export function renderTemplateStudio(
                         <span>${activeEditorTab === 'categories' ? 'Category Behaviors & Automations' : `Template: ${activeTpl?.title}`}</span>
                         ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
                     </h3>
-                    <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure category root markers, journal cloning, topic inheritance, and category-wide rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
+                    <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure category root markers, daily reference filing, topic inheritance, and category-wide rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3">
@@ -299,7 +299,7 @@ export function renderTemplateStudio(
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix & Automations (${cats.length})</h5>
-                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide automation rules.</p>
+                    <p class="text-muted small m-0 mt-1">Configure default container roots, reference filing, topic inheritance, and category-wide automation rules.</p>
                 </div>
                 <button type="button" class="btn btn-sm btn-primary add-cat-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
                     <i class="bx bx-plus"></i> New Category Type
@@ -335,8 +335,8 @@ export function renderTemplateStudio(
                                     <div class="d-flex flex-column gap-2.5 pt-1">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input cat-journal-check" type="checkbox" data-cat-id="${c.id}" ${c.autoJournalClone !== false ? 'checked' : ''}>
-                                            <label class="form-check-label font-weight-bold"><i class="bx bx-calendar text-primary me-1"></i> Auto-File Under Daily Journal</label>
-                                            <div class="text-muted tiny">When enabled, notes created in this category automatically clone reference links into today's journal note.</div>
+                                            <label class="form-check-label font-weight-bold"><i class="bx bx-calendar text-primary me-1"></i> Auto-File Reference Under Today's Journal</label>
+                                            <div class="text-muted tiny">When enabled, notes created in this category automatically file a reference link under today's journal note.</div>
                                         </div>
                                         <div class="form-check form-switch">
                                             <input class="form-check-input cat-topic-check" type="checkbox" data-cat-id="${c.id}" ${c.inheritParentTopics !== false ? 'checked' : ''}>
@@ -462,7 +462,7 @@ export function renderTemplateStudio(
         const parentRules = tpl.relationships.map(r => ({
             id: `rel_${tpl.id}_${r.relationName}`,
             name: `Parent Link ~${r.relationName} -> ${r.targetTemplateName}`,
-            description: `IF note has ~${r.relationName} -> THEN link to ${r.targetTemplateName}, auto-clone to parent container, and inherit parent topics.`,
+            description: `IF note has ~${r.relationName} -> THEN link to ${r.targetTemplateName}, file reference under parent container, and inherit parent topics.`,
             scope: 'template',
             enabled: true,
             isParentLink: true,
@@ -508,7 +508,7 @@ export function renderTemplateStudio(
         `;
         formWrapper.appendChild(basicCard);
 
-        // 2. UNIFIED IFTTT AUTOMATION RULES CARD (WITH ACTIVE/INACTIVE INTERACTIVE TOGGLE BUTTONS)
+        // 2. UNIFIED IFTTT AUTOMATION RULES CARD
         const behaviorCard = document.createElement('div');
         behaviorCard.className = 'card border p-4 shadow-sm rounded-3';
         behaviorCard.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -520,7 +520,7 @@ export function renderTemplateStudio(
                     <h6 class="font-weight-bold text-primary m-0 d-flex align-items-center gap-2">
                         <i class="bx bx-git-commit"></i> Automation Rules (IFTTT Engine)
                     </h6>
-                    <p class="text-muted tiny m-0 mt-0.5">Parent relationship links, auto-cloning, metadata inheritance, and custom logic rules.</p>
+                    <p class="text-muted tiny m-0 mt-0.5">Parent relationship links, reference filing, metadata inheritance, and custom logic rules.</p>
                 </div>
                 <button type="button" class="btn btn-sm btn-primary add-tpl-rule-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
                     <i class="bx bx-plus"></i> Add Automation Rule
@@ -876,7 +876,7 @@ export function renderTemplateStudio(
                     <div class="d-flex flex-column gap-2 small text-muted">
                         <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Global System Scope:</span>
-                            <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill">Auto-Clone to Project & Sync Derived Topics</span>
+                            <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill">Auto-File Reference Under Project & Sync Derived Topics</span>
                         </div>
                         <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Category '${tpl.category}' Scope:</span>
@@ -1023,7 +1023,7 @@ export function renderTemplateStudio(
             <div class="border-top pt-3">
                 <label class="form-label font-weight-bold small text-primary"><i class="bx bx-check-circle"></i> Executed Action Type</label>
                 <select id="rule-action-type" class="form-select form-select-sm mb-2">
-                    <option value="cloneToContainer" ${rule.actions[0]?.type === 'cloneToContainer' ? 'selected' : ''}>File & Auto-Clone Under Parent Container</option>
+                    <option value="cloneToContainer" ${rule.actions[0]?.type === 'cloneToContainer' ? 'selected' : ''}>File Reference Under Parent Container</option>
                     <option value="setLabel" ${rule.actions[0]?.type === 'setLabel' ? 'selected' : ''}>Assign Label / Promoted Attribute Value</option>
                     <option value="syncDerivedTopics" ${rule.actions[0]?.type === 'syncDerivedTopics' ? 'selected' : ''}>Inherit & Recalculate Parent Topics</option>
                 </select>
@@ -1103,7 +1103,7 @@ export function renderTemplateStudio(
 
             <div class="form-check form-switch pt-2">
                 <input class="form-check-input" type="checkbox" id="rel-clone-check" ${rel.autoCloneToParent ? 'checked' : ''}>
-                <label class="form-check-label font-weight-bold small">Auto-clone under Parent Container</label>
+                <label class="form-check-label font-weight-bold small">Auto-file reference link under Parent Container</label>
             </div>
 
             <div class="form-check form-switch">
@@ -1142,7 +1142,7 @@ export function renderTemplateStudio(
             iftttEngine.registerRule({
                 id: `rule_rel_${tpl.id}_${relName}`,
                 name: `Parent Link ~${relName} -> ${targetTpl ? targetTpl.title : targetId}`,
-                description: `IF note has ~${relName} -> THEN link to ${targetTpl ? targetTpl.title : targetId}, auto-clone to parent container, and inherit parent topics.`,
+                description: `IF note has ~${relName} -> THEN link to ${targetTpl ? targetTpl.title : targetId}, file reference link under parent container, and inherit parent topics.`,
                 enabled: true,
                 isBuiltin: false,
                 trigger: { type: 'onNoteCreated', targetTemplateId: tpl.id },
