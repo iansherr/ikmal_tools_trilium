@@ -69,6 +69,66 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         ],
     },
     {
+        id: 'story',
+        marker: 'extStoryDraft',
+        title: 'Story Project',
+        icon: 'news',
+        category: 'drafts',
+        rootContainerMarker: 'storyDraftRoot',
+        titlePattern: '{title}',
+        defaultContent: '<h2>HED</h2><ul><li></li></ul><h2>DEK</h2><ul><li></li></ul><h2>STORYBODY</h2><p></p><p>--ENDIT--</p>',
+        projectScoped: true,
+        isBuiltin: true,
+        attributes: [
+            { name: 'status', type: 'label', dataType: 'select', options: ['drafting', 'review', 'published'], defaultValue: 'drafting', isPromoted: true, label: 'Status' },
+            { name: 'workflow', type: 'label', dataType: 'string', defaultValue: 'project', isPromoted: true, label: 'Workflow' },
+            { name: 'kind', type: 'label', dataType: 'string', defaultValue: 'project', isPromoted: true, label: 'Kind' },
+        ],
+        relationships: [
+            {
+                id: 'rel_story_project',
+                name: 'Project Hub',
+                relationName: 'project',
+                targetTemplateId: 'projectHub',
+                targetTemplateName: 'Project Hub',
+                isMulti: false,
+                autoCloneToParent: true,
+                inheritTopics: true,
+                direction: 'parent',
+            },
+        ],
+    },
+    {
+        id: 'edit',
+        marker: 'extStoryDraft',
+        title: 'Edit Package',
+        icon: 'edit',
+        category: 'drafts',
+        rootContainerMarker: 'storyDraftRoot',
+        titlePattern: 'Edit: {title}',
+        defaultContent: '<h2>EDITORIAL NOTES & REVISIONS</h2><ul><li>[ ] Fact check quotes</li><li>[ ] Copy edit lead paragraph</li><li>[ ] Confirm headline & dek</li></ul><h2>EDITED DRAFT BODY</h2><p></p>',
+        projectScoped: true,
+        isBuiltin: true,
+        attributes: [
+            { name: 'status', type: 'label', dataType: 'select', options: ['editing', 'approved', 'returned'], defaultValue: 'editing', isPromoted: true, label: 'Status' },
+            { name: 'workflow', type: 'label', dataType: 'string', defaultValue: 'edit', isPromoted: true, label: 'Workflow' },
+            { name: 'round', type: 'label', dataType: 'string', defaultValue: 'Round 1 Edit', isPromoted: true, label: 'Round' },
+        ],
+        relationships: [
+            {
+                id: 'rel_edit_story',
+                name: 'Parent Story Draft',
+                relationName: 'storyDraft',
+                targetTemplateId: 'story',
+                targetTemplateName: 'Story Project',
+                isMulti: false,
+                autoCloneToParent: true,
+                inheritTopics: true,
+                direction: 'parent',
+            },
+        ],
+    },
+    {
         id: 'projectHub',
         marker: 'extProjectHub',
         title: 'Project Hub',
@@ -80,9 +140,8 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         isBuiltin: true,
         attributes: [
             { name: 'status', type: 'label', dataType: 'select', options: ['active', 'archived', 'on_hold'], defaultValue: 'active', isPromoted: true, label: 'Status' },
-            { name: 'kind', type: 'label', dataType: 'select', options: ['project', 'client', 'internal'], isPromoted: true, label: 'Kind' },
+            { name: 'kind', type: 'label', dataType: 'select', options: ['project', 'edit', 'client', 'internal'], isPromoted: true, label: 'Kind' },
             { name: 'client', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'Client' },
-            { name: 'onBehalfOf', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'On Behalf Of' },
         ],
         relationships: [
             {
@@ -93,6 +152,34 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
                 targetTemplateName: 'Organization',
                 isMulti: false,
                 autoCloneToParent: false,
+                inheritTopics: true,
+                direction: 'parent',
+            },
+        ],
+    },
+    {
+        id: 'reportingNotes',
+        marker: 'extReportingNotes',
+        title: 'Reporting Notes',
+        icon: 'file-find',
+        category: 'work',
+        rootContainerMarker: 'reportingRoot',
+        titlePattern: '{title} (Reporting & Notes)',
+        defaultContent: '<h2>INTERVIEW TRANSCRIPTS & SOURCES</h2><ul><li></li></ul><h2>DOCUMENTATION & LINKS</h2><p></p>',
+        projectScoped: true,
+        isBuiltin: true,
+        attributes: [
+            { name: 'status', type: 'label', dataType: 'select', options: ['active', 'archived'], defaultValue: 'active', isPromoted: true, label: 'Status' },
+        ],
+        relationships: [
+            {
+                id: 'rel_reporting_project',
+                name: 'Project Hub',
+                relationName: 'project',
+                targetTemplateId: 'projectHub',
+                targetTemplateName: 'Project Hub',
+                isMulti: false,
+                autoCloneToParent: true,
                 inheritTopics: true,
                 direction: 'parent',
             },
@@ -159,35 +246,6 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         relationships: [],
     },
     {
-        id: 'storyDraft',
-        marker: 'extStoryDraft',
-        title: 'Story Draft',
-        icon: 'news',
-        category: 'drafts',
-        rootContainerMarker: 'storyDraftRoot',
-        titlePattern: '{title}',
-        defaultContent: '<h2>HED</h2><ul><li></li></ul><h2>DEK</h2><ul><li></li></ul><h2>STORYBODY</h2><p></p><p>--ENDIT--</p>',
-        projectScoped: true,
-        isBuiltin: true,
-        attributes: [
-            { name: 'round', type: 'label', dataType: 'string', isPromoted: true, label: 'Round' },
-            { name: 'status', type: 'label', dataType: 'select', options: ['draft', 'review', 'published'], isPromoted: true, label: 'Status' },
-        ],
-        relationships: [
-            {
-                id: 'rel_story_project',
-                name: 'Project',
-                relationName: 'project',
-                targetTemplateId: 'projectHub',
-                targetTemplateName: 'Project Hub',
-                isMulti: false,
-                autoCloneToParent: true,
-                inheritTopics: true,
-                direction: 'parent',
-            },
-        ],
-    },
-    {
         id: 'emailDraft',
         marker: 'extEmailDraft',
         title: 'Email Draft',
@@ -252,7 +310,7 @@ export class TemplateEngine {
         if (!existing) {
             throw new Error(`Template with id '${id}' not found`);
         }
-        const updated = { ...existing, ...updates, id }; // Ensure ID remains immutable
+        const updated = { ...existing, ...updates, id };
         this.templates.set(id, updated);
         return updated;
     }
@@ -287,7 +345,6 @@ export class TemplateEngine {
         const template = this.getTemplate(templateId);
         if (!template) throw new Error(`Template '${templateId}' not found`);
         
-        // Replace existing attribute with same name or push new
         const index = template.attributes.findIndex(a => a.name === attribute.name);
         if (index >= 0) {
             template.attributes[index] = attribute;
