@@ -384,12 +384,13 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
 ];
 
 export const BUILTIN_CATEGORIES: TemplateCategoryDef[] = [
-    { id: 'work', title: 'Work & Project Scoped', description: 'Tasks, meetings, project hubs, and reporting notes scoped to project trees', icon: 'book', isBuiltin: true },
-    { id: 'drafts', title: 'Draft & Editorial', description: 'Story projects, edit packages, email drafts, and quick scratch notes', icon: 'edit', isBuiltin: true },
-    { id: 'people', title: 'People & Client Entities', description: 'Persons, contacts, and client organization directories', icon: 'user', isBuiltin: true },
-    { id: 'system', title: 'System & Topic Index', description: 'Topic tags, index containers, and directory roots', icon: 'purchase-tag', isBuiltin: true },
-    { id: 'custom', title: 'Custom / Flexible', description: 'User-defined custom note schemas', icon: 'layer', isBuiltin: true },
+    { id: 'work', title: 'Work & Project Scoped', description: 'Tasks, meetings, project hubs, and reporting notes scoped to project trees', icon: 'book', defaultRootMarker: 'projectRoot', autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: true, isBuiltin: true },
+    { id: 'drafts', title: 'Draft & Editorial', description: 'Story projects, edit packages, email drafts, and quick scratch notes', icon: 'edit', defaultRootMarker: 'storyDraftRoot', autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: true, isBuiltin: true },
+    { id: 'people', title: 'People & Client Entities', description: 'Persons, contacts, and client organization directories', icon: 'user', defaultRootMarker: 'peopleRoot', autoJournalClone: false, inheritParentTopics: true, projectScopedDefault: false, isBuiltin: true },
+    { id: 'system', title: 'System & Topic Index', description: 'Topic tags, index containers, and directory roots', icon: 'purchase-tag', defaultRootMarker: 'topicRoot', autoJournalClone: false, inheritParentTopics: false, projectScopedDefault: false, isBuiltin: true },
+    { id: 'custom', title: 'Custom / Flexible', description: 'User-defined custom note schemas', icon: 'layer', defaultRootMarker: 'unassignedRoot', autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: false, isBuiltin: true },
 ];
+
 
 export class TemplateEngine {
     private templates: Map<string, TemplateDefinition> = new Map();

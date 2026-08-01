@@ -34,6 +34,10 @@ export interface TemplateCategoryDef {
     title: string;
     description: string;
     icon: string;
+    defaultRootMarker?: string; // e.g. projectRoot, storyDraftRoot, peopleRoot, topicRoot, taskRoot
+    autoJournalClone?: boolean;
+    inheritParentTopics?: boolean;
+    projectScopedDefault?: boolean;
     isBuiltin?: boolean;
 }
 

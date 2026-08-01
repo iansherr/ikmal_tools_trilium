@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: Category Type Editor & Dynamic Category Management.
+ * Template Studio Component: Category Type Editor with Interactive Behavior Controls.
  * Styled natively with Trilium Boxicons and standard Trilium form components.
  */
 
@@ -21,7 +21,7 @@ export function renderTemplateStudio(
         const wrapper = document.createElement('div');
         wrapper.className = 'template-studio-wrapper d-flex flex-column gap-4';
 
-        // 1. Refined Header with Category Type Editor button
+        // 1. Header Banner
         const header = document.createElement('div');
         header.className = 'p-4 rounded border d-flex align-items-center justify-content-between shadow-sm';
         header.style.backgroundColor = 'var(--sub-background-color, transparent)';
@@ -39,13 +39,13 @@ export function renderTemplateStudio(
                         <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure template category types, parent-child relations, promoted attributes, and note previews.
+                        Configure template category types, behavioral defaults, parent-child relations, promoted attributes, and note previews.
                     </p>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-sm btn-outline-primary manage-cats-btn px-3 py-2 d-flex align-items-center gap-1.5 shadow-xs">
-                    <i class="bx bx-category fs-6"></i> Category Type Editor
+                    <i class="bx bx-category fs-6"></i> Category Type Behaviors
                 </button>
                 <button type="button" class="btn btn-sm btn-primary new-template-btn px-3 py-2 d-flex align-items-center gap-1.5 shadow-xs">
                     <i class="bx bx-plus fs-6"></i> New Template
@@ -221,10 +221,10 @@ export function renderTemplateStudio(
                 </div>
                 <div>
                     <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        <span>${activeEditorTab === 'categories' ? 'Category Type Editor' : `Template: ${activeTpl?.title}`}</span>
+                        <span>${activeEditorTab === 'categories' ? 'Category Type Behaviors' : `Template: ${activeTpl?.title}`}</span>
                         ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
                     </h3>
-                    <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Manage global template category types and inheritance rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
+                    <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure container roots, journal cloning, topic inheritance, and project scoping' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3">
@@ -241,7 +241,7 @@ export function renderTemplateStudio(
                     </li>
                     <li class="nav-item">
                         <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'categories' ? 'active font-weight-bold' : ''} categories-tab-btn" type="button">
-                            <i class="bx bx-category"></i> Categories
+                            <i class="bx bx-category"></i> Category Behaviors
                         </button>
                     </li>
                 </ul>
@@ -286,34 +286,61 @@ export function renderTemplateStudio(
         catWrapper.innerHTML = `
             <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <h5 class="h6 font-weight-bold m-0">Template Category Types (${cats.length})</h5>
-                    <p class="text-muted small m-0 mt-1">Categories define template behaviors, container locations, and system automation rules.</p>
+                    <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix (${cats.length})</h5>
+                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and project scoping for each category.</p>
                 </div>
                 <button type="button" class="btn btn-sm btn-primary add-cat-btn d-flex align-items-center gap-1">
                     <i class="bx bx-plus"></i> Add New Category Type
                 </button>
             </div>
 
-            <div class="row g-3">
+            <div class="d-flex flex-column gap-3">
                 ${cats.map(c => `
-                    <div class="col-md-6">
-                        <div class="card border p-3.5 h-100" style="background-color: var(--main-background-color, transparent);">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
-                                        <i class="bx bx-${c.icon} fs-5"></i>
+                    <div class="card border p-3.5" style="background-color: var(--main-background-color, transparent);">
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
+                                    <i class="bx bx-${c.icon} fs-5"></i>
+                                </div>
+                                <div>
+                                    <h6 class="font-weight-bold m-0">${c.title}</h6>
+                                    <code class="small">Category ID: ${c.id}</code>
+                                </div>
+                            </div>
+                            <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
+                        </div>
+
+                        <div class="row g-3 small">
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-bold text-muted">Default Root Container</label>
+                                <input type="text" class="form-control form-control-sm cat-root-input" data-cat-id="${c.id}" value="${c.defaultRootMarker || 'projectRoot'}">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label font-weight-bold text-muted">Behavior Toggles</label>
+                                <div class="d-flex flex-wrap gap-4 pt-1">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input cat-journal-check" type="checkbox" data-cat-id="${c.id}" ${c.autoJournalClone !== false ? 'checked' : ''}>
+                                        <label class="form-check-label">Daily Journal Clone</label>
                                     </div>
-                                    <div>
-                                        <h6 class="font-weight-bold m-0">${c.title}</h6>
-                                        <code class="small">ID: ${c.id}</code>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input cat-topic-check" type="checkbox" data-cat-id="${c.id}" ${c.inheritParentTopics !== false ? 'checked' : ''}>
+                                        <label class="form-check-label">Inherit Parent Topics</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input cat-project-check" type="checkbox" data-cat-id="${c.id}" ${c.projectScopedDefault ? 'checked' : ''}>
+                                        <label class="form-check-label">Project Scoped</label>
                                     </div>
                                 </div>
-                                <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${c.isBuiltin ? 'Built-in' : 'Custom'}</span>
                             </div>
-                            <p class="text-muted small m-0 mt-2">${c.description}</p>
                         </div>
                     </div>
                 `).join('')}
+            </div>
+
+            <div class="d-flex justify-content-end pt-2">
+                <button type="button" class="btn btn-primary px-4 py-2 font-weight-bold shadow-sm save-cats-btn d-flex align-items-center gap-1.5">
+                    <i class="bx bx-save fs-6"></i> Save Category Behaviors
+                </button>
             </div>
         `;
 
@@ -325,7 +352,23 @@ export function renderTemplateStudio(
             const icon = prompt('Enter Boxicons icon name (e.g. search, heart, bookmark):', 'layer') || 'layer';
 
             const id = title.toLowerCase().replace(/\s+/g, '-');
-            engine.registerCategory({ id, title, description, icon, isBuiltin: false });
+            engine.registerCategory({ id, title, description, icon, defaultRootMarker: 'unassignedRoot', autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: false, isBuiltin: false });
+            onSave();
+        });
+
+        const saveCatsBtn = catWrapper.querySelector('.save-cats-btn') as HTMLButtonElement;
+        saveCatsBtn.addEventListener('click', () => {
+            catWrapper.querySelectorAll('.cat-root-input').forEach((input: any) => {
+                const catId = input.dataset.catId;
+                const cat = engine.getCategory(catId);
+                if (cat) {
+                    cat.defaultRootMarker = input.value;
+                    cat.autoJournalClone = (catWrapper.querySelector(`.cat-journal-check[data-cat-id="${catId}"]`) as HTMLInputElement)?.checked;
+                    cat.inheritParentTopics = (catWrapper.querySelector(`.cat-topic-check[data-cat-id="${catId}"]`) as HTMLInputElement)?.checked;
+                    cat.projectScopedDefault = (catWrapper.querySelector(`.cat-project-check[data-cat-id="${catId}"]`) as HTMLInputElement)?.checked;
+                    engine.registerCategory(cat);
+                }
+            });
             onSave();
         });
 
