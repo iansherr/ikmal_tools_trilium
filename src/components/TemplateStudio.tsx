@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: Crystal-Clear Human-Readable Descriptions, Behavior Toggles, and Friendly Action Labels.
+ * Template Studio Component: Clean Boxicon Styling (No Emojis), Interactive Active/Inactive Rule Toggle Buttons.
  * Styled natively with Trilium Boxicons and standard Trilium design tokens.
  */
 
@@ -199,7 +199,7 @@ export function renderTemplateStudio(
         sidebarCol.appendChild(sidebarCard);
         layoutRow.appendChild(sidebarCol);
 
-        // 3. Workspace Column: Spacious 9-column Editor / Render Preview / Category Type Editor
+        // 3. Workspace Column
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
 
         const mainCol = document.createElement('div');
@@ -332,20 +332,20 @@ export function renderTemplateStudio(
                                 </div>
                                 <div class="col-md-8">
                                     <label class="form-label font-weight-bold text-muted mb-1">Category Behavior Toggles</label>
-                                    <div class="d-flex flex-column gap-2 pt-1">
+                                    <div class="d-flex flex-column gap-2.5 pt-1">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input cat-journal-check" type="checkbox" data-cat-id="${c.id}" ${c.autoJournalClone !== false ? 'checked' : ''}>
-                                            <label class="form-check-label font-weight-bold">📅 Auto-File Under Daily Journal</label>
+                                            <label class="form-check-label font-weight-bold"><i class="bx bx-calendar text-primary me-1"></i> Auto-File Under Daily Journal</label>
                                             <div class="text-muted tiny">When enabled, notes created in this category automatically clone reference links into today's journal note.</div>
                                         </div>
                                         <div class="form-check form-switch">
                                             <input class="form-check-input cat-topic-check" type="checkbox" data-cat-id="${c.id}" ${c.inheritParentTopics !== false ? 'checked' : ''}>
-                                            <label class="form-check-label font-weight-bold">🌿 Inherit Parent Topics & Metadata</label>
+                                            <label class="form-check-label font-weight-bold"><i class="bx bx-git-repo-forked text-info me-1"></i> Inherit Parent Topics & Metadata</label>
                                             <div class="text-muted tiny">When enabled, notes automatically absorb #topic tags and client details from parent projects & organizations.</div>
                                         </div>
                                         <div class="form-check form-switch">
                                             <input class="form-check-input cat-project-check" type="checkbox" data-cat-id="${c.id}" ${c.projectScopedDefault ? 'checked' : ''}>
-                                            <label class="form-check-label font-weight-bold">🎯 Scope To Project Hub Container</label>
+                                            <label class="form-check-label font-weight-bold"><i class="bx bx-folder text-success me-1"></i> Scope To Project Hub Container</label>
                                             <div class="text-muted tiny">When enabled, notes created in this category require a parent project hub link.</div>
                                         </div>
                                     </div>
@@ -375,7 +375,9 @@ export function renderTemplateStudio(
                                                 <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
                                                     <i class="bx bx-edit-alt"></i> Edit Rule
                                                 </button>
-                                                <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted">${r.enabled ? 'Active' : 'Disabled'}</span>
+                                                <button type="button" class="btn btn-xs ${r.enabled ? 'btn-outline-success' : 'btn-outline-secondary'} toggle-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                                    <i class="bx bx-${r.enabled ? 'check-circle' : 'circle'}"></i> ${r.enabled ? 'Active' : 'Disabled'}
+                                                </button>
                                             </div>
                                         </div>
                                     `).join('') : '<div class="text-muted tiny p-3 border rounded-3 text-center">No category-wide automation rules attached.</div>'}
@@ -408,6 +410,17 @@ export function renderTemplateStudio(
                 const ruleId = e.currentTarget.dataset.ruleId;
                 const rule = iftttEngine.getRule(ruleId);
                 if (rule) openRuleEditorModal(wrapper, iftttEngine, { rule }, onSave);
+            });
+        });
+
+        catWrapper.querySelectorAll('.toggle-rule-btn').forEach(btn => {
+            btn.addEventListener('click', (e: any) => {
+                const ruleId = e.currentTarget.dataset.ruleId;
+                const rule = iftttEngine.getRule(ruleId);
+                if (rule) {
+                    iftttEngine.toggleRule(ruleId, !rule.enabled);
+                    onSave();
+                }
             });
         });
 
@@ -451,6 +464,7 @@ export function renderTemplateStudio(
             name: `Parent Link ~${r.relationName} -> ${r.targetTemplateName}`,
             description: `IF note has ~${r.relationName} -> THEN link to ${r.targetTemplateName}, auto-clone to parent container, and inherit parent topics.`,
             scope: 'template',
+            enabled: true,
             isParentLink: true,
             relationName: r.relationName,
             targetTemplateName: r.targetTemplateName,
@@ -494,7 +508,7 @@ export function renderTemplateStudio(
         `;
         formWrapper.appendChild(basicCard);
 
-        // 2. UNIFIED IFTTT AUTOMATION RULES CARD
+        // 2. UNIFIED IFTTT AUTOMATION RULES CARD (WITH ACTIVE/INACTIVE INTERACTIVE TOGGLE BUTTONS)
         const behaviorCard = document.createElement('div');
         behaviorCard.className = 'card border p-4 shadow-sm rounded-3';
         behaviorCard.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -532,9 +546,14 @@ export function renderTemplateStudio(
                                         <div class="text-muted tiny mt-0.5">${r.description}</div>
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                    <i class="bx bx-edit-alt"></i> Edit Rule
-                                </button>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                        <i class="bx bx-edit-alt"></i> Edit Rule
+                                    </button>
+                                    <button type="button" class="btn btn-xs ${r.enabled ? 'btn-outline-success' : 'btn-outline-secondary'} toggle-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                        <i class="bx bx-${r.enabled ? 'check-circle' : 'circle'}"></i> ${r.enabled ? 'Active' : 'Disabled'}
+                                    </button>
+                                </div>
                             </div>
                         `).join('') : '<div class="p-3 text-center text-muted tiny border rounded-3">No global system rules.</div>'}
                     </div>
@@ -558,9 +577,14 @@ export function renderTemplateStudio(
                                         <div class="text-muted tiny mt-0.5">${r.description}</div>
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-xs btn-outline-info edit-cat-rules-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
-                                    <i class="bx bx-edit-alt"></i> Edit Category
-                                </button>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-xs btn-outline-info edit-cat-rules-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
+                                        <i class="bx bx-edit-alt"></i> Edit Category
+                                    </button>
+                                    <button type="button" class="btn btn-xs ${r.enabled ? 'btn-outline-success' : 'btn-outline-secondary'} toggle-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                        <i class="bx bx-${r.enabled ? 'check-circle' : 'circle'}"></i> ${r.enabled ? 'Active' : 'Disabled'}
+                                    </button>
+                                </div>
                             </div>
                         `).join('') : '<div class="p-3 text-center text-muted tiny border rounded-3">No category-wide rules for category \'' + tpl.category + '\'.</div>'}
                     </div>
@@ -608,6 +632,9 @@ export function renderTemplateStudio(
                                     <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
                                         <i class="bx bx-edit-alt"></i> Edit Rule
                                     </button>
+                                    <button type="button" class="btn btn-xs ${r.enabled ? 'btn-outline-success' : 'btn-outline-secondary'} toggle-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                        <i class="bx bx-${r.enabled ? 'check-circle' : 'circle'}"></i> ${r.enabled ? 'Active' : 'Disabled'}
+                                    </button>
                                     <button type="button" class="btn btn-xs btn-outline-danger del-rule-btn p-1" data-rule-id="${r.id}">
                                         <i class="bx bx-trash"></i>
                                     </button>
@@ -639,6 +666,17 @@ export function renderTemplateStudio(
                 const ruleId = e.currentTarget.dataset.ruleId;
                 const rule = ruleId ? iftttEngine.getRule(ruleId) : undefined;
                 openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab('preview'));
+            });
+        });
+
+        behaviorCard.querySelectorAll('.toggle-rule-btn').forEach(btn => {
+            btn.addEventListener('click', (e: any) => {
+                const ruleId = e.currentTarget.dataset.ruleId;
+                const rule = iftttEngine.getRule(ruleId);
+                if (rule) {
+                    iftttEngine.toggleRule(ruleId, !rule.enabled);
+                    switchTab('preview');
+                }
             });
         });
 
@@ -985,9 +1023,9 @@ export function renderTemplateStudio(
             <div class="border-top pt-3">
                 <label class="form-label font-weight-bold small text-primary"><i class="bx bx-check-circle"></i> Executed Action Type</label>
                 <select id="rule-action-type" class="form-select form-select-sm mb-2">
-                    <option value="cloneToContainer" ${rule.actions[0]?.type === 'cloneToContainer' ? 'selected' : ''}>📁 File & Auto-Clone Under Parent Container</option>
-                    <option value="setLabel" ${rule.actions[0]?.type === 'setLabel' ? 'selected' : ''}>🏷️ Assign Label / Promoted Attribute Value</option>
-                    <option value="syncDerivedTopics" ${rule.actions[0]?.type === 'syncDerivedTopics' ? 'selected' : ''}>🌿 Inherit & Recalculate Parent Topics</option>
+                    <option value="cloneToContainer" ${rule.actions[0]?.type === 'cloneToContainer' ? 'selected' : ''}>File & Auto-Clone Under Parent Container</option>
+                    <option value="setLabel" ${rule.actions[0]?.type === 'setLabel' ? 'selected' : ''}>Assign Label / Promoted Attribute Value</option>
+                    <option value="syncDerivedTopics" ${rule.actions[0]?.type === 'syncDerivedTopics' ? 'selected' : ''}>Inherit & Recalculate Parent Topics</option>
                 </select>
             </div>
         `;
