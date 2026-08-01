@@ -1,42 +1,125 @@
-/* Notes System Plugin Theme & Styling */
+/* ==============================================================================
+   Trilium Notes System — Native Theme & Design Tokens
+   Integrates seamlessly with Trilium's CSS variable system and theme tokens.
+   ============================================================================== */
+
+:root {
+    --ns-border-radius: 8px;
+    --ns-card-bg: var(--sub-background-color, #252538);
+    --ns-main-bg: var(--main-background-color, #1e1e2e);
+    --ns-text-color: var(--main-text-color, #cdd6f4);
+    --ns-muted-text: var(--muted-text-color, #a6adc8);
+    --ns-accent-color: var(--active-item-background-color, #705df2);
+    --ns-border-color: var(--border-color, rgba(255, 255, 255, 0.1));
+}
 
 .notes-system-shell {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    color: #cdd6f4;
+    font-family: var(--main-font-family, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    color: var(--ns-text-color);
+    background-color: var(--ns-main-bg);
+    min-height: 100vh;
+    padding: 1.5rem;
 }
 
+/* Header & Nav Tabs */
 .today-header {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.today-grid .card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border-radius: 10px;
-}
-
-.today-grid .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    background: var(--ns-card-bg);
+    border: 1px solid var(--ns-border-color);
+    border-radius: var(--ns-border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .nav-pills .nav-link {
-    color: #a6adc8;
-    transition: all 0.2s ease;
+    color: var(--ns-muted-text);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
 }
 
 .nav-pills .nav-link:hover {
-    color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--ns-text-color);
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .nav-pills .nav-link.active {
-    background-color: #705df2 !important;
+    background-color: var(--ns-accent-color) !important;
     color: #ffffff !important;
-    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(112, 93, 242, 0.4);
 }
 
+/* Component Grid & Cards */
+.today-grid .card {
+    background-color: var(--ns-card-bg);
+    border: 1px solid var(--ns-border-color);
+    border-radius: var(--ns-border-radius);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.today-grid .card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.card-header {
+    border-bottom: 1px solid var(--ns-border-color);
+    padding: 0.75rem 1rem;
+}
+
+/* Kanban Board Styling */
+.kanban-col {
+    background: var(--ns-main-bg);
+    border: 1px solid var(--ns-border-color);
+    border-radius: 6px;
+    padding: 0.75rem;
+    min-height: 220px;
+}
+
+.kanban-card {
+    background: var(--ns-card-bg);
+    border: 1px solid var(--ns-border-color);
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    cursor: grab;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.kanban-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--ns-accent-color);
+}
+
+.kanban-card:active {
+    cursor: grabbing;
+}
+
+/* Trilium Native-Style Badges & Pills */
 .badge-outline-info {
     border: 1px solid #89dceb;
     color: #89dceb;
     background: transparent;
+}
+
+.badge-outline-success {
+    border: 1px solid #a6e3a1;
+    color: #a6e3a1;
+    background: transparent;
+}
+
+.badge-outline-warning {
+    border: 1px solid #f9e2af;
+    color: #f9e2af;
+    background: transparent;
+}
+
+/* IFTTT Automation Flow Diagram Nodes */
+.ifttt-node {
+    background: var(--ns-card-bg);
+    border: 1px solid var(--ns-border-color);
+    border-radius: 6px;
+    padding: 0.75rem;
+}
+
+.ifttt-arrow {
+    font-size: 1.5rem;
+    color: var(--ns-accent-color);
 }

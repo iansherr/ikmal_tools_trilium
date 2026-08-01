@@ -81,7 +81,7 @@
       "id": "notes-system-css",
       "type": "css",
       "source": "src/artifacts/notes-system.css",
-      "integrity": "sha256-aUSM7Y2BpzE1eWACW1+828EM9l+mXq7S70zgZD5x0lg=",
+      "integrity": "sha256-YmyHbxn8Gc7w7LJDkjzyvvHwvjkHVDtEqmZaau4b9Ac=",
       "title": "Notes System Theme & Styles",
       "activation": "startup"
     }
