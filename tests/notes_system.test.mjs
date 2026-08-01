@@ -5,6 +5,7 @@ import { RelationshipEngine } from '../dist/engine/relationshipEngine.js';
 import { IfThenRuleEngine } from '../dist/engine/ifThenRuleEngine.js';
 import { TodayEngine } from '../dist/engine/todayEngine.js';
 import { NoteCreationEngine } from '../dist/engine/noteCreationEngine.js';
+import { buildAttributeRows } from '../dist/engine/noteMaterializer.js';
 import { SettingsEngine, DEFAULT_AUTOMATION_SETTINGS } from '../dist/engine/settingsEngine.js';
 import { loadAutomationSettings, saveAutomationSetting, loadYamlSpecification, saveYamlSpecification } from '../dist/engine/packagePersistence.js';
 import { dumpYamlSpec, parseAndApplyYamlSpec } from '../dist/engine/yamlSpec.js';
@@ -111,6 +112,28 @@ test('NoteCreationEngine plans note creation with if/then automation', () => {
     assert.equal(plan.formattedTitle, 'Submit quarterly report');
     assert.deepEqual(plan.autoCloneContainers, ['proj_beta']);
     assert.ok(plan.labelsToCreate.some(l => l.name === 'extTask'));
+});
+
+test('buildAttributeRows converts a plan into the label/relation rows api.createNote expects', () => {
+    const tplEngine = new TemplateEngine();
+    const relEngine = new RelationshipEngine(tplEngine);
+    const ifThenRuleEngine = new IfThenRuleEngine();
+    const creationEngine = new NoteCreationEngine(tplEngine, relEngine, ifThenRuleEngine);
+
+    const plan = creationEngine.planNoteCreation({
+        type: 'task',
+        title: 'Submit quarterly report',
+        attributes: { priority: 'high' },
+        relations: { project: 'proj_beta' },
+    });
+
+    const rows = buildAttributeRows(plan);
+
+    assert.ok(rows.some(r => r.type === 'label' && r.name === 'priority' && r.value === 'high'));
+    assert.ok(rows.some(r => r.type === 'label' && r.name === 'extTask'));
+    assert.ok(rows.some(r => r.type === 'relation' && r.name === 'project' && r.value === 'proj_beta'));
+    // Every row is one or the other, never anything api.createNote's attributes array can't take.
+    assert.ok(rows.every(r => r.type === 'label' || r.type === 'relation'));
 });
 
 test('TodayEngine defaults and persists responsive layout settings', () => {

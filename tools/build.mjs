@@ -24,9 +24,6 @@ try {
     console.log('🔨 Bundling dashboard render artifact...');
     execSync('npx esbuild src/artifacts/notes-system-dashboard.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-dashboard.js', { stdio: 'inherit' });
 
-    console.log('🔨 Bundling backend worker artifact...');
-    execSync('npx esbuild src/artifacts/notes-system-backend.js --bundle --format=cjs --target=es2020 --outfile=dist/artifacts/notes-system-backend.js', { stdio: 'inherit' });
-
     console.log('🔨 Bundling launcher artifact...');
     execSync('npx esbuild src/artifacts/notes-system-launcher.js --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-launcher.js', { stdio: 'inherit' });
 

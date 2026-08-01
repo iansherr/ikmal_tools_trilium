@@ -17,18 +17,17 @@ made of a handful of artifacts:
 | Artifact | Type | Source |
 |---|---|---|
 | `notes-system-dashboard` | render note | `src/artifacts/notes-system-dashboard.jsx` |
-| `notes-system-backend` | backend script | `src/artifacts/notes-system-backend.js` |
-| `notes-system-endpoint` | custom HTTP endpoint | `src/artifacts/notes-system-backend.js` |
 | `notes-system-launcher` | launcher bar entry | `src/artifacts/notes-system-launcher.js` |
 | `notes-system-css` | stylesheet | `src/artifacts/notes-system.css` |
 
 The dashboard render note is the whole UI: it mounts three tabs (Today,
 Template Studio, Settings) into a container div and owns all state in memory
-for the session. Nothing here talks to Trilium's database schema directly —
-notes are created and read through the standard frontend script API
-(`api.searchForNotes`, `api.createNewTextNote`, etc.) and a small set of
-authenticated `fetch` calls for anything that API doesn't expose (see
-"Persistence" below).
+for the session. Nothing here talks to Trilium's database schema directly, and
+there is no backend script or custom HTTP endpoint — notes are created and
+read entirely from the frontend, through the standard frontend script API
+(`api.searchForNotes`, `api.createNote`, etc.) and a small set of authenticated
+`fetch` calls for anything that API doesn't expose (see "Persistence" and
+"Creating notes" below).
 
 ## Architecture
 
@@ -89,6 +88,24 @@ copy** of one real specification — useful as a starting point or an export
 target — not something the running plugin reads automatically. Edit it in the
 Settings tab's Specification editor and use Copy/Save there; the file on disk
 doesn't sync itself.
+
+## Creating notes
+
+Quick Capture (`src/components/QuickCaptureModal.ts`) builds a
+`NoteCreationPlan` (`noteCreationEngine.ts`: title, labels, relations, if/then
+actions, auto-clone targets, journal-clone) and then materializes it
+(`src/engine/noteMaterializer.ts`) with `api.createNote` for the note itself.
+Filing it under a second parent — an auto-clone target from a parent-link
+relationship, or today's journal note — isn't exposed on the frontend script
+API either; Trilium's own client uses `PUT notes/{id}/clone-to-note/{parentId}`
+for that (`branches.ts`), so this replicates it with the same authenticated-
+fetch convention as the Persistence section above.
+
+Any template relationship (`~project` on a Task, say) becomes a searchable
+picker over real candidate notes (found by searching for the target
+template's marker label) in the Quick Capture modal, so auto-clone and
+derived-topic inheritance have an actual note to act on rather than always
+resolving to nothing.
 
 ## Scripts
 

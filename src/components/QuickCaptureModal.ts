@@ -1,18 +1,38 @@
 /**
- * Quick Capture Modal Component: Interactive modal for creating Notes, Tasks, Meetings, Stories, and Edits.
- * Styled natively with Trilium Boxicons and design tokens.
+ * Quick Capture Modal Component: creates a note from a template, with a picker
+ * for each of the template's parent-link relationships (e.g. which Project Hub
+ * a Task belongs to) so auto-clone and derived-topic inheritance have something
+ * real to act on. Styled natively with Trilium Boxicons and design tokens.
  * Accurately implements original system contract for New Story (project) vs New Edit (edit).
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
 import { NoteCreationEngine, NoteCreationPlan } from '../engine/noteCreationEngine.js';
+import { materializeNoteCreation, MaterializeResult } from '../engine/noteMaterializer.js';
+import { escapeHtml, searchableSelect, ComboboxHandle } from './nativeUi.js';
 
-export function showQuickCaptureModal(
+interface TriliumFNote {
+    noteId: string;
+    title: string;
+}
+
+function triliumApi(): { searchForNotes(q: string): Promise<TriliumFNote[]>; showMessage?(msg: string): void } | null {
+    const a = (globalThis as any).api;
+    return a && typeof a.searchForNotes === 'function' ? a : null;
+}
+
+export interface QuickCaptureOutcome {
+    plan: NoteCreationPlan;
+    /** Present only when the note was actually created (i.e. running inside Trilium). */
+    result?: MaterializeResult;
+}
+
+export async function showQuickCaptureModal(
     templateId: string,
     templateEngine: TemplateEngine,
     noteCreationEngine: NoteCreationEngine,
-    onCreated?: (plan: NoteCreationPlan) => void
-): void {
+    onCreated?: (outcome: QuickCaptureOutcome) => void
+): Promise<void> {
     const isStoryOrEdit = templateId === 'story' || templateId === 'edit';
     const activeTplId = isStoryOrEdit ? 'story' : templateId;
     const template = templateEngine.getTemplate(activeTplId);
@@ -32,6 +52,19 @@ export function showQuickCaptureModal(
 
     const description = descriptions[templateId] || `Creates a new ${template.title} note.`;
     const modalTitle = isEditMode ? 'New Edit Package' : (templateId === 'story' ? 'New Story Project' : `New ${template.title}`);
+
+    // Each parent-link relationship gets a picker over real candidate notes,
+    // fetched up front so the modal renders with real options rather than a
+    // spinner. Outside Trilium (no api) relationships render with no
+    // candidates, same as the rest of this modal's preview-only fallback.
+    const api = triliumApi();
+    const relationCandidates = new Map<string, TriliumFNote[]>();
+    for (const rel of template.relationships) {
+        if (!api) { relationCandidates.set(rel.relationName, []); continue; }
+        const targetTpl = templateEngine.getTemplate(rel.targetTemplateId);
+        const notes = targetTpl ? await api.searchForNotes(`#${targetTpl.marker}`) : [];
+        relationCandidates.set(rel.relationName, notes);
+    }
 
     // Modal overlay container
     const backdrop = document.createElement('div');
@@ -88,13 +121,16 @@ export function showQuickCaptureModal(
                         </div>
                     ` : ''}
 
-                    <!-- Creation Plan Summary Box -->
-                    <div class="plan-summary-box border-top pt-3 d-none">
-                        <label class="form-label small font-weight-bold text-success d-flex align-items-center gap-1 mb-1">
-                            <i class="bx bx-check-circle"></i> Note Creation Plan
-                        </label>
-                        <div class="p-2.5 rounded border small font-monospace plan-details" style="background-color: var(--main-background-color, transparent); font-size: 11.5px;"></div>
-                    </div>
+                    ${template.relationships.length > 0 ? `
+                        <div class="border-top pt-3 rel-form">
+                            <label class="form-label small font-weight-bold d-flex align-items-center gap-1 mb-2">
+                                <i class="bx bx-link text-warning"></i> Parent links
+                            </label>
+                        </div>
+                    ` : ''}
+
+                    <!-- Error state -->
+                    <div class="create-error alert alert-danger d-none m-0"></div>
                 </div>
                 <div class="modal-footer border-top p-3 d-flex justify-content-between">
                     <button type="button" class="btn btn-sm btn-outline-secondary close-btn">Cancel</button>
@@ -114,10 +150,31 @@ export function showQuickCaptureModal(
         if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
     }
 
+    // Relation pickers are real controls, not markup, so they carry their own
+    // state the same way nativeUi's other composite fields do.
+    const relPickers = new Map<string, ComboboxHandle>();
+    const relForm = modal.querySelector('.rel-form');
+    for (const rel of template.relationships) {
+        const candidates = relationCandidates.get(rel.relationName) ?? [];
+        const field = document.createElement('div');
+        field.className = 'ns-field mb-2';
+        field.innerHTML = `<label class="form-label tiny text-muted font-weight-bold">~${escapeHtml(rel.relationName)} &rarr; ${escapeHtml(rel.targetTemplateName)}</label>`;
+        const picker = searchableSelect({
+            id: `rel-${rel.relationName}`,
+            value: '',
+            placeholder: candidates.length ? `Search ${rel.targetTemplateName}…` : `No existing ${rel.targetTemplateName} notes found`,
+            options: candidates.map((n) => ({ value: n.noteId, label: n.title })),
+        });
+        field.appendChild(picker.el);
+        relForm?.appendChild(field);
+        relPickers.set(rel.relationName, picker);
+    }
+
     const titleInput = modal.querySelector('.title-input') as HTMLInputElement;
     const createBtn = modal.querySelector('.create-btn') as HTMLButtonElement;
+    const errorBox = modal.querySelector('.create-error') as HTMLElement;
 
-    createBtn.addEventListener('click', () => {
+    createBtn.addEventListener('click', async () => {
         const rawTitle = titleInput.value.trim() || `Untitled ${modalTitle}`;
         const attrInputs = modal.querySelectorAll('.attr-input');
         const attributes: Record<string, any> = {};
@@ -127,17 +184,34 @@ export function showQuickCaptureModal(
             if (attrName) attributes[attrName] = input.value;
         });
 
+        const relations: Record<string, string> = {};
+        for (const [relationName, picker] of relPickers) {
+            const value = picker.getValue();
+            if (value) relations[relationName] = value;
+        }
+
         const plan = noteCreationEngine.planNoteCreation({
             type: templateId,
             title: rawTitle,
             attributes,
+            relations,
             mode: isEditMode ? 'edit' : 'project',
         });
 
-        closeModal();
+        errorBox.classList.add('d-none');
+        createBtn.disabled = true;
+        createBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creating…';
 
-        if (onCreated) {
-            onCreated(plan);
+        try {
+            const result = api ? await materializeNoteCreation(plan) : undefined;
+            if (result) api?.showMessage?.(`Created "${result.title}".`);
+            closeModal();
+            onCreated?.({ plan, result });
+        } catch (err: any) {
+            errorBox.textContent = `Could not create the note: ${err.message}`;
+            errorBox.classList.remove('d-none');
+            createBtn.disabled = false;
+            createBtn.innerHTML = `<i class="bx bx-plus"></i> Create ${escapeHtml(modalTitle)}`;
         }
     });
 

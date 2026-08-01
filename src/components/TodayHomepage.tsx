@@ -23,8 +23,16 @@ import {
 } from '../engine/noteInsightsEngine.js';
 import { button, emptyState, escapeHtml, iconAction, listItem, pageHeader, row, section, switchRow, toggle } from './nativeUi.js';
 
-/** Placeholder tasks standing in for the notes a live instance would supply. */
-const SAMPLE_TASKS = [
+interface KanbanTask {
+    id: string;
+    title: string;
+    priority: string;
+    status: string;
+    project: string;
+}
+
+/** Stands in for real tasks outside Trilium (this preview harness, tests). */
+const SAMPLE_TASKS: KanbanTask[] = [
     { id: 't1', title: 'Review quarterly goals & roadmap', priority: 'high', status: 'todo', project: 'Trilium Extension' },
     { id: 't2', title: 'Publish LanguageTool plugin update', priority: 'medium', status: 'in_progress', project: 'LanguageTool Plugin' },
     { id: 't3', title: 'Setup ETAPI automated test suite', priority: 'high', status: 'done', project: 'Trilium Extension' },
@@ -55,6 +63,9 @@ export function renderTodayHomepage(
     // them rather than each widget querying Trilium independently.
     let noteSummaryCache: NoteSummary[] | null = null;
     let noteSummaryPending = false;
+
+    let taskCache: KanbanTask[] | null = null;
+    let taskPending = false;
 
     // Words written today, for the Writing Goal widget.
     let wordsTodayCache: number | null = null;
@@ -576,6 +587,45 @@ export function renderTodayHomepage(
         return false;
     }
 
+    /** The Kanban board's own search — task status/priority/project aren't part of NoteSummary. */
+    async function loadTasks(): Promise<KanbanTask[]> {
+        const api = triliumApi();
+        if (!api) return SAMPLE_TASKS;
+
+        const notes = await api.searchForNotes('#extTask');
+        const tasks: KanbanTask[] = [];
+        for (const note of notes) {
+            const status = typeof note.getLabelValue === 'function' ? note.getLabelValue('status') : null;
+            const priority = typeof note.getLabelValue === 'function' ? note.getLabelValue('priority') : null;
+            const projectNote = typeof note.getRelationTarget === 'function' ? await note.getRelationTarget('project') : null;
+            tasks.push({
+                id: note.noteId,
+                title: note.title,
+                status: status ?? 'todo',
+                priority: priority ?? 'medium',
+                project: projectNote?.title ?? '',
+            });
+        }
+        return tasks;
+    }
+
+    /** Renders a loading placeholder and kicks off the fetch if needed; returns whether the cache is ready to read. */
+    function ensureTasksLoaded(card: HTMLElement): boolean {
+        if (taskCache) return true;
+
+        card.appendChild(emptyState('Loading…'));
+        if (!taskPending) {
+            taskPending = true;
+            loadTasks().then((tasks) => {
+                taskCache = tasks;
+            }).finally(() => {
+                taskPending = false;
+                if (mode === 'preview') refresh();
+            });
+        }
+        return false;
+    }
+
     async function loadWordsWrittenToday(): Promise<number> {
         const api = triliumApi();
         if (!api) return 340; // representative sample outside Trilium, where there is no real content to measure
@@ -843,11 +893,13 @@ export function renderTodayHomepage(
     }
 
     function renderKanban(parent: HTMLElement) {
+        if (!ensureTasksLoaded(parent)) return;
+
         const board = document.createElement('div');
         board.className = 'ns-kanban';
 
         for (const column of KANBAN_COLUMNS) {
-            const tasks = SAMPLE_TASKS.filter((t) => t.status === column.id);
+            const tasks = taskCache!.filter((t) => t.status === column.id);
 
             const col = document.createElement('div');
             col.className = 'kanban-col';

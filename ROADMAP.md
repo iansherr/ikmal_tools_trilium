@@ -3,43 +3,37 @@
 Known gaps in the current package, in rough priority order. Nothing here is
 scheduled — this is a punch list, not a commitment.
 
-## Quick Capture doesn't create notes yet
+## Derived topic inheritance is computed but never applied
 
-`NoteCreationEngine.planNoteCreation()` computes the plan (title, labels,
-auto-file target) and the modal shows it, but nothing calls
-`api.createNewTextNote` or equivalent to actually write the note. This is the
-single biggest gap between what the UI implies and what it does — see
-`USER_GUIDE.md` → Quick capture.
+`NoteCreationEngine.planNoteCreation()` computes `inheritedTopicSources` (the
+notes a new note should inherit topics from, when `enableDerivedTopics` is
+on) and `RelationshipEngine.computeDerivedTopics()` exists to merge them —
+but nothing in the plan or in `noteMaterializer.ts` ever calls it or turns
+the result into a label/relation on the note. The setting toggles, the
+computation runs, and the result goes nowhere. Fixing this needs: reading
+each source note's own topics (a search/read Quick Capture doesn't currently
+do), merging via `computeDerivedTopics`, and adding the merged set to
+`buildAttributeRows`'s output before the note is created.
 
-## The Kanban board is sample data
+## Multi-value parent-link relationships only ever get one target
 
-`renderKanban()` in `TodayHomepage.tsx` always renders `SAMPLE_TASKS`, a
-fixed array, regardless of environment. Every other Today widget is backed by
-a real `api.searchForNotes` query (with a sample-data fallback only outside
-Trilium); Kanban has no live path at all yet.
+`TemplateRelationshipDef.isMulti` exists (a template can declare a
+relationship that allows several targets), but the Quick Capture picker
+(`searchableSelect`) only ever selects one value. A multi-valued relationship
+quietly behaves as single-valued until the picker gains multi-select.
 
-## The custom HTTP endpoint is a stub
+## The custom HTTP endpoint and backend script were removed, not fixed
 
-`src/artifacts/notes-system-backend.js`'s `handleCustomRequest` only
-implements `/notes-system/create` and `/notes-system/templates`, even though
-`trilium-package.json`'s endpoint route also declares `ifThen` and
-`settings`. What it does implement doesn't match the current engine model
-either — its template list (`storyDraft`, etc.) predates the current
-`TemplateEngine` template ids (`story`, `edit`, ...), and it hardcodes a
-`taskRoot` container lookup rather than going through `TemplateEngine` /
-`NoteCreationEngine`. Worth deciding whether this endpoint is still needed at
-all before investing in fixing it — nothing in the dashboard currently calls
-it.
-
-## If an open-ended note picker is ever added, it should reuse `searchableSelect`
-
-The template and category pickers in Template Studio (`nativeUi.ts`'s
-`searchableSelect`) already do fuzzy filtering; the remaining `<select>`s
-(trigger/action type, attribute kind/type, column count, density, units) are
-small fixed enums where a native select is still the right call. If a future
-feature picks from an open-ended set — linking to an arbitrary existing note
-rather than a fixed template — extend `searchableSelect` rather than
-building a second combobox.
+They implemented `/notes-system/create` and `/notes-system/templates`
+against a stale copy of the template model (hardcoded `taskRoot` lookup,
+template ids that predated the current `TemplateEngine`), and nothing called
+either — Quick Capture creates notes entirely from the frontend
+(`noteMaterializer.ts`) via `api.createNote` and a couple of authenticated
+`fetch` calls for what that API doesn't expose. Reimplementing this
+server-side would mean duplicating engine logic in a separate runtime for no
+current caller; if a real need for a server-side endpoint shows up, model it
+against the current engines from scratch rather than resurrecting the old
+one from git history.
 
 ## Design rules
 
@@ -52,3 +46,7 @@ building a second combobox.
    classes, and CSS custom properties that actually exist in Trilium's
    theme-next stylesheets — not just `tsc`/tests. See `README.md` →
    Verifying visually.
+4. Anything that picks one value from an open-ended set (an existing note,
+   not a fixed template/category) should reuse `nativeUi.ts`'s
+   `searchableSelect` rather than a new combobox — see Quick Capture's
+   parent-link picker for the pattern (fetch candidates, pass as options).

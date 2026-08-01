@@ -3,24 +3,26 @@
 ## Is this a Trilium plugin?
 
 Yes — a package (`iansherr/notes-system`) made of one render note (the
-dashboard), a backend script, a custom HTTP endpoint, a launcher entry, and a
-stylesheet. See `README.md` for the artifact list and `trilium-package.json`
-for the manifest.
+dashboard), a launcher entry, and a stylesheet. No backend script and no
+custom HTTP endpoint — everything runs from the frontend. See `README.md`
+for the artifact list and `trilium-package.json` for the manifest.
 
-## Why doesn't Quick Capture's "Create" button create a note?
+## What does Quick Capture's "Create" button actually do?
 
-It doesn't yet — `NoteCreationEngine.planNoteCreation()` computes the title,
-labels, and auto-file target, and the modal shows that plan, but nothing
-calls `api.createNewTextNote` (or an equivalent) to actually write it into
-your note tree. It's a preview of what note creation *would* produce. See
-`ROADMAP.md`.
+Builds a `NoteCreationPlan` (`noteCreationEngine.ts`) and materializes it
+with `api.createNote`, then files it under any auto-clone targets and
+today's journal note if the plan calls for it (`noteMaterializer.ts`). If the
+template has a parent-link relationship (a Task's `~project`, say), the modal
+shows a searchable picker over real existing notes of that type first — pick
+one and the note is auto-cloned there; leave it blank and it just isn't. See
+`README.md` → Creating notes.
 
-## Why does the Kanban board always show the same tasks?
+## Why does the Kanban board always show the same tasks in the static preview, but real ones inside Trilium?
 
-It renders a fixed sample dataset (`SAMPLE_TASKS` in `TodayHomepage.tsx`),
-not a live search — it isn't backed by real notes yet. The rest of Today's
-widgets (Open Tasks, Overdue, Due Soon, etc.) are live `api.searchForNotes`
-queries; the Kanban board specifically is not.
+Outside Trilium (this repo's static preview page, tests) there's nothing to
+search, so it falls back to a fixed sample dataset. Inside Trilium it's a
+live `api.searchForNotes('#extTask')` query, same as every other note-driven
+Today widget.
 
 ## I toggled a setting / saved the Specification — will it still be there after I reload?
 
@@ -47,11 +49,20 @@ browser; no API key required.
 
 ## Do I need `backendScriptingEnabled` turned on for this plugin?
 
-No. Every write this plugin makes (settings, the YAML specification) goes
-through the same authenticated `fetch`-to-attribute-endpoint path the
-sibling `../trilium_plugins` package manager uses, which works regardless of
-that instance option. It's specifically avoided because that option is
-commonly off — see `README.md` → Persistence.
+No. Every write this plugin makes — settings, the YAML specification, note
+creation, filing a note under a second parent — goes through either the
+frontend script API directly or the same authenticated-fetch convention the
+sibling `../trilium_plugins` package manager uses, both of which work
+regardless of that instance option. It's specifically avoided because that
+option is commonly off — see `README.md` → Persistence and Creating notes.
+
+## The parent-link picker in Quick Capture says "No existing ... notes found"
+
+That template's relationship target (e.g. Task's `~project` → Project Hub)
+has no matching notes yet — the picker searches for `#<marker>` on the
+target template and comes up empty. Create one of those first, or leave the
+field blank; the note is still created, just without that relation or its
+auto-clone.
 
 ## How do I deploy a change to a real instance?
 

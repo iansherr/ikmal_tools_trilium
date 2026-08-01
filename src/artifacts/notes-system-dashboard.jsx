@@ -69,11 +69,20 @@ export function initNotesSystemDashboard(containerEl) {
 
         if (activeTab === 'today') {
             renderTodayHomepage(contentArea, todayEngine, templateEngine, (templateId) => {
-                showQuickCaptureModal(templateId, templateEngine, noteCreationEngine, (plan) => {
-                    const cloneTarget = plan.autoCloneContainers.length
-                        ? plan.autoCloneContainers.join(', ')
-                        : (plan.journalClone ? "Today's Journal" : 'None');
-                    alert(`🎉 Created ${templateId.toUpperCase()} Note!\n\nFormatted Title: ${plan.formattedTitle}\nLabels: ${plan.labelsToCreate.map(l => '#' + l.name + '=' + l.value).join(', ')}\nAuto-Clone Target: ${cloneTarget}`);
+                showQuickCaptureModal(templateId, templateEngine, noteCreationEngine, ({ plan, result }) => {
+                    if (result) {
+                        // The modal already showed a Trilium toast; re-render so
+                        // search-driven Today widgets (Open Tasks, etc.) pick up
+                        // the note that was just created.
+                        renderMain();
+                    } else {
+                        // Outside Trilium (static preview, no `api`) there's nothing
+                        // to create against, so fall back to describing the plan.
+                        const cloneTarget = plan.autoCloneContainers.length
+                            ? plan.autoCloneContainers.join(', ')
+                            : (plan.journalClone ? "Today's Journal" : 'None');
+                        alert(`Preview only (no Trilium api present).\n\nFormatted Title: ${plan.formattedTitle}\nLabels: ${plan.labelsToCreate.map(l => '#' + l.name + '=' + l.value).join(', ')}\nAuto-Clone Target: ${cloneTarget}`);
+                    }
                 });
             });
         } else if (activeTab === 'templates') {

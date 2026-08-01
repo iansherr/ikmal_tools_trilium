@@ -2,8 +2,8 @@
 
 The dashboard is one render note with three tabs: **Today**, **Template
 Studio**, and **Settings**. Everything below describes what's actually wired
-up today — a couple of surfaces are previews rather than finished features;
-those are called out explicitly rather than glossed over.
+up today; anywhere behavior differs outside Trilium (the static preview
+page, tests) that's called out explicitly rather than glossed over.
 
 ## Today
 
@@ -47,17 +47,24 @@ longitude, and a label first.
 ### Quick capture
 
 The buttons under "Quick capture" open a modal for the first four templates
-that aren't excluded from journal filing. **Today this only plans and
-previews a note** — title, promoted attributes, computed labels, and where it
-would auto-file — rather than creating anything in your note tree yet. Treat
-it as a preview of what `NoteCreationEngine` would do, not a working "new
-note" button. See `ROADMAP.md`.
+that aren't excluded from journal filing: a title, the template's promoted
+attributes, and — if the template has a parent-link relationship, like a
+Task's `~project` — a searchable picker over real existing notes of the
+target type. Pick one and the note is auto-cloned there once created; leave
+it blank and the note is still created, just without that relation. Create
+calls `api.createNote` and files the note under any auto-clone targets and
+today's journal note (see `README.md` → Creating notes); a failure shows
+inline in the modal rather than closing it.
+
+Outside Trilium (the static preview page, tests) there's no `api` to create
+against, so Create instead shows what the plan *would* produce.
 
 ### Kanban board
 
-Also a preview: it always renders a fixed set of sample tasks (`SAMPLE_TASKS`
-in `TodayHomepage.tsx`), not your real tasks. Useful for seeing the column
-layout and card style; not yet backed by a search.
+A live `api.searchForNotes('#extTask')` query, columned by each task's
+`status` label. Outside Trilium it falls back to fixed sample tasks
+(`SAMPLE_TASKS` in `TodayHomepage.tsx`) so the layout still shows something
+meaningful.
 
 ## Template Studio
 

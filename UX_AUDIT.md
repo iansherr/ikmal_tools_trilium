@@ -51,14 +51,34 @@ to `src/components/` or `src/artifacts/`.
       promoted attributes, body) — no rule/inheritance metadata leaking into
       what's meant to look like the actual note.
 
+## Note creation correctness
+
+- [x] Quick Capture's Create button materializes the plan via
+      `noteMaterializer.ts` (`api.createNote`, then a clone-to-note fetch per
+      auto-clone target and today's journal note) rather than only
+      previewing it. The parent-link picker's rendering (real candidates,
+      empty state, layout inside the modal) is checked against a real
+      Trilium render; the actual create-against-a-live-instance path is not
+      — no disposable instance was available this session, so this is
+      verified by type-checking against Trilium's own client source
+      (`api.createNote`'s signature, the `clone-to-note` route) plus the
+      `buildAttributeRows` unit test, not an end-to-end run.
+- [x] A materialization failure (missing container, failed clone) surfaces
+      inline in the modal rather than closing it or failing silently — see
+      `QuickCaptureModal.ts`'s try/catch around `materializeNoteCreation`.
+- [x] Outside Trilium (no `api`), Quick Capture still shows the plan preview
+      rather than throwing, so the static preview page and tests keep
+      working.
+- [x] The Kanban board is a live `api.searchForNotes('#extTask')` query
+      inside Trilium, with the same sample-data-outside-Trilium fallback as
+      every other note-driven Today widget.
+
 ## Known-incomplete surfaces (see `ROADMAP.md` for detail)
 
-- [ ] Quick Capture's Create button only plans a note; it doesn't call the
-      Trilium API to create one.
-- [ ] The Kanban board always shows fixed sample data, never a real search.
-- [ ] The custom HTTP endpoint (`notes-system-endpoint` artifact) only
-      implements `create` and `templates`, and those don't match the current
-      `TemplateEngine` model.
+- [ ] Derived topic inheritance is computed (`inheritedTopicSources`) but
+      never turned into a label/relation on the created note.
+- [ ] Multi-value parent-link relationships (`isMulti: true`) only ever get
+      one target from the Quick Capture picker.
 
 ## Verification method
 
