@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: Identical IFTTT Rule Cards across Global, Category, and Template scopes with Deep-Link Editing.
+ * Template Studio Component: Ultra-Sleek Design with Rich Bootstrap Modals (No Browser Prompts).
  * Styled natively with Trilium Boxicons and standard Trilium design tokens.
  */
 
@@ -23,12 +23,11 @@ export function renderTemplateStudio(
         const wrapper = document.createElement('div');
         wrapper.className = 'template-studio-wrapper d-flex flex-column gap-4';
 
-        // 1. Header Banner
+        // 1. Sleek Header Banner
         const header = document.createElement('div');
-        header.className = 'p-4 rounded border d-flex align-items-center justify-content-between shadow-sm';
+        header.className = 'p-4 rounded-3 border d-flex align-items-center justify-content-between shadow-sm';
         header.style.backgroundColor = 'var(--sub-background-color, transparent)';
         header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
-        header.style.borderRadius = '12px';
 
         header.innerHTML = `
             <div class="d-flex align-items-center gap-3">
@@ -37,11 +36,11 @@ export function renderTemplateStudio(
                 </div>
                 <div>
                     <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        Template Studio & Unified IFTTT Engine
-                        <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
+                        Template Studio & Behavioral Engine
+                        <span class="badge bg-secondary rounded-pill font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure template schemas, unified IFTTT rules with deep-link editing across Global, Category, and Template scopes.
+                        Configure template schemas, parent-child links, automation rules, promoted attributes, and live note previews.
                     </p>
                 </div>
             </div>
@@ -62,7 +61,7 @@ export function renderTemplateStudio(
         });
 
         const newTplBtn = header.querySelector('.new-template-btn') as HTMLButtonElement;
-        newTplBtn.addEventListener('click', () => showCreateTemplateModal());
+        newTplBtn.addEventListener('click', () => openNewTemplateModal(wrapper, templateEngine, () => { onSave(); refresh(); }));
         wrapper.appendChild(header);
 
         const layoutRow = document.createElement('div');
@@ -73,16 +72,15 @@ export function renderTemplateStudio(
         sidebarCol.className = 'col-md-3';
 
         const sidebarCard = document.createElement('div');
-        sidebarCard.className = 'card border shadow-sm h-100';
+        sidebarCard.className = 'card border shadow-sm h-100 rounded-3';
         sidebarCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
         sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
-        sidebarCard.style.borderRadius = '12px';
 
         const sidebarHeader = document.createElement('div');
         sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center justify-content-between p-3.5';
         sidebarHeader.innerHTML = `
             <span class="d-flex align-items-center gap-2"><i class="bx bx-sitemap text-primary"></i> Template Hierarchy</span>
-            <span class="badge bg-primary bg-opacity-10 text-primary small">Tree</span>
+            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">Tree</span>
         `;
         sidebarCard.appendChild(sidebarHeader);
 
@@ -163,7 +161,7 @@ export function renderTemplateStudio(
                 const isSelected = tpl.id === selectedTemplateId && activeEditorTab !== 'categories';
 
                 const item = document.createElement('div');
-                item.className = `d-flex align-items-center justify-content-between px-3 py-2 rounded cursor-pointer transition-all ${isSelected ? 'bg-primary text-white font-weight-bold shadow-sm' : 'text-body'}`;
+                item.className = `d-flex align-items-center justify-content-between px-3 py-2 rounded-2 cursor-pointer transition-all ${isSelected ? 'bg-primary text-white font-weight-bold shadow-sm' : 'text-body'}`;
                 item.style.cursor = 'pointer';
                 if (!isSelected) {
                     item.style.backgroundColor = 'transparent';
@@ -171,7 +169,7 @@ export function renderTemplateStudio(
 
                 item.innerHTML = `
                     <div class="d-flex align-items-center gap-2">
-                        ${depth > 0 ? '<i class="bx bx-subdirectory-right text-muted"></i>' : ''}
+                        ${depth > 0 ? '<i class="bx bx-subdirectory-right opacity-50"></i>' : ''}
                         <i class="bx bx-${tpl.icon}"></i>
                         <span class="small">${node.label || tpl.title}</span>
                     </div>
@@ -208,29 +206,28 @@ export function renderTemplateStudio(
         mainCol.className = 'col-md-9';
 
         const workspaceCard = document.createElement('div');
-        workspaceCard.className = 'card border shadow-sm h-100';
+        workspaceCard.className = 'card border shadow-sm h-100 rounded-3';
         workspaceCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
         workspaceCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
-        workspaceCard.style.borderRadius = '12px';
 
         // Workspace Header
         const mainHeader = document.createElement('div');
         mainHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between p-3.5';
         mainHeader.innerHTML = `
             <div class="d-flex align-items-center gap-3">
-                <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
-                    <i class="bx bx-${activeEditorTab === 'categories' ? 'category' : (activeTpl?.icon || 'layer')} fs-5 m-0"></i>
+                <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="bx bx-${activeEditorTab === 'categories' ? 'category' : (activeTpl?.icon || 'layer')} fs-4 m-0"></i>
                 </div>
                 <div>
                     <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
                         <span>${activeEditorTab === 'categories' ? 'Category Behaviors & Automations' : `Template: ${activeTpl?.title}`}</span>
-                        ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
+                        ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary rounded-pill font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
                     </h3>
                     <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure category root markers, journal cloning, topic inheritance, and category-wide rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <ul class="nav nav-pills bg-body bg-opacity-50 p-1 rounded border">
+                <ul class="nav nav-pills bg-body bg-opacity-50 p-1 rounded-3 border">
                     <li class="nav-item">
                         <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'editor' ? 'active font-weight-bold' : ''} editor-tab-btn" type="button">
                             <i class="bx bx-edit-alt"></i> Schema & Rules
@@ -264,9 +261,9 @@ export function renderTemplateStudio(
         workspaceBody.className = 'card-body p-4';
 
         if (activeEditorTab === 'categories') {
-            renderCategoryTypeEditorView(workspaceBody, templateEngine, iftttEngine, () => { onSave(); refresh(); });
+            renderCategoryTypeEditorView(workspaceBody, wrapper, templateEngine, iftttEngine, () => { onSave(); refresh(); });
         } else if (activeEditorTab === 'editor' && activeTpl) {
-            renderSchemaEditorView(workspaceBody, activeTpl, templateEngine, iftttEngine, (tab) => {
+            renderSchemaEditorView(workspaceBody, wrapper, activeTpl, templateEngine, iftttEngine, (tab) => {
                 activeEditorTab = tab;
                 refresh();
             });
@@ -285,7 +282,13 @@ export function renderTemplateStudio(
         container.appendChild(wrapper);
     }
 
-    function renderCategoryTypeEditorView(el: HTMLElement, engine: TemplateEngine, iftttEngine: IftttEngine, onSave: () => void) {
+    function renderCategoryTypeEditorView(
+        el: HTMLElement,
+        wrapper: HTMLElement,
+        engine: TemplateEngine,
+        iftttEngine: IftttEngine,
+        onSave: () => void
+    ) {
         const catWrapper = document.createElement('div');
         catWrapper.className = 'd-flex flex-column gap-4';
 
@@ -296,10 +299,10 @@ export function renderTemplateStudio(
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix & Automations (${cats.length})</h5>
-                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide IFTTT rules for each category.</p>
+                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide rules.</p>
                 </div>
-                <button type="button" class="btn btn-sm btn-primary add-cat-btn d-flex align-items-center gap-1">
-                    <i class="bx bx-plus"></i> Add New Category Type
+                <button type="button" class="btn btn-sm btn-primary add-cat-btn d-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bx bx-plus"></i> New Category Type
                 </button>
             </div>
 
@@ -307,10 +310,10 @@ export function renderTemplateStudio(
                 ${cats.map(c => {
                     const catRules = allRules.filter(r => r.trigger.targetCategory === c.id);
                     return `
-                        <div class="card border p-4 shadow-sm" style="background-color: var(--main-background-color, transparent); border-radius: 10px;">
-                            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-                                <div class="d-flex align-items-center gap-2.5">
-                                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
+                        <div class="card border p-4 shadow-sm rounded-3" style="background-color: var(--main-background-color, transparent);">
+                            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2.5">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary">
                                         <i class="bx bx-${c.icon} fs-4"></i>
                                     </div>
                                     <div>
@@ -318,7 +321,7 @@ export function renderTemplateStudio(
                                         <code class="small text-muted">Category ID: ${c.id}</code>
                                     </div>
                                 </div>
-                                <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted px-2.5 py-1">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
+                                <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted rounded-pill px-3 py-1.5">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
                             </div>
 
                             <div class="row g-3 small mb-3">
@@ -351,13 +354,13 @@ export function renderTemplateStudio(
                                     <h6 class="font-weight-bold text-primary small m-0 d-flex align-items-center gap-1.5">
                                         <i class="bx bx-git-commit"></i> Category Automation Rules (${catRules.length})
                                     </h6>
-                                    <button type="button" class="btn btn-xs btn-outline-primary add-cat-rule-btn d-flex align-items-center gap-1" data-cat-id="${c.id}">
+                                    <button type="button" class="btn btn-xs btn-outline-primary add-cat-rule-btn d-flex align-items-center gap-1 shadow-xs" data-cat-id="${c.id}">
                                         <i class="bx bx-plus"></i> Add Category Rule
                                     </button>
                                 </div>
                                 <div class="d-flex flex-column gap-2">
                                     ${catRules.length > 0 ? catRules.map(r => `
-                                        <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                                        <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
                                             <div class="d-flex align-items-center gap-2.5">
                                                 <i class="bx bx-bolt-circle text-primary fs-5"></i>
                                                 <div>
@@ -366,13 +369,13 @@ export function renderTemplateStudio(
                                                 </div>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
-                                                <button type="button" class="btn btn-xs btn-outline-primary edit-rule-btn px-2 py-1" data-rule-id="${r.id}">
-                                                    <i class="bx bx-edit-alt"></i> Deeplink Edit Rule
+                                                <button type="button" class="btn btn-xs btn-outline-primary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                                    <i class="bx bx-edit-alt"></i> Edit Rule
                                                 </button>
-                                                <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted">${r.enabled ? 'Active' : 'Disabled'}</span>
+                                                <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted rounded-pill">${r.enabled ? 'Active' : 'Disabled'}</span>
                                             </div>
                                         </div>
-                                    `).join('') : '<div class="text-muted tiny p-3 border rounded text-center">No category-wide automation rules attached.</div>'}
+                                    `).join('') : '<div class="text-muted tiny p-3 border rounded-3 text-center">No category-wide automation rules attached.</div>'}
                                 </div>
                             </div>
                         </div>
@@ -382,61 +385,27 @@ export function renderTemplateStudio(
 
             <div class="d-flex justify-content-end pt-2">
                 <button type="button" class="btn btn-primary px-4 py-2 font-weight-bold shadow-sm save-cats-btn d-flex align-items-center gap-1.5">
-                    <i class="bx bx-save fs-6"></i> Save Category Behaviors & Rules
+                    <i class="bx bx-save fs-6"></i> Save Category Matrix
                 </button>
             </div>
         `;
+
+        const addCatBtn = catWrapper.querySelector('.add-cat-btn') as HTMLButtonElement;
+        addCatBtn.addEventListener('click', () => openNewCategoryModal(wrapper, engine, onSave));
+
+        catWrapper.querySelectorAll('.add-cat-rule-btn').forEach(btn => {
+            btn.addEventListener('click', (e: any) => {
+                const catId = e.currentTarget.dataset.catId;
+                openRuleEditorModal(wrapper, iftttEngine, { targetCategory: catId }, onSave);
+            });
+        });
 
         catWrapper.querySelectorAll('.edit-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const ruleId = e.currentTarget.dataset.ruleId;
                 const rule = iftttEngine.getRule(ruleId);
-                if (rule) {
-                    const newName = prompt('Edit Rule Name:', rule.name);
-                    if (newName) {
-                        rule.name = newName;
-                        iftttEngine.registerRule(rule);
-                        onSave();
-                    }
-                }
+                if (rule) openRuleEditorModal(wrapper, iftttEngine, { rule }, onSave);
             });
-        });
-
-        catWrapper.querySelectorAll('.add-cat-rule-btn').forEach(btn => {
-            btn.addEventListener('click', (e: any) => {
-                const catId = e.currentTarget.dataset.catId;
-                const name = prompt(`Rule Name for Category '${catId}':`);
-                if (!name) return;
-                const attrName = prompt('Attribute name trigger (optional, e.g. status, priority):');
-
-                iftttEngine.registerRule({
-                    id: `cat_rule_${catId}_${Date.now()}`,
-                    name,
-                    description: `Category-wide rule for all templates in '${catId}'.`,
-                    enabled: true,
-                    isBuiltin: false,
-                    trigger: {
-                        type: attrName ? 'onAttributeChanged' : 'onNoteCreated',
-                        targetCategory: catId,
-                        attributeName: attrName || undefined,
-                    },
-                    conditions: [],
-                    actions: [{ type: 'setLabel', params: { labelName: 'processed', labelValue: 'true' } }],
-                });
-                onSave();
-            });
-        });
-
-        const addCatBtn = catWrapper.querySelector('.add-cat-btn') as HTMLButtonElement;
-        addCatBtn.addEventListener('click', () => {
-            const title = prompt('Enter Category Title (e.g. Research Briefs):');
-            if (!title) return;
-            const description = prompt('Enter Category Description:') || 'Custom category';
-            const icon = prompt('Enter Boxicons icon name (e.g. search, heart, bookmark):', 'layer') || 'layer';
-
-            const id = title.toLowerCase().replace(/\s+/g, '-');
-            engine.registerCategory({ id, title, description, icon, defaultRootMarker: 'unassignedRoot', autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: false, isBuiltin: false });
-            onSave();
         });
 
         const saveCatsBtn = catWrapper.querySelector('.save-cats-btn') as HTMLButtonElement;
@@ -460,6 +429,7 @@ export function renderTemplateStudio(
 
     function renderSchemaEditorView(
         el: HTMLElement,
+        wrapper: HTMLElement,
         tpl: TemplateDefinition,
         engine: TemplateEngine,
         iftttEngine: IftttEngine,
@@ -473,7 +443,6 @@ export function renderTemplateStudio(
         const catRules = iftttEngine.getAllRules().filter(r => r.trigger.targetCategory === tpl.category);
         const tplRules = iftttEngine.getAllRules().filter(r => r.trigger.targetTemplateId === tpl.id);
 
-        // Convert Parent Relationships into Identical IFTTT Rule Cards
         const parentRules = tpl.relationships.map(r => ({
             id: `rel_${tpl.id}_${r.relationName}`,
             name: `Parent Link ~${r.relationName} -> ${r.targetTemplateName}`,
@@ -488,7 +457,7 @@ export function renderTemplateStudio(
 
         // 1. Basic Template Settings & Category Type
         const basicCard = document.createElement('div');
-        basicCard.className = 'card border p-3.5 shadow-sm';
+        basicCard.className = 'card border p-4 shadow-sm rounded-3';
         basicCard.style.backgroundColor = 'var(--main-background-color, transparent)';
         basicCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
 
@@ -499,21 +468,21 @@ export function renderTemplateStudio(
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label small font-weight-bold">Template Title</label>
-                    <input type="text" id="tpl-title" class="form-control" value="${tpl.title}">
+                    <input type="text" id="tpl-title" class="form-control form-control-sm" value="${tpl.title}">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small font-weight-bold">Category Type</label>
-                    <select id="tpl-category" class="form-select">
+                    <select id="tpl-category" class="form-select form-select-sm">
                         ${categories.map(c => `<option value="${c.id}" ${tpl.category === c.id ? 'selected' : ''}>${c.title}</option>`).join('')}
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small font-weight-bold">Title Pattern</label>
-                    <input type="text" id="tpl-pattern" class="form-control" value="${tpl.titlePattern}">
+                    <input type="text" id="tpl-pattern" class="form-control form-control-sm" value="${tpl.titlePattern}">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small font-weight-bold">Icon Class</label>
-                    <div class="input-group">
+                    <div class="input-group input-group-sm">
                         <span class="input-group-text"><i class="bx bx-${tpl.icon}"></i></span>
                         <input type="text" id="tpl-icon" class="form-control" value="${tpl.icon}">
                     </div>
@@ -524,7 +493,7 @@ export function renderTemplateStudio(
 
         // 2. UNIFIED IFTTT AUTOMATION RULES CARD (IDENTICAL CARDS ACROSS GLOBAL, CATEGORY, TEMPLATE SCOPES)
         const behaviorCard = document.createElement('div');
-        behaviorCard.className = 'card border p-4 shadow-sm';
+        behaviorCard.className = 'card border p-4 shadow-sm rounded-3';
         behaviorCard.style.backgroundColor = 'var(--main-background-color, transparent)';
         behaviorCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
 
@@ -537,10 +506,10 @@ export function renderTemplateStudio(
                     <p class="text-muted tiny m-0 mt-0.5">Parent relationship links, auto-cloning, metadata inheritance, and custom logic rules.</p>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-primary add-rel-rule-btn d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-primary add-rel-rule-btn d-flex align-items-center gap-1.5 shadow-xs">
                         <i class="bx bx-link"></i> Add Parent Link Rule
                     </button>
-                    <button type="button" class="btn btn-sm btn-primary add-tpl-rule-btn d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-sm btn-primary add-tpl-rule-btn d-flex align-items-center gap-1.5 shadow-xs">
                         <i class="bx bx-plus"></i> Add Custom Rule
                     </button>
                 </div>
@@ -551,11 +520,11 @@ export function renderTemplateStudio(
                 <div>
                     <div class="text-primary font-weight-bold small mb-2 d-flex align-items-center justify-content-between">
                         <span class="d-flex align-items-center gap-1.5"><i class="bx bx-globe"></i> Global System Rules (${globalRules.length})</span>
-                        <span class="badge bg-primary bg-opacity-10 text-primary tiny">Global Scope</span>
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill tiny">Global Scope</span>
                     </div>
                     <div class="d-flex flex-column gap-2">
                         ${globalRules.map(r => `
-                            <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                            <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
                                 <div class="d-flex align-items-center gap-2.5">
                                     <i class="bx bx-globe text-primary fs-5"></i>
                                     <div>
@@ -581,7 +550,7 @@ export function renderTemplateStudio(
                     </div>
                     <div class="d-flex flex-column gap-2">
                         ${catRules.length > 0 ? catRules.map(r => `
-                            <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                            <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
                                 <div class="d-flex align-items-center gap-2.5">
                                     <i class="bx bx-category text-info fs-5"></i>
                                     <div>
@@ -593,20 +562,19 @@ export function renderTemplateStudio(
                                     <i class="bx bx-edit-alt"></i> Deeplink Edit Category
                                 </button>
                             </div>
-                        `).join('') : '<div class="p-2.5 text-center text-muted tiny border rounded">No category-wide rules for category \'' + tpl.category + '\'.</div>'}
+                        `).join('') : '<div class="p-2.5 text-center text-muted tiny border rounded-3">No category-wide rules for category \'' + tpl.category + '\'.</div>'}
                     </div>
                 </div>
 
-                <!-- Group 3: Template Scope Automations (Parent Links & Custom Rules Rendered IDENTICALLY) -->
+                <!-- Group 3: Template Scope Automations -->
                 <div>
                     <div class="text-success font-weight-bold small mb-2 d-flex align-items-center justify-content-between">
                         <span class="d-flex align-items-center gap-1.5"><i class="bx bx-file"></i> Template Direct Rules (${parentRules.length + tplRules.length})</span>
-                        <span class="badge bg-success bg-opacity-20 text-success tiny">Template Scope</span>
+                        <span class="badge bg-success bg-opacity-20 text-success rounded-pill tiny">Template Scope</span>
                     </div>
                     <div class="d-flex flex-column gap-2">
-                        <!-- Parent Relationship IFTTT Rules -->
                         ${parentRules.map((r, idx) => `
-                            <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                            <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
                                 <div class="d-flex align-items-center gap-2.5">
                                     <i class="bx bx-link text-success fs-5"></i>
                                     <div>
@@ -616,7 +584,7 @@ export function renderTemplateStudio(
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
                                     <button type="button" class="btn btn-xs btn-outline-success edit-parent-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rel-idx="${idx}">
-                                        <i class="bx bx-edit-alt"></i> Deeplink Edit Link
+                                        <i class="bx bx-edit-alt"></i> Edit Link
                                     </button>
                                     <button type="button" class="btn btn-xs btn-outline-danger del-rel-btn p-1" data-rel-idx="${idx}">
                                         <i class="bx bx-trash"></i>
@@ -625,9 +593,8 @@ export function renderTemplateStudio(
                             </div>
                         `).join('')}
 
-                        <!-- Custom Template IFTTT Rules -->
                         ${tplRules.map(r => `
-                            <div class="p-3 rounded border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                            <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
                                 <div class="d-flex align-items-center gap-2.5">
                                     <i class="bx bx-bolt-circle text-success fs-5"></i>
                                     <div>
@@ -637,7 +604,7 @@ export function renderTemplateStudio(
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
                                     <button type="button" class="btn btn-xs btn-outline-primary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                        <i class="bx bx-edit-alt"></i> Deeplink Edit Rule
+                                        <i class="bx bx-edit-alt"></i> Edit Rule
                                     </button>
                                     <button type="button" class="btn btn-xs btn-outline-danger del-rule-btn p-1" data-rule-id="${r.id}">
                                         <i class="bx bx-trash"></i>
@@ -646,13 +613,12 @@ export function renderTemplateStudio(
                             </div>
                         `).join('')}
 
-                        ${parentRules.length === 0 && tplRules.length === 0 ? '<div class="p-3 text-center text-muted tiny border rounded">No template-specific automation rules.</div>' : ''}
+                        ${parentRules.length === 0 && tplRules.length === 0 ? '<div class="p-3 text-center text-muted tiny border rounded-3">No template-specific automation rules.</div>' : ''}
                     </div>
                 </div>
             </div>
         `;
 
-        // Clickable Deeplinks to Edit Category Matrix
         behaviorCard.querySelectorAll('.edit-cat-rules-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -660,39 +626,26 @@ export function renderTemplateStudio(
             });
         });
 
-        // Deeplink Edit Rule Prompt Modal
         behaviorCard.querySelectorAll('.edit-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const ruleId = e.currentTarget.dataset.ruleId;
                 const rule = iftttEngine.getRule(ruleId);
-                if (rule) {
-                    const newName = prompt('Edit Rule Name:', rule.name);
-                    if (newName) {
-                        rule.name = newName;
-                        iftttEngine.registerRule(rule);
-                        switchTab('preview');
-                    }
-                }
+                if (rule) openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab('preview'));
             });
         });
 
-        // Deeplink Edit Parent Rule
         behaviorCard.querySelectorAll('.edit-parent-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const idx = Number(e.currentTarget.dataset.relIdx);
-                const rel = tpl.relationships[idx];
-                if (rel) {
-                    const newRelationName = prompt('Edit Parent Link Relation Name (e.g. project, client, writer):', rel.relationName);
-                    if (newRelationName) {
-                        rel.relationName = newRelationName;
-                        engine.updateTemplate(tpl.id, tpl);
-                    }
-                }
+                openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, idx, () => switchTab('preview'));
             });
         });
 
         const addRelBtn = behaviorCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
-        addRelBtn.addEventListener('click', () => showAddRelationshipModal(tpl, engine, iftttEngine));
+        addRelBtn.addEventListener('click', () => openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, undefined, () => switchTab('preview')));
+
+        const addTplRuleBtn = behaviorCard.querySelector('.add-tpl-rule-btn') as HTMLButtonElement;
+        addTplRuleBtn.addEventListener('click', () => openRuleEditorModal(wrapper, iftttEngine, { targetTemplateId: tpl.id }, () => switchTab('preview')));
 
         behaviorCard.querySelectorAll('.del-rel-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
@@ -709,33 +662,11 @@ export function renderTemplateStudio(
             });
         });
 
-        const addTplRuleBtn = behaviorCard.querySelector('.add-tpl-rule-btn') as HTMLButtonElement;
-        addTplRuleBtn.addEventListener('click', () => {
-            const name = prompt(`Automation Rule Name for '${tpl.title}':`);
-            if (!name) return;
-            const attrName = prompt('Attribute name trigger (optional, e.g. status, priority):');
-
-            iftttEngine.registerRule({
-                id: `tpl_rule_${tpl.id}_${Date.now()}`,
-                name,
-                description: `Template-specific automation rule for '${tpl.title}'.`,
-                enabled: true,
-                isBuiltin: false,
-                trigger: {
-                    type: attrName ? 'onAttributeChanged' : 'onNoteCreated',
-                    targetTemplateId: tpl.id,
-                    attributeName: attrName || undefined,
-                },
-                conditions: [],
-                actions: [{ type: 'setLabel', params: { labelName: 'processed', labelValue: 'true' } }],
-            });
-        });
-
         formWrapper.appendChild(behaviorCard);
 
         // 3. Promoted Attributes
         const attrCard = document.createElement('div');
-        attrCard.className = 'card border p-3.5 shadow-sm';
+        attrCard.className = 'card border p-4 shadow-sm rounded-3';
         attrCard.style.backgroundColor = 'var(--main-background-color, transparent)';
         attrCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
 
@@ -744,11 +675,11 @@ export function renderTemplateStudio(
                 <h6 class="font-weight-bold text-success m-0 d-flex align-items-center gap-2">
                     <i class="bx bx-list-check"></i> Promoted Form Attributes (${tpl.attributes.length})
                 </h6>
-                <button type="button" class="btn btn-sm btn-outline-success add-attr-btn d-flex align-items-center gap-1">
+                <button type="button" class="btn btn-sm btn-outline-success add-attr-btn d-flex align-items-center gap-1 shadow-xs">
                     <i class="bx bx-plus"></i> Add Attribute
                 </button>
             </div>
-            <table class="table table-hover align-middle small m-0 border">
+            <table class="table table-hover align-middle small m-0 border rounded-3 overflow-hidden">
                 <thead>
                     <tr class="text-muted border-bottom">
                         <th>Attribute Name</th>
@@ -761,7 +692,7 @@ export function renderTemplateStudio(
                     ${tpl.attributes.map(a => `
                         <tr>
                             <td><code>#${a.name}</code></td>
-                            <td><span class="badge bg-secondary bg-opacity-20 text-muted">${a.type}</span></td>
+                            <td><span class="badge bg-secondary bg-opacity-20 text-muted rounded-pill">${a.type}</span></td>
                             <td>${a.dataType}</td>
                             <td>${a.options ? a.options.join(', ') : a.defaultValue ?? '-'}</td>
                         </tr>
@@ -771,13 +702,13 @@ export function renderTemplateStudio(
         `;
 
         const addAttrBtn = attrCard.querySelector('.add-attr-btn') as HTMLButtonElement;
-        addAttrBtn.addEventListener('click', () => showAddAttrModal(tpl, engine));
+        addAttrBtn.addEventListener('click', () => openAddAttrModal(wrapper, tpl, engine, () => switchTab('preview')));
 
         formWrapper.appendChild(attrCard);
 
         // 4. HTML Content Skeleton
         const skeletonCard = document.createElement('div');
-        skeletonCard.className = 'card border p-3.5 shadow-sm';
+        skeletonCard.className = 'card border p-4 shadow-sm rounded-3';
         skeletonCard.style.backgroundColor = 'var(--main-background-color, transparent)';
         skeletonCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
 
@@ -833,9 +764,9 @@ export function renderTemplateStudio(
         const tplRules = iftttEngine.getAllRules().filter(r => r.trigger.targetTemplateId === tpl.id);
 
         previewWrapper.innerHTML = `
-            <div class="p-4 rounded border" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.15)) !important;">
+            <div class="p-4 rounded-3 border" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.15)) !important;">
                 <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-4">
-                    <div class="p-3 rounded bg-primary bg-opacity-10 text-primary">
+                    <div class="p-3 rounded-3 bg-primary bg-opacity-10 text-primary">
                         <i class="bx bx-${tpl.icon} h3 m-0"></i>
                     </div>
                     <div>
@@ -848,12 +779,12 @@ export function renderTemplateStudio(
 
                 <div class="row g-4 mb-4">
                     <div class="col-md-6">
-                        <div class="card border p-3.5 h-100 shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                        <div class="card border p-3.5 h-100 shadow-xs rounded-3" style="background-color: var(--sub-background-color, transparent);">
                             <h6 class="font-weight-bold text-muted small mb-3"><i class="bx bx-slider-alt"></i> Direct Form Attributes</h6>
                             <div class="d-flex flex-column gap-2.5">
                                 ${tpl.attributes.map(a => `
-                                    <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
-                                        <span class="badge bg-primary bg-opacity-10 text-primary">#${a.name}</span>
+                                    <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">#${a.name}</span>
                                         ${a.options ? `
                                             <select class="form-select form-select-sm" style="width: 160px;">
                                                 ${a.options.map(opt => `<option>${opt}</option>`).join('')}
@@ -867,53 +798,52 @@ export function renderTemplateStudio(
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card border p-3.5 h-100 shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                        <div class="card border p-3.5 h-100 shadow-xs rounded-3" style="background-color: var(--sub-background-color, transparent);">
                             <h6 class="font-weight-bold text-info small mb-3"><i class="bx bx-git-repo-forked"></i> Multi-Parent Inherited Context</h6>
                             <div class="d-flex flex-column gap-2.5 small text-muted">
-                                <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                                     <span>Parent 1 (Project Hub):</span>
-                                    <span class="badge bg-primary bg-opacity-20 text-primary">~project</span>
+                                    <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill">~project</span>
                                 </div>
-                                <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                                     <span>Parent 2 (Client Organization):</span>
-                                    <span class="badge bg-info bg-opacity-20 text-info">~client</span>
+                                    <span class="badge bg-info bg-opacity-20 text-info rounded-pill">~client</span>
                                 </div>
-                                <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                                     <span>Derived Topics (Dual Inherited):</span>
-                                    <span class="badge bg-success bg-opacity-20 text-success">#TechNews</span>
+                                    <span class="badge bg-success bg-opacity-20 text-success rounded-pill">#TechNews</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Automation Stack Preview with Clickable Button -->
-                <div class="card border p-3.5 mb-4 shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                <div class="card border p-3.5 mb-4 shadow-xs rounded-3" style="background-color: var(--sub-background-color, transparent);">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <h6 class="font-weight-bold text-primary small m-0"><i class="bx bx-git-commit"></i> Active Automation Rules (IFTTT)</h6>
-                        <button type="button" class="btn btn-xs btn-outline-info edit-cat-nav-btn font-weight-bold px-2.5 py-1">
+                        <button type="button" class="btn btn-xs btn-outline-info edit-cat-nav-btn font-weight-bold px-2.5 py-1 shadow-xs">
                             <i class="bx bx-category"></i> Deeplink Edit Category Matrix
                         </button>
                     </div>
                     <div class="d-flex flex-column gap-2 small text-muted">
-                        <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Global System Scope:</span>
-                            <span class="badge bg-primary bg-opacity-20 text-primary">Auto-Clone to Project & Sync Derived Topics</span>
+                            <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill">Auto-Clone to Project & Sync Derived Topics</span>
                         </div>
-                        <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Category '${tpl.category}' Scope:</span>
-                            <span class="badge bg-info bg-opacity-20 text-info">${catRules.length} Category Rules Active</span>
+                            <span class="badge bg-info bg-opacity-20 text-info rounded-pill">${catRules.length} Category Rules Active</span>
                         </div>
-                        <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Template '${tpl.title}' Scope:</span>
-                            <span class="badge bg-success bg-opacity-20 text-success">${tplRules.length} Template Rules Active</span>
+                            <span class="badge bg-success bg-opacity-20 text-success rounded-pill">${tplRules.length} Template Rules Active</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="border-top pt-4">
                     <h6 class="font-weight-bold text-muted small mb-2"><i class="bx bx-file-blank"></i> Content Skeleton Render</h6>
-                    <div class="p-4 rounded border font-monospace" style="background-color: var(--sub-background-color, transparent); min-height: 220px;">
+                    <div class="p-4 rounded-3 border font-monospace" style="background-color: var(--sub-background-color, transparent); min-height: 220px;">
                         ${tpl.defaultContent || '<em class="text-muted">Empty note body skeleton</em>'}
                     </div>
                 </div>
@@ -929,33 +859,219 @@ export function renderTemplateStudio(
         el.appendChild(previewWrapper);
     }
 
-    function showAddRelationshipModal(tpl: TemplateDefinition, engine: TemplateEngine, iftttEngine?: IftttEngine) {
-        const relName = prompt('Enter relation name (e.g. project, client, organization, writer, attendee):');
-        if (!relName) return;
-        const allTemplates = engine.getAllTemplates();
-        const targetId = prompt(`Select target parent template ID:\n${allTemplates.map(t => t.id).join(', ')}`);
-        if (!targetId) return;
+    // --- RICH MODAL SYSTEM IMPLEMENTATION ---
 
-        const targetTpl = engine.getTemplate(targetId);
-        const newRel: TemplateRelationshipDef = {
-            id: `rel_${tpl.id}_${targetId}_${Date.now()}`,
-            name: `${relName} link`,
-            relationName: relName,
-            targetTemplateId: targetId,
-            targetTemplateName: targetTpl ? targetTpl.title : targetId,
+    function openRuleEditorModal(
+        wrapper: HTMLElement,
+        iftttEngine: IftttEngine,
+        opts: { rule?: IftttRuleDef; targetCategory?: string; targetTemplateId?: string },
+        onSave: () => void
+    ) {
+        const isEdit = !!opts.rule;
+        const rule = opts.rule || {
+            id: `rule_${Date.now()}`,
+            name: '',
+            description: '',
+            enabled: true,
+            isBuiltin: false,
+            trigger: {
+                type: 'onNoteCreated' as const,
+                targetCategory: opts.targetCategory,
+                targetTemplateId: opts.targetTemplateId,
+            },
+            conditions: [],
+            actions: [{ type: 'setLabel' as const, params: { labelName: 'processed', labelValue: 'true' } }],
+        };
+
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
+        modalOverlay.style.zIndex = '1050';
+        modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'modal-dialog modal-dialog-centered modal-lg';
+        dialog.style.width = '650px';
+
+        const content = document.createElement('div');
+        content.className = 'modal-content shadow-lg border-0 rounded-3';
+        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
+        content.style.color = 'var(--main-text-color, #333333)';
+
+        content.innerHTML = `
+            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between">
+                <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
+                    <i class="bx bx-bolt-circle text-primary fs-5"></i>
+                    <span>${isEdit ? 'Deeplink Edit Automation Rule (IFTTT)' : 'Create New Automation Rule (IFTTT)'}</span>
+                </h5>
+                <button type="button" class="btn-close close-modal-btn"></button>
+            </div>
+            <div class="modal-body p-4 d-flex flex-column gap-3">
+                <div>
+                    <label class="form-label font-weight-bold small">Rule Name</label>
+                    <input type="text" id="rule-name-input" class="form-control" value="${rule.name}" placeholder="e.g. High Priority Task -> Due Soon Tag">
+                </div>
+
+                <div>
+                    <label class="form-label font-weight-bold small">Description</label>
+                    <input type="text" id="rule-desc-input" class="form-control form-control-sm" value="${rule.description}" placeholder="Explain what this automation rule does...">
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label font-weight-bold small">Trigger Event Type</label>
+                        <select id="rule-trigger-type" class="form-select form-select-sm">
+                            <option value="onNoteCreated" ${rule.trigger.type === 'onNoteCreated' ? 'selected' : ''}>onNoteCreated</option>
+                            <option value="onAttributeChanged" ${rule.trigger.type === 'onAttributeChanged' ? 'selected' : ''}>onAttributeChanged</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label font-weight-bold small">Rule Scope</label>
+                        <input type="text" class="form-control form-control-sm" disabled value="${rule.trigger.targetCategory ? `Category: ${rule.trigger.targetCategory}` : (rule.trigger.targetTemplateId ? `Template: ${rule.trigger.targetTemplateId}` : 'Global System Scope')}">
+                    </div>
+                </div>
+
+                <div class="border-top pt-3">
+                    <label class="form-label font-weight-bold small text-primary"><i class="bx bx-check-circle"></i> Executed Action Type</label>
+                    <select id="rule-action-type" class="form-select form-select-sm mb-2">
+                        <option value="cloneToContainer" ${rule.actions[0]?.type === 'cloneToContainer' ? 'selected' : ''}>cloneToContainer (Auto-clone under Parent Container)</option>
+                        <option value="setLabel" ${rule.actions[0]?.type === 'setLabel' ? 'selected' : ''}>setLabel (Set Label / Attribute Value)</option>
+                        <option value="syncDerivedTopics" ${rule.actions[0]?.type === 'syncDerivedTopics' ? 'selected' : ''}>syncDerivedTopics (Recalculate Topic Inheritance)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary save-rule-modal-btn px-4 font-weight-bold">Save Rule</button>
+            </div>
+        `;
+
+        const closeBtns = content.querySelectorAll('.close-modal-btn');
+        closeBtns.forEach(btn => btn.addEventListener('click', () => modalOverlay.remove()));
+
+        const saveBtn = content.querySelector('.save-rule-modal-btn') as HTMLButtonElement;
+        saveBtn.addEventListener('click', () => {
+            const name = (content.querySelector('#rule-name-input') as HTMLInputElement).value;
+            if (!name) return;
+            const desc = (content.querySelector('#rule-desc-input') as HTMLInputElement).value;
+            const triggerType = (content.querySelector('#rule-trigger-type') as HTMLSelectElement).value as any;
+            const actionType = (content.querySelector('#rule-action-type') as HTMLSelectElement).value as any;
+
+            rule.name = name;
+            rule.description = desc;
+            rule.trigger.type = triggerType;
+            rule.actions = [{ type: actionType, params: { labelName: 'processed', labelValue: 'true' } }];
+
+            iftttEngine.registerRule(rule);
+            modalOverlay.remove();
+            onSave();
+        });
+
+        dialog.appendChild(content);
+        modalOverlay.appendChild(dialog);
+        wrapper.appendChild(modalOverlay);
+    }
+
+    function openAddRelationshipModal(
+        wrapper: HTMLElement,
+        tpl: TemplateDefinition,
+        engine: TemplateEngine,
+        iftttEngine: IftttEngine,
+        editRelIdx?: number,
+        onSave?: () => void
+    ) {
+        const isEdit = editRelIdx !== undefined;
+        const rel = isEdit ? tpl.relationships[editRelIdx] : {
+            id: `rel_${tpl.id}_${Date.now()}`,
+            name: 'project link',
+            relationName: 'project',
+            targetTemplateId: 'projectHub',
+            targetTemplateName: 'Project Hub',
             isMulti: false,
             autoCloneToParent: true,
             inheritTopics: true,
-            direction: 'parent',
+            direction: 'parent' as const,
         };
 
-        engine.addRelationship(tpl.id, newRel);
+        const allTemplates = engine.getAllTemplates();
 
-        if (iftttEngine) {
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
+        modalOverlay.style.zIndex = '1050';
+        modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'modal-dialog modal-dialog-centered';
+        dialog.style.width = '550px';
+
+        const content = document.createElement('div');
+        content.className = 'modal-content shadow-lg border-0 rounded-3';
+        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
+        content.style.color = 'var(--main-text-color, #333333)';
+
+        content.innerHTML = `
+            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between">
+                <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
+                    <i class="bx bx-link text-primary fs-5"></i>
+                    <span>${isEdit ? 'Edit Parent Link Rule' : 'Add Parent Relationship Link (IFTTT)'}</span>
+                </h5>
+                <button type="button" class="btn-close close-modal-btn"></button>
+            </div>
+            <div class="modal-body p-4 d-flex flex-column gap-3">
+                <div>
+                    <label class="form-label font-weight-bold small">Relation Name (e.g. project, client, writer, attendee)</label>
+                    <input type="text" id="rel-name-input" class="form-control form-control-sm" value="${rel.relationName}">
+                </div>
+
+                <div>
+                    <label class="form-label font-weight-bold small">Target Parent Template</label>
+                    <select id="rel-target-input" class="form-select form-select-sm">
+                        ${allTemplates.map(t => `<option value="${t.id}" ${t.id === rel.targetTemplateId ? 'selected' : ''}>${t.title} (${t.id})</option>`).join('')}
+                    </select>
+                </div>
+
+                <div class="form-check form-switch pt-2">
+                    <input class="form-check-input" type="checkbox" id="rel-clone-check" ${rel.autoCloneToParent ? 'checked' : ''}>
+                    <label class="form-check-label font-weight-bold small">Auto-clone under Parent Container</label>
+                </div>
+
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="rel-topics-check" ${rel.inheritTopics ? 'checked' : ''}>
+                    <label class="form-check-label font-weight-bold small">Inherit Parent Topics & Client Metadata</label>
+                </div>
+            </div>
+            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary save-rel-modal-btn px-4 font-weight-bold">Save Link Rule</button>
+            </div>
+        `;
+
+        const closeBtns = content.querySelectorAll('.close-modal-btn');
+        closeBtns.forEach(btn => btn.addEventListener('click', () => modalOverlay.remove()));
+
+        const saveBtn = content.querySelector('.save-rel-modal-btn') as HTMLButtonElement;
+        saveBtn.addEventListener('click', () => {
+            const relName = (content.querySelector('#rel-name-input') as HTMLInputElement).value;
+            const targetId = (content.querySelector('#rel-target-input') as HTMLSelectElement).value;
+            const autoClone = (content.querySelector('#rel-clone-check') as HTMLInputElement).checked;
+            const inheritTopics = (content.querySelector('#rel-topics-check') as HTMLInputElement).checked;
+
+            const targetTpl = engine.getTemplate(targetId);
+
+            rel.relationName = relName;
+            rel.targetTemplateId = targetId;
+            rel.targetTemplateName = targetTpl ? targetTpl.title : targetId;
+            rel.autoCloneToParent = autoClone;
+            rel.inheritTopics = inheritTopics;
+
+            if (!isEdit) {
+                tpl.relationships.push(rel);
+            }
+            engine.updateTemplate(tpl.id, tpl);
+
             iftttEngine.registerRule({
                 id: `rule_rel_${tpl.id}_${relName}`,
                 name: `Parent Link ~${relName} -> ${targetTpl ? targetTpl.title : targetId}`,
-                description: `IF note has ~${relName} relation -> THEN link to ${targetTpl ? targetTpl.title : targetId}, auto-clone to parent container, and inherit parent topics.`,
+                description: `IF note has ~${relName} -> THEN link to ${targetTpl ? targetTpl.title : targetId}, auto-clone to parent container, and inherit parent topics.`,
                 enabled: true,
                 isBuiltin: false,
                 trigger: { type: 'onNoteCreated', targetTemplateId: tpl.id },
@@ -965,46 +1081,215 @@ export function renderTemplateStudio(
                     { type: 'syncDerivedTopics', params: {} },
                 ],
             });
-        }
+
+            modalOverlay.remove();
+            if (onSave) onSave();
+        });
+
+        dialog.appendChild(content);
+        modalOverlay.appendChild(dialog);
+        wrapper.appendChild(modalOverlay);
     }
 
-    function showCreateTemplateModal() {
-        const title = prompt('Enter new Template Title (e.g. Research Brief):');
-        if (!title) return;
-        const category = prompt('Category Type (work, drafts, people, system, custom):', 'work') as any;
+    function openNewTemplateModal(wrapper: HTMLElement, templateEngine: TemplateEngine, onSave: () => void) {
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
+        modalOverlay.style.zIndex = '1050';
+        modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
 
-        const id = title.toLowerCase().replace(/\s+/g, '-');
-        templateEngine.registerTemplate({
-            id,
-            marker: `ext${title.replace(/\s+/g, '')}`,
-            title,
-            category: category || 'work',
-            rootContainerMarker: 'projectRoot',
-            titlePattern: '{title}',
-            icon: 'file-blank',
-            attributes: [],
-            relationships: [],
-            defaultContent: `<h2>${title}</h2><p>Notes content...</p>`,
+        const dialog = document.createElement('div');
+        dialog.className = 'modal-dialog modal-dialog-centered';
+
+        const content = document.createElement('div');
+        content.className = 'modal-content shadow-lg border-0 rounded-3';
+        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
+
+        content.innerHTML = `
+            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between">
+                <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
+                    <i class="bx bx-plus text-primary fs-5"></i>
+                    <span>Create New Template</span>
+                </h5>
+                <button type="button" class="btn-close close-modal-btn"></button>
+            </div>
+            <div class="modal-body p-4 d-flex flex-column gap-3">
+                <div>
+                    <label class="form-label font-weight-bold small">Template Title</label>
+                    <input type="text" id="new-tpl-title" class="form-control form-control-sm" placeholder="e.g. Research Brief">
+                </div>
+                <div>
+                    <label class="form-label font-weight-bold small">Category Type</label>
+                    <select id="new-tpl-cat" class="form-select form-select-sm">
+                        <option value="work">Work & Project Scoped</option>
+                        <option value="drafts">Drafts & Editorial</option>
+                        <option value="people">People & Client Entities</option>
+                        <option value="system">System & Topic Index</option>
+                        <option value="custom">Custom Category</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary create-tpl-btn px-4 font-weight-bold">Create Template</button>
+            </div>
+        `;
+
+        content.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => modalOverlay.remove()));
+        const createBtn = content.querySelector('.create-tpl-btn') as HTMLButtonElement;
+        createBtn.addEventListener('click', () => {
+            const title = (content.querySelector('#new-tpl-title') as HTMLInputElement).value;
+            if (!title) return;
+            const category = (content.querySelector('#new-tpl-cat') as HTMLSelectElement).value as any;
+
+            const id = title.toLowerCase().replace(/\s+/g, '-');
+            templateEngine.registerTemplate({
+                id,
+                marker: `ext${title.replace(/\s+/g, '')}`,
+                title,
+                category: category || 'work',
+                rootContainerMarker: 'projectRoot',
+                titlePattern: '{title}',
+                icon: 'file-blank',
+                attributes: [],
+                relationships: [],
+                defaultContent: `<h2>${title}</h2><p>Notes content...</p>`,
+            });
+            modalOverlay.remove();
+            onSave();
         });
-        onSave();
-        refresh();
+
+        dialog.appendChild(content);
+        modalOverlay.appendChild(dialog);
+        wrapper.appendChild(modalOverlay);
     }
 
-    function showAddAttrModal(tpl: TemplateDefinition, engine: TemplateEngine) {
-        const name = prompt('Attribute name (e.g. priority, status, dueDate):');
-        if (!name) return;
-        const type = prompt('Attribute type (label or relation):', 'label') as any;
-        const dataType = prompt('Data type (text, number, select, date):', 'text') as any;
-        const optionsRaw = dataType === 'select' ? prompt('Comma-separated options (e.g. low, medium, high):') : null;
+    function openNewCategoryModal(wrapper: HTMLElement, engine: TemplateEngine, onSave: () => void) {
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
+        modalOverlay.style.zIndex = '1050';
+        modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
 
-        tpl.attributes.push({
-            name,
-            type: type === 'relation' ? 'relation' : 'label',
-            dataType: dataType || 'text',
-            options: optionsRaw ? optionsRaw.split(',').map(s => s.trim()) : undefined,
-            isPromoted: true,
+        const dialog = document.createElement('div');
+        dialog.className = 'modal-dialog modal-dialog-centered';
+
+        const content = document.createElement('div');
+        content.className = 'modal-content shadow-lg border-0 rounded-3';
+        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
+
+        content.innerHTML = `
+            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between">
+                <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
+                    <i class="bx bx-category text-primary fs-5"></i>
+                    <span>Create New Category Type</span>
+                </h5>
+                <button type="button" class="btn-close close-modal-btn"></button>
+            </div>
+            <div class="modal-body p-4 d-flex flex-column gap-3">
+                <div>
+                    <label class="form-label font-weight-bold small">Category Title</label>
+                    <input type="text" id="cat-title-input" class="form-control form-control-sm" placeholder="e.g. Legal Documents">
+                </div>
+                <div>
+                    <label class="form-label font-weight-bold small">Description</label>
+                    <input type="text" id="cat-desc-input" class="form-control form-control-sm" placeholder="Contracts and legal agreements...">
+                </div>
+            </div>
+            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary create-cat-btn px-4 font-weight-bold">Create Category</button>
+            </div>
+        `;
+
+        content.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => modalOverlay.remove()));
+        const createBtn = content.querySelector('.create-cat-btn') as HTMLButtonElement;
+        createBtn.addEventListener('click', () => {
+            const title = (content.querySelector('#cat-title-input') as HTMLInputElement).value;
+            if (!title) return;
+            const description = (content.querySelector('#cat-desc-input') as HTMLInputElement).value || 'Custom category';
+            const id = title.toLowerCase().replace(/\s+/g, '-');
+
+            engine.registerCategory({ id, title, description, icon: 'layer', defaultRootMarker: 'unassignedRoot', autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: false, isBuiltin: false });
+            modalOverlay.remove();
+            onSave();
         });
-        engine.updateTemplate(tpl.id, tpl);
+
+        dialog.appendChild(content);
+        modalOverlay.appendChild(dialog);
+        wrapper.appendChild(modalOverlay);
+    }
+
+    function openAddAttrModal(wrapper: HTMLElement, tpl: TemplateDefinition, engine: TemplateEngine, onSave: () => void) {
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
+        modalOverlay.style.zIndex = '1050';
+        modalOverlay.style.backgroundColor = 'rgba(0,0,0,0.6)';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'modal-dialog modal-dialog-centered';
+
+        const content = document.createElement('div');
+        content.className = 'modal-content shadow-lg border-0 rounded-3';
+        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
+
+        content.innerHTML = `
+            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between">
+                <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
+                    <i class="bx bx-list-check text-success fs-5"></i>
+                    <span>Add Promoted Form Attribute</span>
+                </h5>
+                <button type="button" class="btn-close close-modal-btn"></button>
+            </div>
+            <div class="modal-body p-4 d-flex flex-column gap-3">
+                <div>
+                    <label class="form-label font-weight-bold small">Attribute Name (without #)</label>
+                    <input type="text" id="attr-name-input" class="form-control form-control-sm" placeholder="e.g. priority, status, dueDate">
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label font-weight-bold small">Attribute Type</label>
+                        <select id="attr-type-input" class="form-select form-select-sm">
+                            <option value="label">Label (#)</option>
+                            <option value="relation">Relation (~)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label font-weight-bold small">Data Type</label>
+                        <select id="attr-datatype-input" class="form-select form-select-sm">
+                            <option value="text">Text</option>
+                            <option value="select">Select Options</option>
+                            <option value="date">Date</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+                <button type="button" class="btn btn-sm btn-success create-attr-btn px-4 font-weight-bold">Save Attribute</button>
+            </div>
+        `;
+
+        content.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => modalOverlay.remove()));
+        const createBtn = content.querySelector('.create-attr-btn') as HTMLButtonElement;
+        createBtn.addEventListener('click', () => {
+            const name = (content.querySelector('#attr-name-input') as HTMLInputElement).value;
+            if (!name) return;
+            const type = (content.querySelector('#attr-type-input') as HTMLSelectElement).value as any;
+            const dataType = (content.querySelector('#attr-datatype-input') as HTMLSelectElement).value as any;
+
+            tpl.attributes.push({
+                name,
+                type: type === 'relation' ? 'relation' : 'label',
+                dataType: dataType || 'text',
+                isPromoted: true,
+            });
+            engine.updateTemplate(tpl.id, tpl);
+            modalOverlay.remove();
+            onSave();
+        });
+
+        dialog.appendChild(content);
+        modalOverlay.appendChild(dialog);
+        wrapper.appendChild(modalOverlay);
     }
 
     refresh();
