@@ -9,7 +9,8 @@ import { IfThenRuleEngine } from '../engine/ifThenRuleEngine.js';
 import { TodayEngine } from '../engine/todayEngine.js';
 import { NoteCreationEngine } from '../engine/noteCreationEngine.js';
 import { SettingsEngine } from '../engine/settingsEngine.js';
-import { loadAutomationSettings } from '../engine/packagePersistence.js';
+import { loadAutomationSettings, loadYamlSpecification, saveYamlSpecification } from '../engine/packagePersistence.js';
+import { parseAndApplyYamlSpec } from '../engine/yamlSpec.js';
 import { renderTodayHomepage } from '../components/TodayHomepage.js';
 import { renderTemplateStudio } from '../components/TemplateStudio.js';
 import { renderRelationshipManager } from '../components/RelationshipManager.js';
@@ -91,7 +92,7 @@ export function initNotesSystemDashboard(containerEl) {
             });
         } else if (activeTab === 'settings') {
             renderSettingsStudio(contentArea, todayEngine, templateEngine, relationshipEngine, ifThenRuleEngine, settingsEngine, (yamlSpec) => {
-                console.log('YAML settings package saved:', yamlSpec);
+                return saveYamlSpecification(yamlSpec);
             });
         }
 
@@ -101,6 +102,18 @@ export function initNotesSystemDashboard(containerEl) {
     }
 
     renderMain();
+
+    // A previously saved YAML specification (Today layout, templates, categories,
+    // if/then rules) is applied as a patch on top of the built-in defaults the
+    // engines were constructed with, the same way parseAndApplyYamlSpec is used
+    // from the Settings tab's Save button. Without this, "Save specification"
+    // would only ever last until the next reload.
+    loadYamlSpecification().then((savedSpec) => {
+        if (savedSpec) {
+            parseAndApplyYamlSpec(savedSpec, todayEngine, templateEngine, ifThenRuleEngine);
+            renderMain();
+        }
+    });
 
     // Automation settings load from the package's manifest note asynchronously
     // (or resolve immediately outside Trilium); re-render once they land so the

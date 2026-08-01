@@ -23,7 +23,7 @@ export function renderSettingsStudio(
     relationshipEngine: RelationshipEngine,
     ifThenRuleEngine: IfThenRuleEngine,
     settingsEngine: SettingsEngine,
-    onSaveSettings?: (yamlSpec: string) => void
+    onSaveSettings?: (yamlSpec: string) => Promise<void>
 ): void {
     let importError = '';
     let importSuccess = '';
@@ -148,15 +148,24 @@ export function renderSettingsStudio(
 
         actions.querySelector<HTMLButtonElement>('.save-yaml-btn')!.addEventListener('click', () => {
             const res = parseAndApplyYamlSpec(textarea.value, todayEngine, templateEngine, ifThenRuleEngine);
-            if (res.success) {
-                importSuccess = res.message;
-                importError = '';
-                if (onSaveSettings) onSaveSettings(textarea.value);
-            } else {
+            if (!res.success) {
                 importError = res.message;
                 importSuccess = '';
+                render();
+                return;
             }
+
+            importSuccess = res.message;
+            importError = '';
             render();
+
+            if (onSaveSettings) {
+                onSaveSettings(textarea.value).catch((err: Error) => {
+                    importError = `Applied in this session, but could not save to the manifest note: ${err.message}`;
+                    importSuccess = '';
+                    render();
+                });
+            }
         });
     }
 

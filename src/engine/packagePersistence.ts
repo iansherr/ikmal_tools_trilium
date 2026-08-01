@@ -94,6 +94,38 @@ function parseStoredBoolean(raw: string, fallback: boolean): boolean {
 /** Used only when there is no manifest note to read from or write to. */
 const memoryStore = new Map<string, string>();
 
+/**
+ * The full YAML specification (Today layout, templates, categories, if/then
+ * rules) lives on the same manifest note as the boolean settings, under its
+ * own label rather than a `packageSetting:<key>` one, since it isn't part of
+ * the fixed schema `trilium-package.json` declares and validates against.
+ * JSON-encoded like the booleans so embedded newlines and quotes round-trip
+ * through the attribute value untouched.
+ */
+const YAML_SPEC_LABEL = 'packageData:yamlSpecification';
+
+export async function loadYamlSpecification(): Promise<string | null> {
+    const note = await findManifestNote();
+    const raw = note ? note.getOwnedLabelValue(YAML_SPEC_LABEL) : memoryStore.get(YAML_SPEC_LABEL) ?? null;
+    if (raw === null) return null;
+    try {
+        const parsed = JSON.parse(raw);
+        return typeof parsed === 'string' ? parsed : null;
+    } catch {
+        return null;
+    }
+}
+
+export async function saveYamlSpecification(yamlSpec: string): Promise<void> {
+    const serialized = JSON.stringify(yamlSpec);
+    const note = await findManifestNote();
+    if (note) {
+        await writeLabel(note, YAML_SPEC_LABEL, serialized);
+    } else {
+        memoryStore.set(YAML_SPEC_LABEL, serialized);
+    }
+}
+
 export async function loadAutomationSettings(): Promise<AutomationSettings> {
     const note = await findManifestNote();
     const result: AutomationSettings = { ...DEFAULT_AUTOMATION_SETTINGS };

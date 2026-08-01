@@ -6,7 +6,7 @@ import { IfThenRuleEngine } from '../dist/engine/ifThenRuleEngine.js';
 import { TodayEngine } from '../dist/engine/todayEngine.js';
 import { NoteCreationEngine } from '../dist/engine/noteCreationEngine.js';
 import { SettingsEngine, DEFAULT_AUTOMATION_SETTINGS } from '../dist/engine/settingsEngine.js';
-import { loadAutomationSettings, saveAutomationSetting } from '../dist/engine/packagePersistence.js';
+import { loadAutomationSettings, saveAutomationSetting, loadYamlSpecification, saveYamlSpecification } from '../dist/engine/packagePersistence.js';
 import { dumpYamlSpec, parseAndApplyYamlSpec } from '../dist/engine/yamlSpec.js';
 import { YamlParser } from '../dist/engine/yamlParser.js';
 import { describeWeatherCode, hasLocation, parseWeatherResponse } from '../dist/engine/weatherEngine.js';
@@ -333,6 +333,16 @@ test('packagePersistence falls back to an in-memory store outside Trilium and ro
 
     // Restore, since the in-memory store is process-wide and other tests assume defaults.
     await saveAutomationSetting('autoRunIfThenRulesOnCreation', true);
+});
+
+test('packagePersistence round-trips the YAML specification and returns null when nothing is saved yet', async () => {
+    assert.equal(await loadYamlSpecification(), null);
+
+    // Content with quotes, newlines, and unicode all have to survive the JSON
+    // encoding used to store them in a single-line attribute value.
+    const yaml = 'homepage:\n  weather:\n    label: "Ian\'s café ☕"\n';
+    await saveYamlSpecification(yaml);
+    assert.equal(await loadYamlSpecification(), yaml);
 });
 
 // -------------------------------------------------------- noteInsightsEngine
