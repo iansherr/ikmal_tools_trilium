@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: Integrated IFTTT Automations inside Category & Template Editors.
+ * Template Studio Component: 3-Tier IFTTT Automation Inheritance (Global, Category-wide, Template-specific)
  * Styled natively with Trilium Boxicons and standard Trilium form components.
  */
 
@@ -37,11 +37,11 @@ export function renderTemplateStudio(
                 </div>
                 <div>
                     <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        Template Studio & Integrated Automations
+                        Template Studio & 3-Tier Automation Inheritance
                         <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure template category behaviors, parent-child relations, promoted attributes, embedded IFTTT rules, and note previews.
+                        Configure templates with 3-tier IFTTT automation inheritance (Global System ➔ Category-Wide ➔ Template-Specific).
                     </p>
                 </div>
             </div>
@@ -268,7 +268,7 @@ export function renderTemplateStudio(
         } else if (activeEditorTab === 'editor' && activeTpl) {
             renderSchemaEditorView(workspaceBody, activeTpl, templateEngine, iftttEngine);
         } else if (activeTpl) {
-            renderLivePreviewView(workspaceBody, activeTpl, templateEngine);
+            renderLivePreviewView(workspaceBody, activeTpl, templateEngine, iftttEngine);
         }
 
         workspaceCard.appendChild(workspaceBody);
@@ -434,6 +434,8 @@ export function renderTemplateStudio(
         formWrapper.className = 'd-flex flex-column gap-4';
 
         const categories = engine.getAllCategories();
+        const globalRules = iftttEngine.getAllRules().filter(r => !r.trigger.targetCategory && !r.trigger.targetTemplateId);
+        const catRules = iftttEngine.getAllRules().filter(r => r.trigger.targetCategory === tpl.category);
         const tplRules = iftttEngine.getAllRules().filter(r => r.trigger.targetTemplateId === tpl.id);
 
         // 1. Basic Template Settings & Category Type
@@ -515,7 +517,7 @@ export function renderTemplateStudio(
 
         formWrapper.appendChild(relCard);
 
-        // 3. Embedded Template-Specific IFTTT Automation Rules
+        // 3. 3-Tier IFTTT Automation Inheritance Stack
         const tplIftttCard = document.createElement('div');
         tplIftttCard.className = 'card border p-3.5';
         tplIftttCard.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -524,22 +526,56 @@ export function renderTemplateStudio(
         tplIftttCard.innerHTML = `
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h6 class="font-weight-bold text-warning m-0 d-flex align-items-center gap-2">
-                    <i class="bx bx-git-commit"></i> Template-Specific IFTTT Automations (${tplRules.length})
+                    <i class="bx bx-git-commit"></i> 3-Tier IFTTT Automation Inheritance Stack
                 </h6>
                 <button type="button" class="btn btn-sm btn-outline-warning add-tpl-rule-btn d-flex align-items-center gap-1">
                     <i class="bx bx-plus"></i> Add Template Rule
                 </button>
             </div>
-            <div class="d-flex flex-column gap-2">
-                ${tplRules.length > 0 ? tplRules.map(r => `
-                    <div class="p-3 rounded border d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
-                        <div>
-                            <strong class="text-body"><i class="bx bx-bolt-circle text-warning"></i> ${r.name}</strong>
-                            <div class="text-muted small mt-1">Trigger: <code>${r.trigger.type}</code> • Actions: <code>${r.actions.map(a => a.type).join(', ')}</code></div>
+
+            <!-- Tier 1: Global System Rules (Inherited) -->
+            <div class="mb-3">
+                <div class="text-muted small font-weight-bold mb-1.5 d-flex align-items-center gap-1">
+                    <i class="bx bx-globe"></i> Tier 1: Global System Automations (Inherited)
+                </div>
+                <div class="d-flex flex-column gap-1.5">
+                    ${globalRules.map(r => `
+                        <div class="p-2 rounded border tiny d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
+                            <span><i class="bx bx-bolt-circle text-primary"></i> ${r.name}</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">Global</span>
                         </div>
-                        <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted">${r.enabled ? 'Enabled' : 'Disabled'}</span>
-                    </div>
-                `).join('') : '<div class="p-3 text-center text-muted small border rounded">No template-specific automation rules attached.</div>'}
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- Tier 2: Category-Wide Rules (Inherited) -->
+            <div class="mb-3">
+                <div class="text-info small font-weight-bold mb-1.5 d-flex align-items-center gap-1">
+                    <i class="bx bx-category"></i> Tier 2: Category Automations (Inherited from '${tpl.category}')
+                </div>
+                <div class="d-flex flex-column gap-1.5">
+                    ${catRules.length > 0 ? catRules.map(r => `
+                        <div class="p-2 rounded border tiny d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
+                            <span><i class="bx bx-bolt-circle text-info"></i> ${r.name}</span>
+                            <span class="badge bg-info bg-opacity-20 text-info">Category</span>
+                        </div>
+                    `).join('') : '<div class="text-muted tiny p-2 border rounded">No category-wide rules.</div>'}
+                </div>
+            </div>
+
+            <!-- Tier 3: Template-Specific Rules (Direct) -->
+            <div>
+                <div class="text-success small font-weight-bold mb-1.5 d-flex align-items-center gap-1">
+                    <i class="bx bx-file"></i> Tier 3: Template-Specific Automations (Direct)
+                </div>
+                <div class="d-flex flex-column gap-1.5">
+                    ${tplRules.length > 0 ? tplRules.map(r => `
+                        <div class="p-2 rounded border tiny d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
+                            <span><i class="bx bx-bolt-circle text-success"></i> ${r.name}</span>
+                            <span class="badge bg-success bg-opacity-20 text-success">Template Direct</span>
+                        </div>
+                    `).join('') : '<div class="text-muted tiny p-2 border rounded">No template-specific rules.</div>'}
+                </div>
             </div>
         `;
 
@@ -652,11 +688,13 @@ export function renderTemplateStudio(
         el.appendChild(formWrapper);
     }
 
-    function renderLivePreviewView(el: HTMLElement, tpl: TemplateDefinition, engine: TemplateEngine) {
+    function renderLivePreviewView(el: HTMLElement, tpl: TemplateDefinition, engine: TemplateEngine, iftttEngine: IftttEngine) {
         const previewWrapper = document.createElement('div');
         previewWrapper.className = 'd-flex flex-column gap-4';
 
         const formattedTitle = engine.formatTitle(tpl.id, 'Sample Note Title');
+        const catRules = iftttEngine.getAllRules().filter(r => r.trigger.targetCategory === tpl.category);
+        const tplRules = iftttEngine.getAllRules().filter(r => r.trigger.targetTemplateId === tpl.id);
 
         previewWrapper.innerHTML = `
             <div class="p-4 rounded border" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.15)) !important;">
@@ -672,7 +710,7 @@ export function renderTemplateStudio(
                     </div>
                 </div>
 
-                <div class="row g-4">
+                <div class="row g-4 mb-4">
                     <div class="col-md-6">
                         <div class="card border p-3.5 h-100" style="background-color: var(--sub-background-color, transparent);">
                             <h6 class="font-weight-bold text-muted small mb-3"><i class="bx bx-slider-alt"></i> Direct Form Attributes</h6>
@@ -713,7 +751,26 @@ export function renderTemplateStudio(
                     </div>
                 </div>
 
-                <div class="border-top pt-4 mt-4">
+                <!-- 3-Tier IFTTT Automation Stack Preview -->
+                <div class="card border p-3.5 mb-4" style="background-color: var(--sub-background-color, transparent);">
+                    <h6 class="font-weight-bold text-warning small mb-3"><i class="bx bx-git-commit"></i> Active 3-Tier Automation Stack</h6>
+                    <div class="d-flex flex-column gap-2 small text-muted">
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                            <span>Tier 1 (Global System):</span>
+                            <span class="badge bg-primary bg-opacity-20 text-primary">Auto-Clone to Project & Sync Derived Topics</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                            <span>Tier 2 (Category '${tpl.category}'):</span>
+                            <span class="badge bg-info bg-opacity-20 text-info">${catRules.length} Category Rules Active</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                            <span>Tier 3 (Template Direct):</span>
+                            <span class="badge bg-success bg-opacity-20 text-success">${tplRules.length} Template Rules Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-top pt-4">
                     <h6 class="font-weight-bold text-muted small mb-2"><i class="bx bx-file-blank"></i> Content Skeleton Render</h6>
                     <div class="p-4 rounded border font-monospace" style="background-color: var(--sub-background-color, transparent); min-height: 220px;">
                         ${tpl.defaultContent || '<em class="text-muted">Empty note body skeleton</em>'}
