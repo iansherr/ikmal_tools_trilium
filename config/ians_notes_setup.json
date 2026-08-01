@@ -2,7 +2,7 @@
   "$schema": "../schema/notes-system.schema.json",
   "name": "Ian's Trilium Notes Setup",
   "version": "1.0.0",
-  "description": "Complete component-driven notes system configuration containing containers, templates, promoted attributes, relationships, Today Homepage components, and IFTTT automation rules.",
+  "description": "Complete component-driven notes system configuration containing containers, templates, promoted attributes, relationships, Today Homepage components, and if/then automation rules.",
   "containers": [
     { "marker": "calendarRoot", "title": "Journal", "icon": "calendar" },
     { "marker": "todayRoot", "title": "Today", "icon": "home" },
@@ -292,7 +292,7 @@
       }
     ]
   },
-  "iftttRules": [
+  "ifThenRules": [
     {
       "id": "rule_task_done_date",
       "name": "Auto-Set Task Done Date",

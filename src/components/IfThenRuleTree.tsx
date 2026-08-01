@@ -1,15 +1,15 @@
 /**
- * IFTTT Rule Tree Component: Interactive IF-THIS-THEN-THAT automation rule visualizer & editor.
+ * If/Then Rule Tree Component: interactive if/then automation rule visualizer & editor.
  * Supports Category-wide rules vs Template-specific rules vs Global rules.
  * Styled natively with Trilium Boxicons and design tokens.
  */
 
-import { IftttEngine } from '../engine/iftttEngine.js';
-import { IftttRuleDef, IftttCondition, IftttAction, TriggerType } from '../engine/types.js';
+import { IfThenRuleEngine } from '../engine/ifThenRuleEngine.js';
+import { IfThenRuleDef, IfThenCondition, IfThenAction, TriggerType } from '../engine/types.js';
 
-export function renderIftttRuleTree(
+export function renderIfThenRuleTree(
     container: HTMLElement,
-    iftttEngine: IftttEngine,
+    ifThenRuleEngine: IfThenRuleEngine,
     onRuleChange: () => void
 ): void {
     function refresh() {
@@ -26,7 +26,7 @@ export function renderIftttRuleTree(
             <div class="d-flex align-items-center gap-2">
                 <i class="bx bx-git-commit h5 m-0 text-warning"></i>
                 <div>
-                    <h5 class="m-0 h6 font-weight-bold">IF-THIS-THEN-THAT (IFTTT) Automation Trees</h5>
+                    <h5 class="m-0 h6 font-weight-bold">If/Then Automation Rules</h5>
                     <p class="text-muted small m-0 mt-0.5">Automate rules across Category Scopes (Work, Drafts, People) or specific Templates.</p>
                 </div>
             </div>
@@ -67,7 +67,7 @@ export function renderIftttRuleTree(
 
         const chip1 = helpBanner.querySelector('.preset-chip-1') as HTMLButtonElement;
         chip1.addEventListener('click', () => {
-            iftttEngine.registerRule({
+            ifThenRuleEngine.registerRule({
                 id: `preset_category_draft_${Date.now()}`,
                 name: 'Category-Wide Draft Rule -> Sync Round',
                 description: 'Triggers for ALL templates in the Drafts category (story, edit, emailDraft, scratch).',
@@ -83,7 +83,7 @@ export function renderIftttRuleTree(
 
         const chip2 = helpBanner.querySelector('.preset-chip-2') as HTMLButtonElement;
         chip2.addEventListener('click', () => {
-            iftttEngine.registerRule({
+            ifThenRuleEngine.registerRule({
                 id: `preset_dueSoon_${Date.now()}`,
                 name: 'High Priority Task -> Due Soon',
                 description: 'Automatically assigns #dueSoon tag when a task priority is set to high.',
@@ -99,7 +99,7 @@ export function renderIftttRuleTree(
 
         const chip3 = helpBanner.querySelector('.preset-chip-3') as HTMLButtonElement;
         chip3.addEventListener('click', () => {
-            iftttEngine.registerRule({
+            ifThenRuleEngine.registerRule({
                 id: `preset_journal_${Date.now()}`,
                 name: 'Meeting Created -> Clone to Journal',
                 description: 'Clones new meeting notes into today\'s Journal day note.',
@@ -115,7 +115,7 @@ export function renderIftttRuleTree(
 
         body.appendChild(helpBanner);
 
-        const rules = iftttEngine.getAllRules();
+        const rules = ifThenRuleEngine.getAllRules();
 
         const rulesContainer = document.createElement('div');
         rulesContainer.className = 'd-flex flex-column gap-3';
@@ -137,7 +137,7 @@ export function renderIftttRuleTree(
             toggle.className = 'form-check-input cursor-pointer';
             toggle.checked = rule.enabled;
             toggle.addEventListener('change', () => {
-                iftttEngine.toggleRule(rule.id, toggle.checked);
+                ifThenRuleEngine.toggleRule(rule.id, toggle.checked);
                 onRuleChange();
                 refresh();
             });
@@ -168,7 +168,7 @@ export function renderIftttRuleTree(
                 delBtn.className = 'btn btn-sm btn-outline-danger d-flex align-items-center gap-1';
                 delBtn.innerHTML = '<i class="bx bx-trash"></i> Delete';
                 delBtn.addEventListener('click', () => {
-                    iftttEngine.deleteRule(rule.id);
+                    ifThenRuleEngine.deleteRule(rule.id);
                     onRuleChange();
                     refresh();
                 });
@@ -250,7 +250,7 @@ export function renderIftttRuleTree(
 
         const attrName = prompt('Attribute name trigger (optional, e.g. status, priority):');
 
-        iftttEngine.registerRule({
+        ifThenRuleEngine.registerRule({
             id: `custom_rule_${Date.now()}`,
             name,
             description: `Custom automation rule for ${targetCategory ? `category '${targetCategory}'` : (targetTemplateId ? `template '${targetTemplateId}'` : 'global scope')}.`,

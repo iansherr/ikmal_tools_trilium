@@ -1,17 +1,64 @@
 /**
- * Template Studio Component: Integrated Category Matrix Selector in the Left Tree Rail.
- * Styled natively with Trilium Boxicons and standard Trilium design tokens.
+ * Template Studio: edit template schemas, category behaviour, and the automation
+ * rules attached to each.
+ *
+ * The layout follows Trilium's settings pages — a sticky page header, a rail on
+ * the leading edge, and a stack of titled sections in the main pane. Everything is
+ * built from the primitives in `nativeUi.ts`, which reproduce Trilium's own
+ * options markup; nothing here invents its own card, badge, or colour language.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
-import { IftttEngine } from '../engine/iftttEngine.js';
-import { TemplateDefinition, PromotedAttributeDef, TemplateRelationshipDef, TemplateCategoryDef, IftttRuleDef } from '../engine/types.js';
-import { exportTemplateAsHtml } from '../engine/yamlSpec.js';
+import { IfThenRuleEngine } from '../engine/ifThenRuleEngine.js';
+import { TemplateDefinition, TemplateCategoryDef, IfThenRuleDef, PromotedAttributeDef } from '../engine/types.js';
+import { button, emptyState, escapeHtml, iconAction, listItem, openModal, pageHeader, row, section, switchRow, toggle } from './nativeUi.js';
+
+/** The rail's template hierarchy. Ids reference templates registered in the engine. */
+const TEMPLATE_TREE: TreeNode[] = [
+    {
+        id: 'projectHub', label: 'Project Hub',
+        children: [
+            { id: 'story', label: 'Story Project', children: [
+                { id: 'edit', label: 'Edit Package', children: [] },
+                { id: 'reportingNotes', label: 'Reporting Notes', children: [] },
+            ]},
+            { id: 'projectTask', label: 'Project Task', children: [] },
+            { id: 'meeting', label: 'Project Meeting', children: [] },
+            { id: 'scratch', label: 'Project Scratch Note', children: [] },
+            { id: 'person', label: 'Project Person', children: [] },
+            { id: 'organization', label: 'Client Organization', children: [] },
+            { id: 'emailDraft', label: 'Email Draft', children: [] },
+            { id: 'topic', label: 'Assigned Topic', children: [] },
+        ],
+    },
+    {
+        id: 'organization', label: 'Organization Directory',
+        children: [
+            { id: 'person', label: 'Key Contact Person', children: [] },
+            { id: 'meeting', label: 'Client Meeting', children: [
+                { id: 'meetingPrep', label: 'Meeting Prep', children: [] },
+            ]},
+        ],
+    },
+    {
+        id: 'person', label: 'Person Directory',
+        children: [{ id: 'meeting', label: 'Person Meeting', children: [] }],
+    },
+    { id: 'task', label: 'Standalone Task', children: [] },
+    { id: 'scratch', label: 'Unassigned Scratch Note', children: [] },
+    { id: 'topic', label: 'Global Topic Index', children: [] },
+];
+
+interface TreeNode {
+    id: string;
+    label?: string;
+    children: TreeNode[];
+}
 
 export function renderTemplateStudio(
     container: HTMLElement,
     templateEngine: TemplateEngine,
-    iftttEngine: IftttEngine,
+    ifThenRuleEngine: IfThenRuleEngine,
     onSave: () => void
 ): void {
     let selectedTemplateId: string = templateEngine.getAllTemplates()[0]?.id || 'story';
@@ -23,1075 +70,699 @@ export function renderTemplateStudio(
         container.innerHTML = '';
 
         const wrapper = document.createElement('div');
-        wrapper.className = 'template-studio-wrapper d-flex flex-column gap-4';
+        wrapper.className = 'template-studio-wrapper';
 
-        // 1. Sleek Header Banner
-        const header = document.createElement('div');
-        header.className = 'p-4 rounded-3 border d-flex align-items-center justify-content-between shadow-sm';
-        header.style.backgroundColor = 'var(--sub-background-color, rgba(255, 255, 255, 0.05))';
-        header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
-
-        header.innerHTML = `
-            <div class="d-flex align-items-center gap-3">
-                <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                    <i class="bx bx-layer h3 m-0 text-primary"></i>
-                </div>
-                <div>
-                    <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        Template Studio & Behavioral Engine
-                        <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
-                    </h2>
-                    <p class="text-muted small m-0 mt-1">
-                        Configure template schemas, parent-child links, automation rules, promoted attributes, and live note previews.
-                    </p>
-                </div>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-primary new-template-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
-                    <i class="bx bx-plus fs-6"></i> New Template
-                </button>
-            </div>
-        `;
-
-        const newTplBtn = header.querySelector('.new-template-btn') as HTMLButtonElement;
-        newTplBtn.addEventListener('click', () => openNewTemplateModal(wrapper, templateEngine, () => { onSave(); refresh(); }));
-        wrapper.appendChild(header);
-
-        const layoutRow = document.createElement('div');
-        layoutRow.className = 'row g-4';
-
-        // 2. Sidebar: Segmented Toggle (Templates / Categories) swaps tree content
-        const sidebarCol = document.createElement('div');
-        sidebarCol.className = 'col-md-3';
-
-        const sidebarCard = document.createElement('div');
-        sidebarCard.className = 'card border shadow-sm h-100 rounded-3';
-        sidebarCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
-        sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
-
-        // Segmented rail mode toggle in header
-        const sidebarHeader = document.createElement('div');
-        sidebarHeader.className = 'card-header bg-transparent border-bottom p-3';
-
-        const segmentedToggle = document.createElement('div');
-        segmentedToggle.className = 'd-flex rounded-3 border overflow-hidden';
-        segmentedToggle.style.backgroundColor = 'var(--main-background-color, transparent)';
-
-        const tplsCount = templateEngine.getAllTemplates().length;
-        const catsCount = templateEngine.getAllCategories().length;
-
-        const tplToggleBtn = document.createElement('button');
-        tplToggleBtn.type = 'button';
-        tplToggleBtn.className = `btn btn-sm flex-fill d-flex align-items-center justify-content-center gap-1.5 py-2 border-0 font-weight-bold ${railMode === 'templates' ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-muted'}`;
-        tplToggleBtn.innerHTML = `<i class="bx bx-sitemap"></i> Templates <span class="badge ${railMode === 'templates' ? 'bg-white text-primary' : 'bg-secondary bg-opacity-20 text-muted'} rounded-pill ms-1 tiny">${tplsCount}</span>`;
-        tplToggleBtn.addEventListener('click', () => {
-            railMode = 'templates';
-            activeEditorTab = 'editor';
-            refresh();
-        });
-
-        const catToggleBtn = document.createElement('button');
-        catToggleBtn.type = 'button';
-        catToggleBtn.className = `btn btn-sm flex-fill d-flex align-items-center justify-content-center gap-1.5 py-2 border-0 font-weight-bold ${railMode === 'categories' ? 'bg-info text-white shadow-sm' : 'bg-transparent text-muted'}`;
-        catToggleBtn.innerHTML = `<i class="bx bx-category"></i> Categories <span class="badge ${railMode === 'categories' ? 'bg-white text-info' : 'bg-secondary bg-opacity-20 text-muted'} rounded-pill ms-1 tiny">${catsCount}</span>`;
-        catToggleBtn.addEventListener('click', () => {
-            railMode = 'categories';
-            refresh();
-        });
-
-        segmentedToggle.appendChild(tplToggleBtn);
-        segmentedToggle.appendChild(catToggleBtn);
-        sidebarHeader.appendChild(segmentedToggle);
-        sidebarCard.appendChild(sidebarHeader);
-
-        const treeContainer = document.createElement('div');
-        treeContainer.className = 'card-body p-3';
-
-        if (railMode === 'categories') {
-            // Category list in the rail
-            const cats = templateEngine.getAllCategories();
-            const catList = document.createElement('ul');
-            catList.className = 'list-unstyled m-0 d-flex flex-column gap-1.5';
-
-            for (const cat of cats) {
-                const li = document.createElement('li');
-                const isSelected = cat.id === selectedCategoryId;
-
-                const item = document.createElement('div');
-                item.className = `d-flex align-items-center justify-content-between px-3 py-2.5 rounded-2 transition-all ${isSelected ? 'bg-info text-white font-weight-bold shadow-sm' : 'text-body'}`;
-                item.style.cursor = 'pointer';
-                if (!isSelected) item.style.backgroundColor = 'transparent';
-
-                const tplCountForCat = templateEngine.getAllTemplates().filter(t => t.category === cat.id).length;
-                item.innerHTML = `
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bx bx-${cat.icon} ${isSelected ? 'text-white' : 'text-info'}"></i>
-                        <span class="small">${cat.title}</span>
-                    </div>
-                    <span class="badge ${isSelected ? 'bg-white text-info' : 'bg-info bg-opacity-15 text-info'} rounded-pill tiny">${tplCountForCat}</span>
-                `;
-
-                item.addEventListener('click', () => {
-                    selectedCategoryId = cat.id;
-                    refresh();
-                });
-
-                li.appendChild(item);
-                catList.appendChild(li);
-            }
-
-            treeContainer.appendChild(catList);
-        } else {
-            // Template hierarchy tree in the rail
-            const treeNodes = [
-                {
-                    id: 'projectHub', label: 'Project Hub',
-                    children: [
-                        { id: 'story', label: 'Story Project', children: [
-                            { id: 'edit', label: 'Edit Package', children: [] },
-                            { id: 'reportingNotes', label: 'Reporting Notes', children: [] }
-                        ]},
-                        { id: 'projectTask', label: 'Project Task', children: [] },
-                        { id: 'meeting', label: 'Project Meeting', children: [] },
-                        { id: 'scratch', label: 'Project Scratch Note', children: [] },
-                        { id: 'person', label: 'Project Person', children: [] },
-                        { id: 'organization', label: 'Client Organization', children: [] },
-                        { id: 'emailDraft', label: 'Email Draft', children: [] },
-                        { id: 'topic', label: 'Assigned Topic', children: [] }
-                    ]
-                },
-                {
-                    id: 'organization', label: 'Organization Directory',
-                    children: [
-                        { id: 'person', label: 'Key Contact Person', children: [] },
-                        { id: 'meeting', label: 'Client Meeting', children: [
-                            { id: 'meetingPrep', label: 'Meeting Prep', children: [] }
-                        ]}
-                    ]
-                },
-                {
-                    id: 'person', label: 'Person Directory',
-                    children: [{ id: 'meeting', label: 'Person Meeting', children: [] }]
-                },
-                { id: 'task', label: 'Standalone Task (Unassigned)', children: [] },
-                { id: 'scratch', label: 'Unassigned Scratch Note', children: [] },
-                { id: 'topic', label: 'Global Topic Index', children: [] }
-            ];
-
-            function renderTreeBranch(nodes: Array<{ id: string; label?: string; children: any[] }>, depth = 0): HTMLElement {
-                const ul = document.createElement('ul');
-                ul.className = 'list-unstyled m-0 d-flex flex-column gap-1.5';
-                if (depth > 0) ul.style.paddingLeft = '1.2rem';
-
-                for (const node of nodes) {
-                    const tpl = templateEngine.getTemplate(node.id);
-                    if (!tpl) continue;
-
-                    const li = document.createElement('li');
-                    const isSelected = tpl.id === selectedTemplateId;
-
-                    const item = document.createElement('div');
-                    item.className = `d-flex align-items-center justify-content-between px-3 py-2 rounded-2 transition-all ${isSelected ? 'bg-primary text-white font-weight-bold shadow-sm' : 'text-body'}`;
-                    item.style.cursor = 'pointer';
-                    if (!isSelected) item.style.backgroundColor = 'transparent';
-
-                    item.innerHTML = `
-                        <div class="d-flex align-items-center gap-2">
-                            ${depth > 0 ? '<i class="bx bx-subdirectory-right opacity-50"></i>' : ''}
-                            <i class="bx bx-${tpl.icon}"></i>
-                            <span class="small">${node.label || tpl.title}</span>
-                        </div>
-                    `;
-
-                    item.addEventListener('click', () => {
-                        selectedTemplateId = tpl.id;
-                        activeEditorTab = 'editor';
-                        refresh();
-                    });
-
-                    li.appendChild(item);
-                    if (node.children && node.children.length > 0) {
-                        li.appendChild(renderTreeBranch(node.children, depth + 1));
-                    }
-                    ul.appendChild(li);
-                }
-                return ul;
-            }
-
-            treeContainer.appendChild(renderTreeBranch(treeNodes));
-        }
-
-        sidebarCard.appendChild(treeContainer);
-        sidebarCol.appendChild(sidebarCard);
-        layoutRow.appendChild(sidebarCol);
-
-        // 3. Workspace Column
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
         const activeCat = templateEngine.getCategory(selectedCategoryId);
+        const inCategories = railMode === 'categories';
 
-        const mainCol = document.createElement('div');
-        mainCol.className = 'col-md-9';
+        wrapper.appendChild(pageHeader({
+            icon: 'bx-layer',
+            title: 'Template Studio',
+            subtitle: 'Template schemas, parent links, automation rules, and promoted attributes.',
+            actions: [
+                ...(inCategories || !activeTpl ? [] : [modeSwitcher()]),
+                inCategories
+                    ? button({
+                        text: 'New category',
+                        icon: 'bx-plus',
+                        kind: 'primary',
+                        onClick: () => openNewCategoryModal(),
+                    })
+                    : button({
+                        text: 'New template',
+                        icon: 'bx-plus',
+                        kind: 'primary',
+                        onClick: () => openNewTemplateModal(),
+                    }),
+            ],
+        }));
 
-        const workspaceCard = document.createElement('div');
-        workspaceCard.className = 'card border shadow-sm h-100 rounded-3';
-        workspaceCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
-        workspaceCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
+        const split = document.createElement('div');
+        split.className = 'ns-split';
 
-        const mainHeader = document.createElement('div');
-        mainHeader.className = 'card-header bg-transparent border-bottom p-3.5';
+        const rail = document.createElement('div');
+        rail.className = 'ns-split-rail';
+        renderRail(rail);
+        split.appendChild(rail);
 
-        if (railMode === 'categories' && activeCat) {
-            // Category editor header
-            mainHeader.innerHTML = `
-                <div class="d-flex align-items-center gap-3">
-                    <div class="p-2.5 rounded-3 bg-info bg-opacity-10 text-info">
-                        <i class="bx bx-${activeCat.icon} fs-4 m-0"></i>
-                    </div>
-                    <div>
-                        <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
-                            <span>Category: ${activeCat.title}</span>
-                            <span class="badge ${activeCat.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted font-weight-normal small">${activeCat.isBuiltin ? 'Built-in' : 'Custom'}</span>
-                        </h3>
-                        <div class="text-muted small mt-0.5">${activeCat.description}</div>
-                    </div>
-                </div>
-            `;
+        const main = document.createElement('div');
+        main.className = 'ns-split-main';
+
+        if (inCategories && activeCat) {
+            renderCategoryEditor(main, activeCat);
+        } else if (activeTpl && activeEditorTab === 'editor') {
+            renderSchemaEditor(main, activeTpl);
         } else if (activeTpl) {
-            // Template header with Schema / Preview toggle
-            mainHeader.innerHTML = `
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary">
-                            <i class="bx bx-${activeTpl.icon} fs-4 m-0"></i>
-                        </div>
-                        <div>
-                            <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
-                                <span>Template: ${activeTpl.title}</span>
-                                <span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>
-                            </h3>
-                            <div class="text-muted small mt-0.5">Marker: #${activeTpl.marker} &bull; ID: ${activeTpl.id}</div>
-                        </div>
-                    </div>
-                    <div class="d-flex rounded-3 border overflow-hidden" style="background-color: var(--main-background-color, transparent);">
-                        <button type="button" class="btn btn-sm px-3 py-1.5 border-0 font-weight-bold d-flex align-items-center gap-1.5 mode-btn ${activeEditorTab === 'editor' ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-muted'}" data-mode="editor">
-                            <i class="bx bx-slider"></i> Schema & Rules
-                        </button>
-                        <button type="button" class="btn btn-sm px-3 py-1.5 border-0 font-weight-bold d-flex align-items-center gap-1.5 mode-btn ${activeEditorTab === 'preview' ? 'bg-success text-white shadow-sm' : 'bg-transparent text-muted'}" data-mode="preview">
-                            <i class="bx bx-show"></i> Preview
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            mainHeader.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.addEventListener('click', (e: any) => {
-                    activeEditorTab = e.currentTarget.dataset.mode as any;
-                    refresh();
-                });
-            });
+            renderPreview(main, activeTpl);
         }
 
-        workspaceCard.appendChild(mainHeader);
-
-        const workspaceBody = document.createElement('div');
-        workspaceBody.className = 'card-body p-4';
-
-        if (railMode === 'categories' && activeCat) {
-            renderSingleCategoryEditorView(workspaceBody, wrapper, activeCat.id, templateEngine, iftttEngine, () => { onSave(); refresh(); });
-        } else if (activeEditorTab === 'editor' && activeTpl) {
-            renderSchemaEditorView(workspaceBody, wrapper, activeTpl, templateEngine, iftttEngine, () => { refresh(); });
-        } else if (activeTpl) {
-            renderLivePreviewView(workspaceBody, activeTpl, templateEngine, iftttEngine, () => { refresh(); });
-        }
-
-        workspaceCard.appendChild(workspaceBody);
-        mainCol.appendChild(workspaceCard);
-        layoutRow.appendChild(mainCol);
-
-        wrapper.appendChild(layoutRow);
+        split.appendChild(main);
+        wrapper.appendChild(split);
         container.appendChild(wrapper);
     }
 
+    /** Segmented Schema/Preview control for the currently selected template. */
+    function modeSwitcher(): HTMLElement {
+        const group = document.createElement('div');
+        group.className = 'btn-group btn-group-sm';
+        group.setAttribute('role', 'group');
 
-    function renderSingleCategoryEditorView(
-        el: HTMLElement,
-        wrapper: HTMLElement,
-        catId: string,
-        engine: TemplateEngine,
-        iftttEngine: IftttEngine,
-        onSave: () => void
-    ) {
-        const c = engine.getCategory(catId);
-        if (!c) return;
-
-        const allRules = iftttEngine.getAllRules();
-        const catRules = allRules.filter(r => r.trigger.targetCategory === c.id);
-        const catTemplates = engine.getAllTemplates().filter(t => t.category === c.id);
-
-        const catWrapper = document.createElement('div');
-        catWrapper.className = 'd-flex flex-column gap-4';
-
-        catWrapper.innerHTML = `
-            <!-- Settings Card -->
-            <div class="card border p-4 shadow-sm rounded-3" style="background-color: var(--main-background-color, transparent);">
-                <h6 class="font-weight-bold text-info mb-3 d-flex align-items-center gap-2">
-                    <i class="bx bx-slider-alt"></i> Category Settings
-                </h6>
-                <div class="row g-4 small">
-                    <div class="col-md-4">
-                        <label class="form-label font-weight-bold text-muted mb-1">Default Root Container Target</label>
-                        <input type="text" class="form-control form-control-sm cat-root-input" data-cat-id="${c.id}" value="${c.defaultRootMarker || 'projectRoot'}">
-                        <div class="text-muted tiny mt-1">Target container tag (e.g. #projectRoot, #calendarRoot)</div>
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label font-weight-bold text-muted mb-1">Category Behavior Toggles</label>
-                        <div class="d-flex flex-column gap-2.5 pt-1">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input cat-journal-check" type="checkbox" data-cat-id="${c.id}" ${c.autoJournalClone !== false ? 'checked' : ''}>
-                                <label class="form-check-label font-weight-bold"><i class="bx bx-calendar text-primary me-1"></i> Auto-File Reference Under Today's Journal</label>
-                                <div class="text-muted tiny">When enabled, notes created in this category automatically file a reference link under today's journal note.</div>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input cat-topic-check" type="checkbox" data-cat-id="${c.id}" ${c.inheritParentTopics !== false ? 'checked' : ''}>
-                                <label class="form-check-label font-weight-bold"><i class="bx bx-git-repo-forked text-info me-1"></i> Inherit Parent Topics & Metadata</label>
-                                <div class="text-muted tiny">When enabled, notes automatically absorb #topic tags and client details from parent projects & organizations.</div>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input cat-project-check" type="checkbox" data-cat-id="${c.id}" ${c.projectScopedDefault ? 'checked' : ''}>
-                                <label class="form-check-label font-weight-bold"><i class="bx bx-folder text-success me-1"></i> Scope To Project Hub Container</label>
-                                <div class="text-muted tiny">When enabled, notes created in this category require a parent project hub link.</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Templates in this category -->
-            <div class="card border p-4 shadow-sm rounded-3" style="background-color: var(--main-background-color, transparent);">
-                <h6 class="font-weight-bold text-primary mb-3 d-flex align-items-center gap-2">
-                    <i class="bx bx-file"></i> Templates in this Category (${catTemplates.length})
-                </h6>
-                <div class="d-flex flex-column gap-2">
-                    ${catTemplates.length > 0 ? catTemplates.map(t => `
-                        <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                            <div class="d-flex align-items-center gap-2.5">
-                                <i class="bx bx-${t.icon} text-primary fs-5"></i>
-                                <div>
-                                    <strong class="text-body">${t.title}</strong>
-                                    <div class="text-muted tiny mt-0.5">Marker: #${t.marker} &bull; ${t.attributes.length} attributes, ${t.relationships.length} parent links</div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('') : '<div class="text-muted tiny p-3 border rounded-3 text-center">No templates assigned to this category.</div>'}
-                </div>
-            </div>
-
-            <!-- Category automation rules -->
-            <div class="card border p-4 shadow-sm rounded-3" style="background-color: var(--main-background-color, transparent);">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h6 class="font-weight-bold text-info m-0 d-flex align-items-center gap-2">
-                        <i class="bx bx-git-commit"></i> Category Automation Rules (${catRules.length})
-                    </h6>
-                    <button type="button" class="btn btn-sm btn-outline-info add-cat-rule-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-cat-id="${c.id}">
-                        <i class="bx bx-plus"></i> Add Category Rule
-                    </button>
-                </div>
-                <div class="d-flex flex-column gap-2">
-                    ${catRules.length > 0 ? catRules.map(r => `
-                        <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                            <div class="d-flex align-items-center gap-2.5">
-                                <i class="bx bx-bolt-circle text-info fs-5"></i>
-                                <div>
-                                    <strong class="text-body">${r.name}</strong>
-                                    <div class="text-muted tiny mt-0.5">${r.description}</div>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                    <i class="bx bx-edit-alt"></i> Edit Rule
-                                </button>
-                                <button type="button" class="btn btn-xs ${r.enabled ? 'btn-outline-success' : 'btn-outline-secondary'} toggle-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                    <i class="bx bx-${r.enabled ? 'check-circle' : 'circle'}"></i> ${r.enabled ? 'Active' : 'Disabled'}
-                                </button>
-                            </div>
-                        </div>
-                    `).join('') : '<div class="text-muted tiny p-3 border rounded-3 text-center">No category-wide automation rules attached.</div>'}
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-end pt-2">
-                <button type="button" class="btn btn-primary px-4 py-2 font-weight-bold shadow-sm save-cat-btn d-flex align-items-center gap-1.5">
-                    <i class="bx bx-save fs-6"></i> Save Category Settings
-                </button>
-            </div>
-        `;
-
-        catWrapper.querySelectorAll('.add-cat-rule-btn').forEach(btn => {
-            btn.addEventListener('click', (e: any) => {
-                openRuleEditorModal(wrapper, iftttEngine, { targetCategory: c.id }, onSave);
+        for (const mode of [
+            { id: 'editor' as const, label: 'Schema', icon: 'bx-slider' },
+            { id: 'preview' as const, label: 'Preview', icon: 'bx-show' },
+        ]) {
+            const btn = button({
+                text: mode.label,
+                icon: mode.icon,
+                size: 'small',
+                className: activeEditorTab === mode.id ? 'active' : undefined,
+                onClick: () => {
+                    activeEditorTab = mode.id;
+                    refresh();
+                },
             });
-        });
-
-        catWrapper.querySelectorAll('.edit-rule-btn').forEach(btn => {
-            btn.addEventListener('click', (e: any) => {
-                const ruleId = e.currentTarget.dataset.ruleId;
-                const rule = iftttEngine.getRule(ruleId);
-                if (rule) openRuleEditorModal(wrapper, iftttEngine, { rule }, onSave);
-            });
-        });
-
-        catWrapper.querySelectorAll('.toggle-rule-btn').forEach(btn => {
-            btn.addEventListener('click', (e: any) => {
-                const ruleId = e.currentTarget.dataset.ruleId;
-                const rule = iftttEngine.getRule(ruleId);
-                if (rule) {
-                    iftttEngine.toggleRule(ruleId, !rule.enabled);
-                    onSave();
-                }
-            });
-        });
-
-        const saveCatBtn = catWrapper.querySelector('.save-cat-btn') as HTMLButtonElement;
-        saveCatBtn.addEventListener('click', () => {
-            const rootInput = catWrapper.querySelector('.cat-root-input') as HTMLInputElement;
-            if (rootInput) c.defaultRootMarker = rootInput.value;
-            c.autoJournalClone = (catWrapper.querySelector('.cat-journal-check') as HTMLInputElement)?.checked;
-            c.inheritParentTopics = (catWrapper.querySelector('.cat-topic-check') as HTMLInputElement)?.checked;
-            c.projectScopedDefault = (catWrapper.querySelector('.cat-project-check') as HTMLInputElement)?.checked;
-            engine.registerCategory(c);
-            onSave();
-        });
-
-        el.appendChild(catWrapper);
-    }
-
-    function renderSchemaEditorView(
-        el: HTMLElement,
-        wrapper: HTMLElement,
-        tpl: TemplateDefinition,
-        engine: TemplateEngine,
-        iftttEngine: IftttEngine,
-        switchTab: () => void
-    ) {
-        const formWrapper = document.createElement('div');
-        formWrapper.className = 'd-flex flex-column gap-4';
-
-        const categories = engine.getAllCategories();
-        const globalRules = iftttEngine.getAllRules().filter(r => !r.trigger.targetCategory && !r.trigger.targetTemplateId);
-        const catRules = iftttEngine.getAllRules().filter(r => r.trigger.targetCategory === tpl.category);
-        const tplRules = iftttEngine.getAllRules().filter(r => r.trigger.targetTemplateId === tpl.id);
-
-        const parentRules = tpl.relationships.map(r => ({
-            id: `rel_${tpl.id}_${r.relationName}`,
-            name: `Parent Link ~${r.relationName} -> ${r.targetTemplateName}`,
-            description: `IF note has ~${r.relationName} -> THEN link to ${r.targetTemplateName}, file reference link under parent container, and inherit parent topics.`,
-            scope: 'template',
-            enabled: true,
-            isParentLink: true,
-            relationName: r.relationName,
-            targetTemplateName: r.targetTemplateName,
-            autoCloneToParent: r.autoCloneToParent,
-            inheritTopics: r.inheritTopics,
-        }));
-
-        // 1. Basic Template Settings & Category Type
-        const basicCard = document.createElement('div');
-        basicCard.className = 'card border p-4 shadow-sm rounded-3';
-        basicCard.style.backgroundColor = 'var(--main-background-color, transparent)';
-        basicCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
-
-        basicCard.innerHTML = `
-            <h6 class="font-weight-bold text-primary mb-3 d-flex align-items-center gap-2">
-                <i class="bx bx-slider"></i> General Settings & Category Type
-            </h6>
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label small font-weight-bold">Template Title</label>
-                    <input type="text" id="tpl-title" class="form-control form-control-sm" value="${tpl.title}">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small font-weight-bold">Category Type</label>
-                    <select id="tpl-category" class="form-select form-select-sm">
-                        ${categories.map(c => `<option value="${c.id}" ${tpl.category === c.id ? 'selected' : ''}>${c.title}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small font-weight-bold">Title Pattern</label>
-                    <input type="text" id="tpl-pattern" class="form-control form-control-sm" value="${tpl.titlePattern}">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small font-weight-bold">Icon Class</label>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text"><i class="bx bx-${tpl.icon}"></i></span>
-                        <input type="text" id="tpl-icon" class="form-control" value="${tpl.icon}">
-                    </div>
-                </div>
-            </div>
-        `;
-        formWrapper.appendChild(basicCard);
-
-        // 2. UNIFIED IFTTT AUTOMATION RULES CARD
-        const behaviorCard = document.createElement('div');
-        behaviorCard.className = 'card border p-4 shadow-sm rounded-3';
-        behaviorCard.style.backgroundColor = 'var(--main-background-color, transparent)';
-        behaviorCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
-
-        behaviorCard.innerHTML = `
-            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2.5">
-                <div>
-                    <h6 class="font-weight-bold text-primary m-0 d-flex align-items-center gap-2">
-                        <i class="bx bx-git-commit"></i> Automation Rules (IFTTT Engine)
-                    </h6>
-                    <p class="text-muted tiny m-0 mt-0.5">Parent relationship links, reference filing, metadata inheritance, and custom logic rules.</p>
-                </div>
-                <button type="button" class="btn btn-sm btn-primary add-tpl-rule-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
-                    <i class="bx bx-plus"></i> Add Automation Rule
-                </button>
-            </div>
-
-            <div class="d-flex flex-column gap-4">
-                <!-- Group 1: Global Scope Automations -->
-                <div>
-                    <div class="text-primary font-weight-bold small mb-2 d-flex align-items-center justify-content-between">
-                        <span class="d-flex align-items-center gap-1.5"><i class="bx bx-globe"></i> Global System Rules (${globalRules.length})</span>
-                        <button type="button" class="btn btn-xs btn-outline-secondary edit-global-rules-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
-                            <i class="bx bx-slider-alt"></i> Edit Global Rules
-                        </button>
-                    </div>
-                    <div class="d-flex flex-column gap-2">
-                        ${globalRules.length > 0 ? globalRules.map(r => `
-                            <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                                <div class="d-flex align-items-center gap-2.5">
-                                    <i class="bx bx-globe text-primary fs-5"></i>
-                                    <div>
-                                        <strong class="text-body">${r.name}</strong>
-                                        <div class="text-muted tiny mt-0.5">${r.description}</div>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                        <i class="bx bx-edit-alt"></i> Edit Rule
-                                    </button>
-                                    <button type="button" class="btn btn-xs ${r.enabled ? 'btn-outline-success' : 'btn-outline-secondary'} toggle-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                        <i class="bx bx-${r.enabled ? 'check-circle' : 'circle'}"></i> ${r.enabled ? 'Active' : 'Disabled'}
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('') : '<div class="p-3 text-center text-muted tiny border rounded-3">No global system rules.</div>'}
-                    </div>
-                </div>
-
-                <!-- Group 2: Category Scope Automations -->
-                <div>
-                    <div class="text-info font-weight-bold small mb-2 d-flex align-items-center justify-content-between">
-                        <span class="d-flex align-items-center gap-1.5"><i class="bx bx-category"></i> Category Type Rules (${catRules.length})</span>
-                        <button type="button" class="btn btn-xs btn-outline-info edit-cat-rules-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
-                            <i class="bx bx-category"></i> Edit Category Matrix
-                        </button>
-                    </div>
-                    <div class="d-flex flex-column gap-2">
-                        ${catRules.length > 0 ? catRules.map(r => `
-                            <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                                <div class="d-flex align-items-center gap-2.5">
-                                    <i class="bx bx-category text-info fs-5"></i>
-                                    <div>
-                                        <strong class="text-body">${r.name}</strong>
-                                        <div class="text-muted tiny mt-0.5">${r.description}</div>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-xs btn-outline-info edit-cat-rules-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
-                                        <i class="bx bx-edit-alt"></i> Edit Category
-                                    </button>
-                                    <button type="button" class="btn btn-xs ${r.enabled ? 'btn-outline-success' : 'btn-outline-secondary'} toggle-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                        <i class="bx bx-${r.enabled ? 'check-circle' : 'circle'}"></i> ${r.enabled ? 'Active' : 'Disabled'}
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('') : '<div class="p-3 text-center text-muted tiny border rounded-3">No category-wide rules for category \'' + tpl.category + '\'.</div>'}
-                    </div>
-                </div>
-
-                <!-- Group 3: Template Scope Automations -->
-                <div>
-                    <div class="text-success font-weight-bold small mb-2 d-flex align-items-center justify-content-between">
-                        <span class="d-flex align-items-center gap-1.5"><i class="bx bx-file"></i> Template Direct Rules (${parentRules.length + tplRules.length})</span>
-                        <button type="button" class="btn btn-xs btn-outline-success add-rel-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
-                            <i class="bx bx-link"></i> Add Parent Link
-                        </button>
-                    </div>
-                    <div class="d-flex flex-column gap-2">
-                        ${parentRules.map((r, idx) => `
-                            <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                                <div class="d-flex align-items-center gap-2.5">
-                                    <i class="bx bx-link text-success fs-5"></i>
-                                    <div>
-                                        <strong class="text-body">${r.name}</strong>
-                                        <div class="text-muted tiny mt-0.5">${r.description}</div>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-xs btn-outline-secondary edit-parent-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rel-idx="${idx}">
-                                        <i class="bx bx-edit-alt"></i> Edit Link
-                                    </button>
-                                    <button type="button" class="btn btn-xs btn-outline-danger del-rel-btn p-1" data-rel-idx="${idx}">
-                                        <i class="bx bx-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('')}
-
-                        ${tplRules.map(r => `
-                            <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                                <div class="d-flex align-items-center gap-2.5">
-                                    <i class="bx bx-bolt-circle text-success fs-5"></i>
-                                    <div>
-                                        <strong class="text-body">${r.name}</strong>
-                                        <div class="text-muted tiny mt-0.5">${r.description}</div>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                        <i class="bx bx-edit-alt"></i> Edit Rule
-                                    </button>
-                                    <button type="button" class="btn btn-xs ${r.enabled ? 'btn-outline-success' : 'btn-outline-secondary'} toggle-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                        <i class="bx bx-${r.enabled ? 'check-circle' : 'circle'}"></i> ${r.enabled ? 'Active' : 'Disabled'}
-                                    </button>
-                                    <button type="button" class="btn btn-xs btn-outline-danger del-rule-btn p-1" data-rule-id="${r.id}">
-                                        <i class="bx bx-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('')}
-
-                        ${parentRules.length === 0 && tplRules.length === 0 ? '<div class="p-3 text-center text-muted tiny border rounded-3">No template-specific automation rules.</div>' : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        behaviorCard.querySelectorAll('.edit-cat-rules-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                switchTab();
-            });
-        });
-
-        behaviorCard.querySelectorAll('.edit-global-rules-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                openRuleEditorModal(wrapper, iftttEngine, {}, () => switchTab());
-            });
-        });
-
-        behaviorCard.querySelectorAll('.edit-rule-btn').forEach(btn => {
-            btn.addEventListener('click', (e: any) => {
-                const ruleId = e.currentTarget.dataset.ruleId;
-                const rule = ruleId ? iftttEngine.getRule(ruleId) : undefined;
-                openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab());
-            });
-        });
-
-        behaviorCard.querySelectorAll('.toggle-rule-btn').forEach(btn => {
-            btn.addEventListener('click', (e: any) => {
-                const ruleId = e.currentTarget.dataset.ruleId;
-                const rule = iftttEngine.getRule(ruleId);
-                if (rule) {
-                    iftttEngine.toggleRule(ruleId, !rule.enabled);
-                    switchTab();
-                }
-            });
-        });
-
-        behaviorCard.querySelectorAll('.edit-parent-rule-btn').forEach(btn => {
-            btn.addEventListener('click', (e: any) => {
-                const idx = Number(e.currentTarget.dataset.relIdx);
-                openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, idx, () => switchTab());
-            });
-        });
-
-        const addRelBtn = behaviorCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
-        if (addRelBtn) {
-            addRelBtn.addEventListener('click', () => openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, undefined, () => switchTab()));
+            btn.setAttribute('aria-pressed', String(activeEditorTab === mode.id));
+            group.appendChild(btn);
         }
 
-        const addTplRuleBtn = behaviorCard.querySelector('.add-tpl-rule-btn') as HTMLButtonElement;
-        addTplRuleBtn.addEventListener('click', () => openRuleEditorModal(wrapper, iftttEngine, { targetTemplateId: tpl.id }, () => switchTab()));
+        return group;
+    }
 
-        behaviorCard.querySelectorAll('.del-rel-btn').forEach(btn => {
-            btn.addEventListener('click', (e: any) => {
-                const idx = Number(e.currentTarget.dataset.relIdx);
-                tpl.relationships.splice(idx, 1);
-                engine.updateTemplate(tpl.id, tpl);
-                switchTab();
+    // ------------------------------------------------------------------- rail
+
+    function renderRail(parent: HTMLElement) {
+        const { card } = section(parent, { title: 'Library' });
+
+        const switcher = document.createElement('div');
+        switcher.className = 'btn-group btn-group-sm';
+        switcher.setAttribute('role', 'group');
+        switcher.style.width = '100%';
+        switcher.style.marginBottom = '12px';
+
+        for (const mode of [
+            { id: 'templates' as const, label: 'Templates', count: templateEngine.getAllTemplates().length },
+            { id: 'categories' as const, label: 'Categories', count: templateEngine.getAllCategories().length },
+        ]) {
+            const btn = button({
+                text: `${mode.label} (${mode.count})`,
+                size: 'small',
+                className: railMode === mode.id ? 'active' : undefined,
+                onClick: () => {
+                    railMode = mode.id;
+                    if (mode.id === 'templates') activeEditorTab = 'editor';
+                    refresh();
+                },
             });
+            btn.setAttribute('aria-pressed', String(railMode === mode.id));
+            switcher.appendChild(btn);
+        }
+        card.appendChild(switcher);
+
+        card.appendChild(railMode === 'categories' ? categoryList() : templateTree(TEMPLATE_TREE));
+    }
+
+    function categoryList(): HTMLElement {
+        const list = document.createElement('ul');
+        list.className = 'ns-tree';
+
+        for (const cat of templateEngine.getAllCategories()) {
+            const count = templateEngine.getAllTemplates().filter((t) => t.category === cat.id).length;
+            const li = document.createElement('li');
+            li.appendChild(treeItem({
+                icon: cat.icon,
+                label: cat.title,
+                count,
+                selected: cat.id === selectedCategoryId,
+                onClick: () => {
+                    selectedCategoryId = cat.id;
+                    refresh();
+                },
+            }));
+            list.appendChild(li);
+        }
+
+        return list;
+    }
+
+    function templateTree(nodes: TreeNode[]): HTMLElement {
+        const list = document.createElement('ul');
+        list.className = 'ns-tree';
+
+        for (const node of nodes) {
+            const tpl = templateEngine.getTemplate(node.id);
+            if (!tpl) continue;
+
+            const li = document.createElement('li');
+            li.appendChild(treeItem({
+                icon: tpl.icon,
+                label: node.label || tpl.title,
+                selected: tpl.id === selectedTemplateId,
+                onClick: () => {
+                    selectedTemplateId = tpl.id;
+                    activeEditorTab = 'editor';
+                    refresh();
+                },
+            }));
+
+            if (node.children.length) {
+                li.appendChild(templateTree(node.children));
+            }
+            list.appendChild(li);
+        }
+
+        return list;
+    }
+
+    function treeItem({ icon, label, count, selected, onClick }: {
+        icon: string;
+        label: string;
+        count?: number;
+        selected: boolean;
+        onClick: () => void;
+    }): HTMLElement {
+        const item = document.createElement('div');
+        item.className = `ns-tree-item${selected ? ' selected' : ''}`;
+        item.setAttribute('role', 'button');
+        item.tabIndex = 0;
+        item.title = label;
+        item.innerHTML = `
+            <span class="bx bx-${escapeHtml(icon)}" aria-hidden="true"></span>
+            <span class="ns-tree-item-label">${escapeHtml(label)}</span>
+            ${count !== undefined ? `<span class="ns-count">${count}</span>` : ''}
+        `;
+        item.addEventListener('click', onClick);
+        item.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+            }
+        });
+        return item;
+    }
+
+    // -------------------------------------------------------- category editor
+
+    function renderCategoryEditor(parent: HTMLElement, cat: TemplateCategoryDef) {
+        const rules = ifThenRuleEngine.getAllRules().filter((r) => r.trigger.targetCategory === cat.id);
+        const templates = templateEngine.getAllTemplates().filter((t) => t.category === cat.id);
+
+        // --- behaviour
+        const { card } = section(parent, {
+            title: cat.title,
+            description: cat.description,
         });
 
-        behaviorCard.querySelectorAll('.del-rule-btn').forEach(btn => {
-            btn.addEventListener('click', (e: any) => {
-                const ruleId = e.currentTarget.dataset.ruleId;
-                iftttEngine.deleteRule(ruleId);
-                switchTab();
-            });
+        const rootInput = document.createElement('input');
+        rootInput.type = 'text';
+        rootInput.className = 'form-control form-control-sm';
+        rootInput.id = 'cat-root';
+        rootInput.value = cat.defaultRootMarker || 'projectRoot';
+        card.appendChild(row(rootInput, {
+            label: 'Default root container',
+            description: 'Container tag new notes in this category are filed under, e.g. projectRoot.',
+            htmlFor: 'cat-root',
+        }));
+
+        const journalToggle = switchRow({
+            id: 'cat-journal',
+            label: "File under today's journal note",
+            description: 'Add a reference link to the current day note when a note in this category is created.',
+            checked: cat.autoJournalClone !== false,
+        });
+        card.appendChild(journalToggle);
+
+        const topicsToggle = switchRow({
+            id: 'cat-topics',
+            label: 'Inherit parent topics and metadata',
+            description: 'Absorb topic tags and client details from parent projects and organizations.',
+            checked: cat.inheritParentTopics !== false,
+        });
+        card.appendChild(topicsToggle);
+
+        const scopeToggle = switchRow({
+            id: 'cat-scoped',
+            label: 'Require a project hub',
+            description: 'Notes in this category must be linked to a parent project hub.',
+            checked: !!cat.projectScopedDefault,
+        });
+        card.appendChild(scopeToggle);
+
+        // --- templates in the category
+        const { card: tplCard } = section(parent, { title: `Templates (${templates.length})` });
+        if (templates.length) {
+            for (const t of templates) {
+                tplCard.appendChild(listItem({
+                    icon: `bx-${t.icon}`,
+                    title: t.title,
+                    description: `#${t.marker} · ${t.attributes.length} attributes · ${t.relationships.length} parent links`,
+                    actions: [iconAction({
+                        icon: 'bx-link-external',
+                        title: `Open ${t.title}`,
+                        onClick: () => {
+                            railMode = 'templates';
+                            selectedTemplateId = t.id;
+                            activeEditorTab = 'editor';
+                            refresh();
+                        },
+                    })],
+                }));
+            }
+        } else {
+            tplCard.appendChild(emptyState('No templates are assigned to this category.'));
+        }
+
+        // --- category rules
+        renderRuleSection(parent, {
+            title: `Automation rules (${rules.length})`,
+            description: 'Rules that run for every template in this category.',
+            rules,
+            emptyText: 'No category-wide rules.',
+            addLabel: 'Add category rule',
+            onAdd: () => openRuleEditorModal({ targetCategory: cat.id }),
         });
 
-        formWrapper.appendChild(behaviorCard);
+        // --- save
+        const actions = document.createElement('div');
+        actions.className = 'ns-actions ns-actions-end';
+        actions.appendChild(button({
+            text: 'Save category',
+            icon: 'bx-save',
+            kind: 'primary',
+            size: 'normal',
+            onClick: () => {
+                cat.defaultRootMarker = rootInput.value;
+                cat.autoJournalClone = journalToggle.querySelector<HTMLInputElement>('input')!.checked;
+                cat.inheritParentTopics = topicsToggle.querySelector<HTMLInputElement>('input')!.checked;
+                cat.projectScopedDefault = scopeToggle.querySelector<HTMLInputElement>('input')!.checked;
+                templateEngine.registerCategory(cat);
+                onSave();
+                refresh();
+            },
+        }));
+        parent.appendChild(actions);
+    }
 
-        // 3. Promoted Attributes
-        const attrCard = document.createElement('div');
-        attrCard.className = 'card border p-4 shadow-sm rounded-3';
-        attrCard.style.backgroundColor = 'var(--main-background-color, transparent)';
-        attrCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
+    // ---------------------------------------------------------- schema editor
 
-        attrCard.innerHTML = `
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h6 class="font-weight-bold text-success m-0 d-flex align-items-center gap-2">
-                    <i class="bx bx-list-check"></i> Promoted Form Attributes (${tpl.attributes.length})
-                </h6>
-                <button type="button" class="btn btn-sm btn-outline-success add-attr-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
-                    <i class="bx bx-plus"></i> Add Attribute
-                </button>
-            </div>
-            <table class="table table-hover align-middle small m-0 border rounded-3 overflow-hidden">
+    function renderSchemaEditor(parent: HTMLElement, tpl: TemplateDefinition) {
+        const categories = templateEngine.getAllCategories();
+        const allRules = ifThenRuleEngine.getAllRules();
+        const globalRules = allRules.filter((r) => !r.trigger.targetCategory && !r.trigger.targetTemplateId);
+        const catRules = allRules.filter((r) => r.trigger.targetCategory === tpl.category);
+        const tplRules = allRules.filter((r) => r.trigger.targetTemplateId === tpl.id);
+
+        // --- general
+        const { card } = section(parent, {
+            title: tpl.title,
+            description: `Marker #${tpl.marker} · id ${tpl.id}`,
+        });
+
+        const titleInput = inputControl('tpl-title', tpl.title);
+        card.appendChild(row(titleInput, { label: 'Title', htmlFor: 'tpl-title' }));
+
+        const categorySelect = document.createElement('select');
+        categorySelect.className = 'form-select form-select-sm';
+        categorySelect.id = 'tpl-category';
+        categorySelect.innerHTML = categories
+            .map((c) => `<option value="${escapeHtml(c.id)}"${tpl.category === c.id ? ' selected' : ''}>${escapeHtml(c.title)}</option>`)
+            .join('');
+        card.appendChild(row(categorySelect, {
+            label: 'Category',
+            description: 'Category behaviour and category-wide rules apply to this template.',
+            htmlFor: 'tpl-category',
+        }));
+
+        const patternInput = inputControl('tpl-pattern', tpl.titlePattern);
+        card.appendChild(row(patternInput, {
+            label: 'Title pattern',
+            description: 'Pattern applied to new note titles, e.g. Project: {title}.',
+            htmlFor: 'tpl-pattern',
+        }));
+
+        const iconGroup = document.createElement('div');
+        iconGroup.className = 'input-group input-group-sm';
+        iconGroup.innerHTML = `<span class="input-group-text"><span class="bx bx-${escapeHtml(tpl.icon)}"></span></span>`;
+        const iconInput = inputControl('tpl-icon', tpl.icon);
+        iconInput.className = 'form-control form-control-sm';
+        iconGroup.appendChild(iconInput);
+        card.appendChild(row(iconGroup, {
+            label: 'Icon',
+            description: 'Boxicons name without the bx- prefix.',
+            htmlFor: 'tpl-icon',
+        }));
+
+        // --- rules, one section per scope so nothing nests
+        renderRuleSection(parent, {
+            title: `Global rules (${globalRules.length})`,
+            description: 'Run for every note the system creates.',
+            rules: globalRules,
+            emptyText: 'No global rules.',
+            addLabel: 'Add rule',
+            onAdd: () => openRuleEditorModal({}),
+        });
+
+        renderRuleSection(parent, {
+            title: `Category rules (${catRules.length})`,
+            description: `Inherited from the ${tpl.category} category.`,
+            rules: catRules,
+            emptyText: `No rules on the ${tpl.category} category.`,
+            addIcon: 'bx-category',
+            addLabel: `Edit the ${tpl.category} category`,
+            onAdd: () => {
+                railMode = 'categories';
+                selectedCategoryId = tpl.category;
+                refresh();
+            },
+        });
+
+        renderTemplateRuleSection(parent, tpl, tplRules);
+
+        // --- promoted attributes
+        const { card: attrCard } = section(parent, {
+            title: `Promoted attributes (${tpl.attributes.length})`,
+            description: 'Fields shown on the note itself when it is created from this template.',
+            actions: [iconAction({ icon: 'bx-plus', title: 'Add attribute', onClick: () => openAddAttrModal(tpl) })],
+        });
+
+        if (tpl.attributes.length) {
+            const table = document.createElement('table');
+            table.className = 'ns-table';
+            table.innerHTML = `
                 <thead>
-                    <tr class="text-muted border-bottom">
-                        <th>Attribute Name</th>
-                        <th>Type</th>
-                        <th>Data Type</th>
-                        <th>Default / Options</th>
-                    </tr>
+                    <tr><th>Name</th><th>Kind</th><th>Type</th><th>Default / options</th></tr>
                 </thead>
                 <tbody>
-                    ${tpl.attributes.map(a => `
+                    ${tpl.attributes.map((a) => `
                         <tr>
-                            <td><code>#${a.name}</code></td>
-                            <td><span class="badge bg-secondary bg-opacity-20 text-muted rounded-pill">${a.type}</span></td>
-                            <td>${a.dataType}</td>
-                            <td>${a.options ? a.options.join(', ') : a.defaultValue ?? '-'}</td>
+                            <td><span class="ns-code">${a.type === 'relation' ? '~' : '#'}${escapeHtml(a.name)}</span></td>
+                            <td>${escapeHtml(a.type)}</td>
+                            <td>${escapeHtml(a.dataType)}</td>
+                            <td class="ns-meta">${escapeHtml(a.options ? a.options.join(', ') : a.defaultValue ?? '—')}</td>
                         </tr>
                     `).join('')}
                 </tbody>
-            </table>
-        `;
+            `;
+            attrCard.appendChild(table);
+        } else {
+            attrCard.appendChild(emptyState('No promoted attributes.'));
+        }
 
-        const addAttrBtn = attrCard.querySelector('.add-attr-btn') as HTMLButtonElement;
-        addAttrBtn.addEventListener('click', () => openAddAttrModal(wrapper, tpl, engine, () => switchTab()));
-
-        formWrapper.appendChild(attrCard);
-
-        // 4. HTML Content Skeleton
-        const skeletonCard = document.createElement('div');
-        skeletonCard.className = 'card border p-4 shadow-sm rounded-3';
-        skeletonCard.style.backgroundColor = 'var(--main-background-color, transparent)';
-        skeletonCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
-
-        skeletonCard.innerHTML = `
-            <h6 class="font-weight-bold text-info mb-3 d-flex align-items-center gap-2">
-                <i class="bx bx-code-alt"></i> Default Content Skeleton (HTML)
-            </h6>
-            <textarea id="tpl-content" class="form-control font-monospace" rows="8">${tpl.defaultContent}</textarea>
-        `;
-        formWrapper.appendChild(skeletonCard);
-
-        // Save Button Footer
-        const footer = document.createElement('div');
-        footer.className = 'd-flex justify-content-end';
-        const saveBtn = document.createElement('button');
-        saveBtn.type = 'button';
-        saveBtn.className = 'btn btn-primary px-4 py-2 font-weight-bold shadow-sm d-flex align-items-center gap-1.5';
-        saveBtn.innerHTML = '<i class="bx bx-save fs-6"></i> Save Template Schema';
-        saveBtn.addEventListener('click', () => {
-            const newTitle = (formWrapper.querySelector('#tpl-title') as HTMLInputElement).value;
-            const newCategory = (formWrapper.querySelector('#tpl-category') as HTMLSelectElement).value as any;
-            const newPattern = (formWrapper.querySelector('#tpl-pattern') as HTMLInputElement).value;
-            const newIcon = (formWrapper.querySelector('#tpl-icon') as HTMLInputElement).value;
-            const newContent = (formWrapper.querySelector('#tpl-content') as HTMLTextAreaElement).value;
-
-            engine.updateTemplate(tpl.id, {
-                title: newTitle,
-                category: newCategory,
-                titlePattern: newPattern,
-                icon: newIcon,
-                defaultContent: newContent,
-            });
+        // --- content skeleton
+        const { card: contentCard } = section(parent, {
+            title: 'Content skeleton',
+            description: 'HTML inserted into the body of a new note created from this template.',
         });
+        const contentArea = document.createElement('textarea');
+        contentArea.className = 'form-control ns-code';
+        contentArea.id = 'tpl-content';
+        contentArea.rows = 8;
+        contentArea.spellcheck = false;
+        contentArea.value = tpl.defaultContent;
+        contentCard.appendChild(contentArea);
 
-        footer.appendChild(saveBtn);
-        formWrapper.appendChild(footer);
-
-        el.appendChild(formWrapper);
+        // --- save
+        const actions = document.createElement('div');
+        actions.className = 'ns-actions ns-actions-end';
+        actions.appendChild(button({
+            text: 'Save template',
+            icon: 'bx-save',
+            kind: 'primary',
+            size: 'normal',
+            onClick: () => {
+                templateEngine.updateTemplate(tpl.id, {
+                    title: titleInput.value,
+                    category: categorySelect.value,
+                    titlePattern: patternInput.value,
+                    icon: iconInput.value,
+                    defaultContent: contentArea.value,
+                });
+                onSave();
+                refresh();
+            },
+        }));
+        parent.appendChild(actions);
     }
 
-    function renderLivePreviewView(
-        el: HTMLElement,
+    function inputControl(id: string, value: string): HTMLInputElement {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control form-control-sm';
+        input.id = id;
+        input.value = value;
+        return input;
+    }
+
+    /** A section listing rules of one scope, each with edit and enable controls. */
+    function renderRuleSection(parent: HTMLElement, opts: {
+        title: string;
+        description: string;
+        rules: IfThenRuleDef[];
+        emptyText: string;
+        addIcon?: string;
+        addLabel: string;
+        onAdd: () => void;
+    }) {
+        const { card } = section(parent, {
+            title: opts.title,
+            description: opts.description,
+            actions: [iconAction({ icon: opts.addIcon ?? 'bx-plus', title: opts.addLabel, onClick: opts.onAdd })],
+        });
+
+        if (!opts.rules.length) {
+            card.appendChild(emptyState(opts.emptyText));
+            return;
+        }
+
+        for (const rule of opts.rules) {
+            card.appendChild(ruleItem(rule));
+        }
+    }
+
+    /** Template-scope rules, which also include the parent links declared on the template. */
+    function renderTemplateRuleSection(
+        parent: HTMLElement,
         tpl: TemplateDefinition,
-        engine: TemplateEngine,
-        iftttEngine: IftttEngine,
-        switchTab: () => void
+        tplRules: IfThenRuleDef[]
     ) {
-        const previewWrapper = document.createElement('div');
-        previewWrapper.className = 'd-flex flex-column gap-4';
-
-        const formattedTitle = engine.formatTitle(tpl.id, 'Sample Note Title');
-        const catRules = iftttEngine.getAllRules().filter(r => r.trigger.targetCategory === tpl.category);
-        const tplRules = iftttEngine.getAllRules().filter(r => r.trigger.targetTemplateId === tpl.id);
-
-        previewWrapper.innerHTML = `
-            <div class="p-4 rounded-3 border" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.15)) !important;">
-                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-4">
-                    <div class="p-3 rounded-3 bg-primary bg-opacity-10 text-primary">
-                        <i class="bx bx-${tpl.icon} h3 m-0"></i>
-                    </div>
-                    <div>
-                        <h3 class="h5 m-0 font-weight-bold">${formattedTitle}</h3>
-                        <div class="small text-muted mt-1">
-                            <i class="bx bx-folder"></i> Target Subtree: <code>${tpl.noJournalClone ? '#projectRoot' : '#calendarRoot / Journal'}</code>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-4 mb-4">
-                    <div class="col-md-6">
-                        <div class="card border p-3.5 h-100 shadow-xs rounded-3" style="background-color: var(--sub-background-color, transparent);">
-                            <h6 class="font-weight-bold text-muted small mb-3"><i class="bx bx-slider-alt"></i> Direct Form Attributes</h6>
-                            <div class="d-flex flex-column gap-2.5">
-                                ${tpl.attributes.map(a => `
-                                    <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
-                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">#${a.name}</span>
-                                        ${a.options ? `
-                                            <select class="form-select form-select-sm" style="width: 160px;">
-                                                ${a.options.map(opt => `<option>${opt}</option>`).join('')}
-                                            </select>
-                                        ` : `
-                                            <input type="text" class="form-control form-control-sm" value="${a.defaultValue ?? ''}" placeholder="Value..." style="width: 160px;">
-                                        `}
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card border p-3.5 h-100 shadow-xs rounded-3" style="background-color: var(--sub-background-color, transparent);">
-                            <h6 class="font-weight-bold text-info small mb-3"><i class="bx bx-git-repo-forked"></i> Multi-Parent Inherited Context</h6>
-                            <div class="d-flex flex-column gap-2.5 small text-muted">
-                                <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
-                                    <span>Parent 1 (Project Hub):</span>
-                                    <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill">~project</span>
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
-                                    <span>Parent 2 (Client Organization):</span>
-                                    <span class="badge bg-info bg-opacity-20 text-info rounded-pill">~client</span>
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
-                                    <span>Derived Topics (Dual Inherited):</span>
-                                    <span class="badge bg-success bg-opacity-20 text-success rounded-pill">#TechNews</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card border p-3.5 mb-4 shadow-xs rounded-3" style="background-color: var(--sub-background-color, transparent);">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="font-weight-bold text-primary small m-0"><i class="bx bx-git-commit"></i> Active Automation Rules (IFTTT)</h6>
-                        <button type="button" class="btn btn-xs btn-outline-info edit-cat-nav-btn font-weight-bold px-2.5 py-1 shadow-xs">
-                            <i class="bx bx-category"></i> Deeplink Edit Category Matrix
-                        </button>
-                    </div>
-                    <div class="d-flex flex-column gap-2 small text-muted">
-                        <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
-                            <span>Global System Scope:</span>
-                            <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill">Auto-File Reference Under Project & Sync Derived Topics</span>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
-                            <span>Category '${tpl.category}' Scope:</span>
-                            <span class="badge bg-info bg-opacity-20 text-info rounded-pill">${catRules.length} Category Rules Active</span>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
-                            <span>Template '${tpl.title}' Scope:</span>
-                            <span class="badge bg-success bg-opacity-20 text-success rounded-pill">${tplRules.length} Template Rules Active</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border-top pt-4">
-                    <h6 class="font-weight-bold text-muted small mb-2"><i class="bx bx-file-blank"></i> Content Skeleton Render</h6>
-                    <div class="p-4 rounded-3 border font-monospace" style="background-color: var(--sub-background-color, transparent); min-height: 220px;">
-                        ${tpl.defaultContent || '<em class="text-muted">Empty note body skeleton</em>'}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        const editCatNavBtn = previewWrapper.querySelector('.edit-cat-nav-btn') as HTMLButtonElement;
-        editCatNavBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            switchTab();
+        const total = tpl.relationships.length + tplRules.length;
+        const { card } = section(parent, {
+            title: `Template rules (${total})`,
+            description: 'Parent links and rules that apply only to this template.',
+            actions: [
+                iconAction({ icon: 'bx-link', title: 'Add parent link', onClick: () => openRelationshipModal(tpl) }),
+                iconAction({ icon: 'bx-plus', title: 'Add rule', onClick: () => openRuleEditorModal({ targetTemplateId: tpl.id }) }),
+            ],
         });
 
-        el.appendChild(previewWrapper);
+        tpl.relationships.forEach((rel, idx) => {
+            card.appendChild(listItem({
+                icon: 'bx-link',
+                title: `~${rel.relationName} → ${rel.targetTemplateName}`,
+                description: [
+                    rel.autoCloneToParent ? 'files a reference link under the parent' : null,
+                    rel.inheritTopics ? 'inherits parent topics' : null,
+                ].filter(Boolean).join(', ') || 'link only',
+                actions: [
+                    iconAction({ icon: 'bx-edit-alt', title: 'Edit parent link', onClick: () => openRelationshipModal(tpl, idx) }),
+                    iconAction({
+                        icon: 'bx-trash',
+                        title: 'Delete parent link',
+                        onClick: () => {
+                            tpl.relationships.splice(idx, 1);
+                            templateEngine.updateTemplate(tpl.id, tpl);
+                            onSave();
+                            refresh();
+                        },
+                    }),
+                ],
+            }));
+        });
+
+        for (const rule of tplRules) {
+            card.appendChild(ruleItem(rule, () => {
+                ifThenRuleEngine.deleteRule(rule.id);
+                onSave();
+                refresh();
+            }));
+        }
+
+        if (!total) {
+            card.appendChild(emptyState('No template-specific rules.'));
+        }
     }
 
-    // --- SOLID OPAQUE HIGH-CONTRAST MODAL SYSTEM ---
+    function ruleItem(rule: IfThenRuleDef, onDelete?: () => void): HTMLElement {
+        // Enablement is a state, so it gets the same switch the settings page uses
+        // rather than a button whose label restates the state it is about to leave.
+        const enableToggle = toggle(`rule-enabled-${rule.id}`, rule.enabled, (enabled) => {
+            ifThenRuleEngine.toggleRule(rule.id, enabled);
+            onSave();
+        });
+        enableToggle.title = rule.enabled ? 'Disable this rule' : 'Enable this rule';
 
-    function createSolidModal(titleHtml: string, bodyHtml: string, footerButtonsHtml: string): { overlay: HTMLElement; content: HTMLElement } {
-        const overlay = document.createElement('div');
-        overlay.className = 'notes-modal-overlay d-flex align-items-center justify-content-center';
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.right = '0';
-        overlay.style.bottom = '0';
-        overlay.style.zIndex = '99999';
-        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.75)';
-        overlay.style.backdropFilter = 'blur(6px)';
+        const actions: HTMLElement[] = [
+            enableToggle,
+            iconAction({ icon: 'bx-edit-alt', title: 'Edit rule', onClick: () => openRuleEditorModal({ rule }) }),
+        ];
 
-        const dialog = document.createElement('div');
-        dialog.className = 'notes-modal-dialog';
-        dialog.style.width = '580px';
-        dialog.style.maxWidth = '92vw';
-        dialog.style.zIndex = '100000';
+        if (onDelete) {
+            actions.push(iconAction({ icon: 'bx-trash', title: 'Delete rule', onClick: onDelete }));
+        }
 
-        const content = document.createElement('div');
-        content.className = 'notes-modal-card shadow-lg rounded-3 border';
+        return listItem({
+            icon: 'bx-bolt-circle',
+            title: rule.name,
+            description: rule.description,
+            disabled: !rule.enabled,
+            actions,
+        });
+    }
 
-        const isDark = document.body.classList.contains('dark') || 
-            (window.getComputedStyle(document.body).backgroundColor.includes('rgb(') && 
-            parseInt(window.getComputedStyle(document.body).backgroundColor.split(',')[0].replace(/\D/g, '') || '255') < 128);
+    // ----------------------------------------------------------------- preview
 
-        const solidBg = isDark ? '#22262f' : '#ffffff';
-        const textColor = isDark ? '#f0f4f8' : '#1e293b';
-        const borderColor = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
-        const headerSubBg = isDark ? '#1a1d24' : '#f8fafc';
+    /**
+     * Renders the note this template produces, as it appears once created — Trilium's
+     * title chrome, the promoted-attributes grid, and the body — and nothing else.
+     * Anything a real note would not show (which rules fired, what it inherits, where
+     * it is filed) belongs in the schema editor, not here.
+     */
+    function renderPreview(parent: HTMLElement, tpl: TemplateDefinition) {
+        const note = document.createElement('div');
+        note.className = 'ns-note';
 
-        content.style.setProperty('background-color', solidBg, 'important');
-        content.style.setProperty('background', solidBg, 'important');
-        content.style.setProperty('color', textColor, 'important');
-        content.style.setProperty('border-color', borderColor, 'important');
-        content.style.setProperty('box-shadow', '0 20px 40px rgba(0,0,0,0.4)', 'important');
-        content.style.setProperty('opacity', '1', 'important');
-
-        content.innerHTML = `
-            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between" style="background-color: ${headerSubBg} !important; border-color: ${borderColor} !important;">
-                ${titleHtml}
-                <button type="button" class="btn-close close-modal-btn ${isDark ? 'btn-close-white' : ''}" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4 d-flex flex-column gap-3" style="background-color: ${solidBg} !important; color: ${textColor} !important;">
-                ${bodyHtml}
-            </div>
-            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2" style="background-color: ${headerSubBg} !important; border-color: ${borderColor} !important;">
-                ${footerButtonsHtml}
-            </div>
+        const titleRow = document.createElement('div');
+        titleRow.className = 'ns-note-title-row';
+        titleRow.innerHTML = `
+            <span class="ns-note-icon bx bx-${escapeHtml(tpl.icon)}" aria-hidden="true"></span>
+            <input type="text" class="ns-note-title" aria-label="Note title"
+                   value="${escapeHtml(templateEngine.formatTitle(tpl.id, 'Sample Note Title'))}">
         `;
+        note.appendChild(titleRow);
 
-        content.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => overlay.remove()));
-        dialog.appendChild(content);
-        overlay.appendChild(dialog);
+        if (tpl.attributes.length) {
+            const attrs = document.createElement('div');
+            attrs.className = 'promoted-attributes-container';
+            attrs.innerHTML = tpl.attributes.map((attr) => `
+                <div class="promoted-attribute-cell promoted-attribute-${attr.type === 'relation' ? 'relation' : `label-${escapeHtml(attr.dataType)}`}">
+                    <label>${escapeHtml(attr.label ?? attr.name)}</label>
+                    <div class="input-group">${attributeInput(attr)}</div>
+                </div>
+            `).join('');
+            note.appendChild(attrs);
+        }
 
-        return { overlay, content };
+        const body = document.createElement('div');
+        // `ck-content` is the class Trilium's note text carries, so the skeleton gets
+        // the typography it will really be rendered with.
+        body.className = 'ns-note-body ck-content';
+        body.innerHTML = tpl.defaultContent || '';
+        note.appendChild(body);
+
+        parent.appendChild(note);
     }
+
+    /** The field a promoted attribute is edited through on the note itself. */
+    function attributeInput(attr: PromotedAttributeDef): string {
+        const value = escapeHtml(attr.defaultValue ?? '');
+
+        if (attr.dataType === 'select' && attr.options) {
+            return `<select class="form-control promoted-attribute-input">
+                ${attr.options.map((o) => `<option${o === attr.defaultValue ? ' selected' : ''}>${escapeHtml(o)}</option>`).join('')}
+            </select>`;
+        }
+
+        if (attr.dataType === 'boolean') {
+            return `<input type="checkbox" class="form-control promoted-attribute-input"${attr.defaultValue ? ' checked' : ''}>`;
+        }
+
+        const type = attr.dataType === 'date' ? 'date' : attr.dataType === 'number' ? 'number' : 'text';
+        return `<input type="${type}" class="form-control promoted-attribute-input" value="${value}" placeholder="unset">`;
+    }
+
+    // ------------------------------------------------------------------ modals
 
     function openRuleEditorModal(
-        wrapper: HTMLElement,
-        iftttEngine: IftttEngine,
-        opts: { rule?: IftttRuleDef; targetCategory?: string; targetTemplateId?: string },
-        onSave: () => void
+        opts: { rule?: IfThenRuleDef; targetCategory?: string; targetTemplateId?: string }
     ) {
         const isEdit = !!opts.rule;
-        const rule = opts.rule || {
+        const rule: IfThenRuleDef = opts.rule || {
             id: `rule_${Date.now()}`,
             name: '',
             description: '',
             enabled: true,
             isBuiltin: false,
             trigger: {
-                type: 'onNoteCreated' as const,
+                type: 'onNoteCreated',
                 targetCategory: opts.targetCategory,
                 targetTemplateId: opts.targetTemplateId,
             },
             conditions: [],
-            actions: [{ type: 'setLabel' as const, params: { labelName: 'processed', labelValue: 'true' } }],
+            actions: [{ type: 'setLabel', params: { labelName: 'processed', labelValue: 'true' } }],
         };
 
-        const title = `
-            <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2 m-0">
-                <i class="bx bx-bolt-circle text-primary fs-5"></i>
-                <span>${isEdit ? 'Deeplink Edit Automation Rule (IFTTT)' : 'Create New Automation Rule (IFTTT)'}</span>
-            </h5>
-        `;
+        const scope = rule.trigger.targetCategory
+            ? `Category: ${rule.trigger.targetCategory}`
+            : rule.trigger.targetTemplateId
+                ? `Template: ${rule.trigger.targetTemplateId}`
+                : 'Global';
 
-        const body = `
-            <div>
-                <label class="form-label font-weight-bold small">Rule Name</label>
-                <input type="text" id="rule-name-input" class="form-control form-control-sm" value="${rule.name}" placeholder="e.g. High Priority Task -> Due Soon Tag">
-            </div>
-
-            <div>
-                <label class="form-label font-weight-bold small">Description</label>
-                <input type="text" id="rule-desc-input" class="form-control form-control-sm" value="${rule.description}" placeholder="Explain what this automation rule does...">
-            </div>
-
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label font-weight-bold small">Trigger Event Type</label>
-                    <select id="rule-trigger-type" class="form-select form-select-sm">
-                        <option value="onNoteCreated" ${rule.trigger.type === 'onNoteCreated' ? 'selected' : ''}>onNoteCreated (When Note is Created)</option>
-                        <option value="onAttributeChanged" ${rule.trigger.type === 'onAttributeChanged' ? 'selected' : ''}>onAttributeChanged (When Attribute Value Changes)</option>
+        openModal({
+            title: isEdit ? 'Edit automation rule' : 'New automation rule',
+            icon: 'bx-bolt-circle',
+            confirmText: 'Save rule',
+            body: `
+                <div class="ns-field">
+                    <label for="rule-name">Name</label>
+                    <input type="text" id="rule-name" class="form-control form-control-sm" value="${escapeHtml(rule.name)}" placeholder="High priority task → due soon tag">
+                </div>
+                <div class="ns-field">
+                    <label for="rule-desc">Description</label>
+                    <input type="text" id="rule-desc" class="form-control form-control-sm" value="${escapeHtml(rule.description)}" placeholder="What this rule does">
+                </div>
+                <div class="ns-field-grid">
+                    <div class="ns-field">
+                        <label for="rule-trigger">Trigger</label>
+                        <select id="rule-trigger" class="form-select form-select-sm">
+                            <option value="onNoteCreated"${rule.trigger.type === 'onNoteCreated' ? ' selected' : ''}>When a note is created</option>
+                            <option value="onAttributeChanged"${rule.trigger.type === 'onAttributeChanged' ? ' selected' : ''}>When an attribute changes</option>
+                        </select>
+                    </div>
+                    <div class="ns-field">
+                        <label for="rule-scope">Scope</label>
+                        <input type="text" id="rule-scope" class="form-control form-control-sm" value="${escapeHtml(scope)}" disabled>
+                    </div>
+                </div>
+                <div class="ns-field">
+                    <label for="rule-action">Action</label>
+                    <select id="rule-action" class="form-select form-select-sm">
+                        <option value="cloneToContainer"${rule.actions[0]?.type === 'cloneToContainer' ? ' selected' : ''}>File a reference link under the parent container</option>
+                        <option value="setLabel"${rule.actions[0]?.type === 'setLabel' ? ' selected' : ''}>Assign a label value</option>
+                        <option value="syncDerivedTopics"${rule.actions[0]?.type === 'syncDerivedTopics' ? ' selected' : ''}>Recalculate inherited topics</option>
                     </select>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label font-weight-bold small">Rule Scope</label>
-                    <input type="text" class="form-control form-control-sm" disabled value="${rule.trigger.targetCategory ? `Category: ${rule.trigger.targetCategory}` : (rule.trigger.targetTemplateId ? `Template: ${rule.trigger.targetTemplateId}` : 'Global System Scope')}">
-                </div>
-            </div>
-
-            <div class="border-top pt-3">
-                <label class="form-label font-weight-bold small text-primary"><i class="bx bx-check-circle"></i> Executed Action Type</label>
-                <select id="rule-action-type" class="form-select form-select-sm mb-2">
-                    <option value="cloneToContainer" ${rule.actions[0]?.type === 'cloneToContainer' ? 'selected' : ''}>File Reference Under Parent Container</option>
-                    <option value="setLabel" ${rule.actions[0]?.type === 'setLabel' ? 'selected' : ''}>Assign Label / Promoted Attribute Value</option>
-                    <option value="syncDerivedTopics" ${rule.actions[0]?.type === 'syncDerivedTopics' ? 'selected' : ''}>Inherit & Recalculate Parent Topics</option>
-                </select>
-            </div>
-        `;
-
-        const footer = `
-            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn font-weight-bold">Cancel</button>
-            <button type="button" class="btn btn-sm btn-primary save-rule-modal-btn px-4 font-weight-bold">Save Rule</button>
-        `;
-
-        const { overlay, content } = createSolidModal(title, body, footer);
-
-        const saveBtn = content.querySelector('.save-rule-modal-btn') as HTMLButtonElement;
-        saveBtn.addEventListener('click', () => {
-            const name = (content.querySelector('#rule-name-input') as HTMLInputElement).value;
-            if (!name) return;
-            const desc = (content.querySelector('#rule-desc-input') as HTMLInputElement).value;
-            const triggerType = (content.querySelector('#rule-trigger-type') as HTMLSelectElement).value as any;
-            const actionType = (content.querySelector('#rule-action-type') as HTMLSelectElement).value as any;
+            `,
+        }, (content) => {
+            const name = content.querySelector<HTMLInputElement>('#rule-name')!.value.trim();
+            if (!name) return false;
 
             rule.name = name;
-            rule.description = desc;
-            rule.trigger.type = triggerType;
-            rule.actions = [{ type: actionType, params: { labelName: 'processed', labelValue: 'true' } }];
+            rule.description = content.querySelector<HTMLInputElement>('#rule-desc')!.value;
+            rule.trigger.type = content.querySelector<HTMLSelectElement>('#rule-trigger')!.value as IfThenRuleDef['trigger']['type'];
+            rule.actions = [{
+                type: content.querySelector<HTMLSelectElement>('#rule-action')!.value as IfThenRuleDef['actions'][number]['type'],
+                params: { labelName: 'processed', labelValue: 'true' },
+            }];
 
-            iftttEngine.registerRule(rule);
-            overlay.remove();
+            ifThenRuleEngine.registerRule(rule);
             onSave();
+            refresh();
         });
-
-        wrapper.appendChild(overlay);
     }
 
-    function openAddRelationshipModal(
-        wrapper: HTMLElement,
-        tpl: TemplateDefinition,
-        engine: TemplateEngine,
-        iftttEngine: IftttEngine,
-        editRelIdx?: number,
-        onSave?: () => void
-    ) {
-        const isEdit = editRelIdx !== undefined;
-        const rel = isEdit ? tpl.relationships[editRelIdx] : {
+    function openRelationshipModal(tpl: TemplateDefinition, editIdx?: number) {
+        const isEdit = editIdx !== undefined;
+        const rel = isEdit ? tpl.relationships[editIdx] : {
             id: `rel_${tpl.id}_${Date.now()}`,
             name: 'project link',
             relationName: 'project',
@@ -1103,70 +774,47 @@ export function renderTemplateStudio(
             direction: 'parent' as const,
         };
 
-        const allTemplates = engine.getAllTemplates();
+        const allTemplates = templateEngine.getAllTemplates();
 
-        const title = `
-            <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2 m-0">
-                <i class="bx bx-link text-primary fs-5"></i>
-                <span>${isEdit ? 'Edit Parent Link Rule' : 'Add Parent Relationship Link (IFTTT)'}</span>
-            </h5>
-        `;
+        const modal = openModal({
+            title: isEdit ? 'Edit parent link' : 'Add parent link',
+            icon: 'bx-link',
+            confirmText: 'Save link',
+            body: `
+                <div class="ns-field">
+                    <label for="rel-name">Relation name</label>
+                    <input type="text" id="rel-name" class="form-control form-control-sm" value="${escapeHtml(rel.relationName)}">
+                    <small class="ns-row-desc">Used as ~name on the note, e.g. project, client, attendee.</small>
+                </div>
+                <div class="ns-field">
+                    <label for="rel-target">Parent template</label>
+                    <select id="rel-target" class="form-select form-select-sm">
+                        ${allTemplates.map((t) => `<option value="${escapeHtml(t.id)}"${t.id === rel.targetTemplateId ? ' selected' : ''}>${escapeHtml(t.title)}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="ns-toggles"></div>
+            `,
+        }, (content) => {
+            const relName = content.querySelector<HTMLInputElement>('#rel-name')!.value.trim();
+            if (!relName) return false;
 
-        const body = `
-            <div>
-                <label class="form-label font-weight-bold small">Relation Name (e.g. project, client, writer, attendee)</label>
-                <input type="text" id="rel-name-input" class="form-control form-control-sm" value="${rel.relationName}">
-            </div>
-
-            <div>
-                <label class="form-label font-weight-bold small">Target Parent Template</label>
-                <select id="rel-target-input" class="form-select form-select-sm">
-                    ${allTemplates.map(t => `<option value="${t.id}" ${t.id === rel.targetTemplateId ? 'selected' : ''}>${t.title} (${t.id})</option>`).join('')}
-                </select>
-            </div>
-
-            <div class="form-check form-switch pt-2">
-                <input class="form-check-input" type="checkbox" id="rel-clone-check" ${rel.autoCloneToParent ? 'checked' : ''}>
-                <label class="form-check-label font-weight-bold small">Auto-file reference link under Parent Container</label>
-            </div>
-
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="rel-topics-check" ${rel.inheritTopics ? 'checked' : ''}>
-                <label class="form-check-label font-weight-bold small">Inherit Parent Topics & Client Metadata</label>
-            </div>
-        `;
-
-        const footer = `
-            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn font-weight-bold">Cancel</button>
-            <button type="button" class="btn btn-sm btn-primary save-rel-modal-btn px-4 font-weight-bold">Save Link Rule</button>
-        `;
-
-        const { overlay, content } = createSolidModal(title, body, footer);
-
-        const saveBtn = content.querySelector('.save-rel-modal-btn') as HTMLButtonElement;
-        saveBtn.addEventListener('click', () => {
-            const relName = (content.querySelector('#rel-name-input') as HTMLInputElement).value;
-            const targetId = (content.querySelector('#rel-target-input') as HTMLSelectElement).value;
-            const autoClone = (content.querySelector('#rel-clone-check') as HTMLInputElement).checked;
-            const inheritTopics = (content.querySelector('#rel-topics-check') as HTMLInputElement).checked;
-
-            const targetTpl = engine.getTemplate(targetId);
+            const targetId = content.querySelector<HTMLSelectElement>('#rel-target')!.value;
+            const targetTpl = templateEngine.getTemplate(targetId);
+            const targetName = targetTpl ? targetTpl.title : targetId;
 
             rel.relationName = relName;
             rel.targetTemplateId = targetId;
-            rel.targetTemplateName = targetTpl ? targetTpl.title : targetId;
-            rel.autoCloneToParent = autoClone;
-            rel.inheritTopics = inheritTopics;
+            rel.targetTemplateName = targetName;
+            rel.autoCloneToParent = cloneRow.querySelector<HTMLInputElement>('input')!.checked;
+            rel.inheritTopics = topicsRow.querySelector<HTMLInputElement>('input')!.checked;
 
-            if (!isEdit) {
-                tpl.relationships.push(rel);
-            }
-            engine.updateTemplate(tpl.id, tpl);
+            if (!isEdit) tpl.relationships.push(rel);
+            templateEngine.updateTemplate(tpl.id, tpl);
 
-            iftttEngine.registerRule({
+            ifThenRuleEngine.registerRule({
                 id: `rule_rel_${tpl.id}_${relName}`,
-                name: `Parent Link ~${relName} -> ${targetTpl ? targetTpl.title : targetId}`,
-                description: `IF note has ~${relName} -> THEN link to ${targetTpl ? targetTpl.title : targetId}, file reference link under parent container, and inherit parent topics.`,
+                name: `Parent link ~${relName} → ${targetName}`,
+                description: `When the note has ~${relName}, link it to ${targetName}, file a reference link under the parent container, and inherit parent topics.`,
                 enabled: true,
                 isBuiltin: false,
                 trigger: { type: 'onNoteCreated', targetTemplateId: tpl.id },
@@ -1177,170 +825,155 @@ export function renderTemplateStudio(
                 ],
             });
 
-            overlay.remove();
-            if (onSave) onSave();
+            onSave();
+            refresh();
         });
 
-        wrapper.appendChild(overlay);
+        // Toggles are real controls rather than markup, so they carry their state.
+        const toggles = modal.querySelector('.ns-toggles') as HTMLElement;
+        const cloneRow = switchRow({
+            id: 'rel-clone',
+            label: 'File a reference link under the parent',
+            checked: rel.autoCloneToParent,
+        });
+        const topicsRow = switchRow({
+            id: 'rel-topics',
+            label: 'Inherit parent topics and metadata',
+            checked: rel.inheritTopics,
+        });
+        toggles.appendChild(cloneRow);
+        toggles.appendChild(topicsRow);
     }
 
-    function openNewTemplateModal(wrapper: HTMLElement, templateEngine: TemplateEngine, onSave: () => void) {
-        const title = `
-            <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2 m-0">
-                <i class="bx bx-plus text-primary fs-5"></i>
-                <span>Create New Template</span>
-            </h5>
-        `;
+    function openNewTemplateModal() {
+        const categories = templateEngine.getAllCategories();
 
-        const body = `
-            <div>
-                <label class="form-label font-weight-bold small">Template Title</label>
-                <input type="text" id="new-tpl-title" class="form-control form-control-sm" placeholder="e.g. Research Brief">
-            </div>
-            <div>
-                <label class="form-label font-weight-bold small">Category Type</label>
-                <select id="new-tpl-cat" class="form-select form-select-sm">
-                    <option value="work">Work & Project Scoped</option>
-                    <option value="drafts">Drafts & Editorial</option>
-                    <option value="people">People & Client Entities</option>
-                    <option value="system">System & Topic Index</option>
-                    <option value="custom">Custom Category</option>
-                </select>
-            </div>
-        `;
+        openModal({
+            title: 'New template',
+            icon: 'bx-plus',
+            confirmText: 'Create template',
+            body: `
+                <div class="ns-field">
+                    <label for="new-tpl-title">Title</label>
+                    <input type="text" id="new-tpl-title" class="form-control form-control-sm" placeholder="Research Brief">
+                </div>
+                <div class="ns-field">
+                    <label for="new-tpl-cat">Category</label>
+                    <select id="new-tpl-cat" class="form-select form-select-sm">
+                        ${categories.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.title)}</option>`).join('')}
+                    </select>
+                </div>
+            `,
+        }, (content) => {
+            const title = content.querySelector<HTMLInputElement>('#new-tpl-title')!.value.trim();
+            if (!title) return false;
 
-        const footer = `
-            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn font-weight-bold">Cancel</button>
-            <button type="button" class="btn btn-sm btn-primary create-tpl-btn px-4 font-weight-bold">Create Template</button>
-        `;
+            const category = content.querySelector<HTMLSelectElement>('#new-tpl-cat')!.value;
+            const id = title.toLowerCase().replace(/\s+/g, '-');
 
-        const { overlay, content } = createSolidModal(title, body, footer);
-
-        const createBtn = content.querySelector('.create-tpl-btn') as HTMLButtonElement;
-        createBtn.addEventListener('click', () => {
-            const titleInput = (content.querySelector('#new-tpl-title') as HTMLInputElement).value;
-            if (!titleInput) return;
-            const category = (content.querySelector('#new-tpl-cat') as HTMLSelectElement).value as any;
-
-            const id = titleInput.toLowerCase().replace(/\s+/g, '-');
             templateEngine.registerTemplate({
                 id,
-                marker: `ext${titleInput.replace(/\s+/g, '')}`,
-                title: titleInput,
+                marker: `ext${title.replace(/\s+/g, '')}`,
+                title,
                 category: category || 'work',
                 rootContainerMarker: 'projectRoot',
                 titlePattern: '{title}',
                 icon: 'file-blank',
                 attributes: [],
                 relationships: [],
-                defaultContent: `<h2>${titleInput}</h2><p>Notes content...</p>`,
+                defaultContent: `<h2>${escapeHtml(title)}</h2><p>Notes content…</p>`,
             });
-            overlay.remove();
-            onSave();
-        });
 
-        wrapper.appendChild(overlay);
+            selectedTemplateId = id;
+            activeEditorTab = 'editor';
+            onSave();
+            refresh();
+        });
     }
 
-    function openNewCategoryModal(wrapper: HTMLElement, engine: TemplateEngine, onSave: () => void) {
-        const title = `
-            <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2 m-0">
-                <i class="bx bx-category text-primary fs-5"></i>
-                <span>Create New Category Type</span>
-            </h5>
-        `;
+    function openNewCategoryModal() {
+        openModal({
+            title: 'New category',
+            icon: 'bx-plus',
+            confirmText: 'Create category',
+            body: `
+                <div class="ns-field">
+                    <label for="cat-title">Title</label>
+                    <input type="text" id="cat-title" class="form-control form-control-sm" placeholder="Legal Documents">
+                </div>
+                <div class="ns-field">
+                    <label for="cat-desc">Description</label>
+                    <input type="text" id="cat-desc" class="form-control form-control-sm" placeholder="Contracts and legal agreements">
+                </div>
+            `,
+        }, (content) => {
+            const title = content.querySelector<HTMLInputElement>('#cat-title')!.value.trim();
+            if (!title) return false;
 
-        const body = `
-            <div>
-                <label class="form-label font-weight-bold small">Category Title</label>
-                <input type="text" id="cat-title-input" class="form-control form-control-sm" placeholder="e.g. Legal Documents">
-            </div>
-            <div>
-                <label class="form-label font-weight-bold small">Description</label>
-                <input type="text" id="cat-desc-input" class="form-control form-control-sm" placeholder="Contracts and legal agreements...">
-            </div>
-        `;
+            const id = title.toLowerCase().replace(/\s+/g, '-');
+            templateEngine.registerCategory({
+                id,
+                title,
+                description: content.querySelector<HTMLInputElement>('#cat-desc')!.value || 'Custom category',
+                icon: 'layer',
+                defaultRootMarker: 'unassignedRoot',
+                autoJournalClone: true,
+                inheritParentTopics: true,
+                projectScopedDefault: false,
+                isBuiltin: false,
+            });
 
-        const footer = `
-            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn font-weight-bold">Cancel</button>
-            <button type="button" class="btn btn-sm btn-primary create-cat-btn px-4 font-weight-bold">Create Category</button>
-        `;
-
-        const { overlay, content } = createSolidModal(title, body, footer);
-
-        const createBtn = content.querySelector('.create-cat-btn') as HTMLButtonElement;
-        createBtn.addEventListener('click', () => {
-            const titleInput = (content.querySelector('#cat-title-input') as HTMLInputElement).value;
-            if (!titleInput) return;
-            const description = (content.querySelector('#cat-desc-input') as HTMLInputElement).value || 'Custom category';
-            const id = titleInput.toLowerCase().replace(/\s+/g, '-');
-
-            engine.registerCategory({ id, title: titleInput, description, icon: 'layer', defaultRootMarker: 'unassignedRoot', autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: false, isBuiltin: false });
-            overlay.remove();
+            selectedCategoryId = id;
             onSave();
+            refresh();
         });
-
-        wrapper.appendChild(overlay);
     }
 
-    function openAddAttrModal(wrapper: HTMLElement, tpl: TemplateDefinition, engine: TemplateEngine, onSave: () => void) {
-        const title = `
-            <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2 m-0">
-                <i class="bx bx-list-check text-success fs-5"></i>
-                <span>Add Promoted Form Attribute</span>
-            </h5>
-        `;
-
-        const body = `
-            <div>
-                <label class="form-label font-weight-bold small">Attribute Name (without #)</label>
-                <input type="text" id="attr-name-input" class="form-control form-control-sm" placeholder="e.g. priority, status, dueDate">
-            </div>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label font-weight-bold small">Attribute Type</label>
-                    <select id="attr-type-input" class="form-select form-select-sm">
-                        <option value="label">Label (#)</option>
-                        <option value="relation">Relation (~)</option>
-                    </select>
+    function openAddAttrModal(tpl: TemplateDefinition) {
+        openModal({
+            title: 'Add promoted attribute',
+            icon: 'bx-list-check',
+            confirmText: 'Add attribute',
+            body: `
+                <div class="ns-field">
+                    <label for="attr-name">Name</label>
+                    <input type="text" id="attr-name" class="form-control form-control-sm" placeholder="priority">
+                    <small class="ns-row-desc">Without the leading # or ~.</small>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label font-weight-bold small">Data Type</label>
-                    <select id="attr-datatype-input" class="form-select form-select-sm">
-                        <option value="text">Text</option>
-                        <option value="select">Select Options</option>
-                        <option value="date">Date</option>
-                    </select>
+                <div class="ns-field-grid">
+                    <div class="ns-field">
+                        <label for="attr-kind">Kind</label>
+                        <select id="attr-kind" class="form-select form-select-sm">
+                            <option value="label">Label (#)</option>
+                            <option value="relation">Relation (~)</option>
+                        </select>
+                    </div>
+                    <div class="ns-field">
+                        <label for="attr-type">Type</label>
+                        <select id="attr-type" class="form-select form-select-sm">
+                            <option value="string">Text</option>
+                            <option value="select">Select</option>
+                            <option value="date">Date</option>
+                            <option value="number">Number</option>
+                            <option value="boolean">Boolean</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-        `;
-
-        const footer = `
-            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn font-weight-bold">Cancel</button>
-            <button type="button" class="btn btn-sm btn-success create-attr-btn px-4 font-weight-bold">Save Attribute</button>
-        `;
-
-        const { overlay, content } = createSolidModal(title, body, footer);
-
-        const createBtn = content.querySelector('.create-attr-btn') as HTMLButtonElement;
-        createBtn.addEventListener('click', () => {
-            const name = (content.querySelector('#attr-name-input') as HTMLInputElement).value;
-            if (!name) return;
-            const type = (content.querySelector('#attr-type-input') as HTMLSelectElement).value as any;
-            const dataType = (content.querySelector('#attr-datatype-input') as HTMLSelectElement).value as any;
+            `,
+        }, (content) => {
+            const name = content.querySelector<HTMLInputElement>('#attr-name')!.value.trim();
+            if (!name) return false;
 
             tpl.attributes.push({
                 name,
-                type: type === 'relation' ? 'relation' : 'label',
-                dataType: dataType || 'text',
+                type: content.querySelector<HTMLSelectElement>('#attr-kind')!.value === 'relation' ? 'relation' : 'label',
+                dataType: content.querySelector<HTMLSelectElement>('#attr-type')!.value as never,
                 isPromoted: true,
             });
-            engine.updateTemplate(tpl.id, tpl);
-            overlay.remove();
+            templateEngine.updateTemplate(tpl.id, tpl);
             onSave();
+            refresh();
         });
-
-        wrapper.appendChild(overlay);
     }
 
     refresh();

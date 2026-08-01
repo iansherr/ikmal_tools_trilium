@@ -2,7 +2,7 @@
   "id": "iansherr/notes-system",
   "version": "1.0.0",
   "name": "Trilium Notes System & Template Studio",
-  "description": "Component-driven, editable, and organizable notes system layer for Trilium Notes with Today Homepage, Template Studio, Relationship Manager, and IFTTT Automation Trees.",
+  "description": "Component-driven, editable, and organizable notes system layer for Trilium Notes with Today Homepage, Template Studio, Relationship Manager, and If/Then Automation Rules.",
   "author": "Ian Sherr",
   "maintainer": "Ian Sherr",
   "repository": "https://github.com/iansherr/trilium_notes",
@@ -29,10 +29,10 @@
       "default": 65
     },
     {
-      "key": "autoRunIftttOnCreation",
+      "key": "autoRunIfThenRulesOnCreation",
       "type": "boolean",
-      "title": "Execute IFTTT Rules on Note Creation",
-      "description": "Automatically evaluate IF-THIS-THEN-THAT automation rules when new notes are created.",
+      "title": "Execute If/Then Rules on Note Creation",
+      "description": "Automatically evaluate if/then automation rules when new notes are created.",
       "default": true
     },
     {
@@ -41,6 +41,13 @@
       "title": "Enable Derived Topic Propagation",
       "description": "Automatically calculate and assign derived topics from parent project, client, or organization relations.",
       "default": true
+    },
+    {
+      "key": "autoJournalClone",
+      "type": "boolean",
+      "title": "File New Notes Under Today's Journal Note",
+      "description": "Add a reference link for newly created tasks, meetings, and story drafts to the current day note.",
+      "default": true
     }
   ],
   "artifacts": [
@@ -48,7 +55,7 @@
       "id": "notes-system-dashboard",
       "type": "render",
       "source": "src/artifacts/notes-system-dashboard.jsx",
-      "integrity": "sha256-QomFaiJpRi/wmgtK31IsolscVq0SBmThyN9IQNFu6fo=",
+      "integrity": "sha256-c/M7/VkywE93M+m39RUC3YqUoc5C31CZkh1l8F9ncBY=",
       "title": "Notes System & Today Homepage",
       "activation": "manual"
     },
@@ -67,7 +74,7 @@
       "integrity": "sha256-52MUYYBMkT+IqwMND0T692kuFrCxAerEw0ymF09k1To=",
       "title": "Notes System HTTP API Endpoint",
       "activation": "request",
-      "route": "notes-system/(create|ifttt|templates|settings)"
+      "route": "notes-system/(create|ifThen|templates|settings)"
     },
     {
       "id": "notes-system-launcher",
@@ -81,7 +88,7 @@
       "id": "notes-system-css",
       "type": "css",
       "source": "src/artifacts/notes-system.css",
-      "integrity": "sha256-hF0dgxH5D6y6GkT2psjQRSTSLxXG6YmMf/JSHGxm1+U=",
+      "integrity": "sha256-7aPkxSoP8xtINq/lyZ3M410Ki/yDfmvkFvrHGHXjSmU=",
       "title": "Notes System Theme & Styles",
       "activation": "startup"
     }

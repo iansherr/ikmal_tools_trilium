@@ -39,7 +39,7 @@ export function renderRelationshipManager(
         const body = document.createElement('div');
         body.className = 'card-body p-4 d-flex flex-column gap-4';
 
-        // Explanatory Help Banner: Relationships vs IFTTT
+        // Explanatory Help Banner: Relationships vs If/Then Rules
         const helpBanner = document.createElement('div');
         helpBanner.className = 'p-3 rounded border bg-body';
         helpBanner.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -47,7 +47,7 @@ export function renderRelationshipManager(
         helpBanner.innerHTML = `
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <h6 class="m-0 font-weight-bold text-info small d-flex align-items-center gap-1.5">
-                    <i class="bx bx-help-circle"></i> Understanding Relationships vs. IFTTT Automation
+                    <i class="bx bx-help-circle"></i> Understanding Relationships vs. If/Then Automation
                 </h6>
             </div>
             <div class="row g-3 small">
@@ -64,7 +64,7 @@ export function renderRelationshipManager(
                 <div class="col-md-6">
                     <div class="p-2.5 rounded border" style="background-color: var(--sub-background-color, transparent);">
                         <strong class="text-warning d-flex align-items-center gap-1 mb-1">
-                            <i class="bx bx-git-commit"></i> IFTTT Rules (Event Automations)
+                            <i class="bx bx-git-commit"></i> If/Then Rules (Event Automations)
                         </strong>
                         <p class="text-muted m-0">
                             Defines what happens when actions occur. Example: <em>IF</em> a task is marked High Priority, <em>THEN</em> automatically assign the <code>#dueSoon</code> label and run a repair script.

@@ -57,10 +57,10 @@ export interface TemplateDefinition {
     isBuiltin?: boolean;
 }
 
-// IF-THIS-THEN-THAT (IFTTT) Engine Types
+// If/Then Rules Engine Types (event-triggered automation)
 export type TriggerType = 'onNoteCreated' | 'onAttributeChanged' | 'onManualAction' | 'onScheduledCheck';
 
-export interface IftttTrigger {
+export interface IfThenTrigger {
     type: TriggerType;
     targetCategory?: string; // Target all templates in a category (e.g. work, drafts, people)
     targetTemplateId?: string; // Limit to specific template
@@ -71,13 +71,13 @@ export interface IftttTrigger {
 
 export type OperatorType = 'equals' | 'notEquals' | 'contains' | 'isSet' | 'isEmpty' | 'greaterThan' | 'lessThan';
 
-export interface IftttCondition {
+export interface IfThenCondition {
     field: string; // Attribute name or system property (e.g. title, type)
     operator: OperatorType;
     value: string | number | boolean;
 }
 
-export type ActionType = 
+export type ActionType =
     | 'setLabel'
     | 'removeLabel'
     | 'setRelation'
@@ -87,7 +87,7 @@ export type ActionType =
     | 'setTaskStatus'
     | 'runScript';
 
-export interface IftttAction {
+export interface IfThenAction {
     type: ActionType;
     params: {
         labelName?: string;
@@ -101,14 +101,14 @@ export interface IftttAction {
     };
 }
 
-export interface IftttRuleDef {
+export interface IfThenRuleDef {
     id: string;
     name: string;
     description: string;
     enabled: boolean;
-    trigger: IftttTrigger;
-    conditions: IftttCondition[];
-    actions: IftttAction[];
+    trigger: IfThenTrigger;
+    conditions: IfThenCondition[];
+    actions: IfThenAction[];
     isBuiltin?: boolean;
 }
 
@@ -126,9 +126,39 @@ export interface TodayWidgetConfig {
     actionLabel?: string;
 }
 
+/**
+ * How many columns the dashboard grid uses at full width. `auto` fits as many as
+ * the pane can hold at a readable width, which is what most panes want; a fixed
+ * count is for people who want the same shape regardless of width. Every setting
+ * still collapses on a narrow pane.
+ */
+export type DashboardColumns = 'auto' | 1 | 2 | 3;
+
+export type DashboardDensity = 'comfortable' | 'compact';
+
+/**
+ * Location the weather widget reports for. Coordinates are stored rather than a
+ * place name so the widget never has to call a geocoding service.
+ */
+export interface WeatherConfig {
+    /** Shown as the widget's location; purely cosmetic. */
+    label: string;
+    latitude: number;
+    longitude: number;
+    units: 'metric' | 'imperial';
+}
+
 export interface TodayLayoutConfig {
     journalWidthPercent: number;
     showQuickCaptureBar: boolean;
+    /** Optional so a layout saved before these existed still loads; see TodayEngine. */
+    columns?: DashboardColumns;
+    density?: DashboardDensity;
+    weather?: WeatherConfig;
+    /** Daily word target for the Writing Goal widget. */
+    writingGoalWords?: number;
+    /** Days a still-open note can go untouched before the Needs Attention widget flags it. */
+    staleThresholdDays?: number;
     widgets: TodayWidgetConfig[];
 }
 
@@ -136,6 +166,6 @@ export interface NotesSystemConfig {
     version: string;
     templates: TemplateDefinition[];
     categories?: TemplateCategoryDef[];
-    iftttRules: IftttRuleDef[];
+    ifThenRules: IfThenRuleDef[];
     todayLayout: TodayLayoutConfig;
 }

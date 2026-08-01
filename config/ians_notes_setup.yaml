@@ -6,14 +6,14 @@
 #   2. Promoted Attribute Schemas & Templates
 #   3. Relationship Rules & Auto-Cloning Paths
 #   4. Today Homepage Grid Layout (with Kanban Board)
-#   5. IF-THIS-THEN-THAT (IFTTT) Automation Trees
+#   5. If/Then Automation Rules
 # ==============================================================================
 
 name: "Ian's Trilium Notes Setup"
 version: "1.0.0"
 description: >
   Complete component-driven notes system with daily notes, tasks, meetings,
-  project hubs, topics, collections, and IFTTT trees.
+  project hubs, topics, collections, and if/then rule trees.
 
 # ------------------------------------------------------------------------------
 # 1. ROOT CONTAINER TREE
@@ -374,10 +374,10 @@ todayLayout:
       actionLabel: "New Project"
 
 # ------------------------------------------------------------------------------
-# 4. IF-THIS-THEN-THAT (IFTTT) AUTOMATION TREES
+# 4. IF/THEN AUTOMATION RULES
 # Trigger-Condition-Action trees for workflow automation
 # ------------------------------------------------------------------------------
-iftttRules:
+ifThenRules:
   - id: rule_task_done_date
     name: "Auto-Set Task Done Date"
     description: "When a Task status is marked as done, automatically record the current date in #doneDate."

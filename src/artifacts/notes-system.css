@@ -1,86 +1,995 @@
 /* ==============================================================================
-   Trilium Notes System — Native Theme & Design Tokens
-   Integrates seamlessly with Trilium's CSS variable system and active theme.
+   Trilium Notes System — native options surface
+
+   This mirrors Trilium's own settings pages (apps/client/src/widgets/type_widgets/
+   options/components/*.css and stylesheets/theme-next/pages.css) so plugin pages
+   read as part of the app rather than as a Bootstrap dashboard bolted onto it.
+
+   Metrics are copied from Trilium rather than re-invented: 900px card column,
+   17px card padding, 8px radius, 26px between sections, uppercase 0.75rem section
+   titles, rows separated by a hairline with the control on the trailing edge.
+
+   Trilium ships these rules itself, but the options CSS lives in a lazily loaded
+   chunk, so a plugin page cannot rely on it being present. The values here are
+   identical, so nothing conflicts when both are loaded.
    ============================================================================== */
 
+/* Defined on :root rather than on the shell so dialogs, which are portalled to
+   <body> to escape the note pane, still resolve them. */
 :root {
-    --ns-border-radius: 8px;
-    --ns-card-bg: var(--sub-background-color, var(--main-background-color, transparent));
-    --ns-main-bg: var(--main-background-color, transparent);
-    --ns-text-color: var(--main-text-color, inherit);
-    --ns-muted-text: var(--muted-text-color, #7f8c8d);
-    --ns-accent-color: var(--active-item-background-color, #3b82f6);
-    --ns-border-color: var(--border-color, rgba(128, 128, 128, 0.2));
+    /* --card-* only exists in theme-next; legacy themes fall back to tokens they
+       do define, so the surface still tracks the active theme either way. */
+    --ns-card-bg: var(--card-background-color, var(--accented-background-color));
+    --ns-card-border: var(--card-border-color, var(--main-border-color));
+    --ns-card-shadow: var(--card-box-shadow, none);
+    --ns-border: var(--main-border-color);
+    --ns-muted: var(--muted-text-color);
+
+    --ns-card-padding: 17px;
+    --ns-card-max-width: 900px;
+    --ns-section-gap: 26px;
+    --ns-title-size: 0.75rem;
+    --ns-title-offset: 13px;
 }
 
 .notes-system-shell {
-    font-family: var(--main-font-family, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
-    color: var(--ns-text-color);
-    background: transparent;
-    min-height: 100vh;
-    padding: 1rem;
+    /* Rows and the two-pane split respond to the width of the note pane, not the
+       window, so the page works in a narrow split as well as full width. */
+    container-type: inline-size;
+
+    font-family: var(--main-font-family, inherit);
+    color: var(--main-text-color);
+    background: var(--main-background-color);
+    padding: 15px 25px;
 }
 
-/* Header & Nav Tabs */
+/* ---------------------------------------------------------------- page header */
+
+/* Mirrors OptionsPageHeader: sticky title bar, circular icon badge, page actions
+   trailing. The title is normal weight — it stands in for the note title chrome,
+   which is not bold. */
+.ns-page-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin-inline: -25px;
+    padding: 10px 25px;
+    border-bottom: 1px solid var(--ns-border);
+    background: var(--main-background-color);
+    margin-bottom: 1em;
+}
+
+/* Held to the section column so the title and actions sit above the cards rather
+   than at the edges of the pane. */
+.ns-page-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: var(--ns-card-max-width);
+}
+
+.ns-page-header-icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--note-icon-color, var(--main-text-color));
+    background: var(--note-icon-background-color, var(--accented-background-color));
+}
+
+.ns-page-header-titles {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ns-page-header-title {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: normal;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.ns-page-header-subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ns-muted);
+}
+
+.ns-page-header-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* -------------------------------------------------------------------- section */
+
+.ns-section {
+    max-width: var(--ns-card-max-width);
+    margin-bottom: var(--ns-section-gap);
+}
+
+.ns-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.ns-section-title {
+    margin: 0 0 var(--ns-title-offset);
+    text-transform: uppercase;
+    letter-spacing: 0.4pt;
+    font-size: var(--ns-title-size);
+    font-weight: 600;
+    color: var(--launcher-pane-text-color, var(--muted-text-color));
+}
+
+.ns-section-header .ns-section-title {
+    margin-bottom: 0;
+}
+
+.ns-section-card {
+    container-type: inline-size;
+    box-shadow: var(--ns-card-shadow);
+    border: 1px solid var(--ns-card-border);
+    border-radius: 8px;
+    background: var(--ns-card-bg);
+    padding: var(--ns-card-padding);
+}
+
+.ns-section-description {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: var(--ns-muted);
+}
+
+/* ------------------------------------------------------------------------ row */
+
+/* A settings row: label and description on the leading edge, one control on the
+   trailing edge, hairline between rows and none after the last. */
+.ns-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75em 0;
+    border-bottom: 1px solid var(--ns-border);
+}
+
+.ns-row:last-child {
+    border-bottom: none;
+}
+
+.ns-row-label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.ns-row-label > label {
+    margin-bottom: 0;
+}
+
+.ns-row-desc {
+    margin-top: 0.25em;
+    line-height: 1.3;
+    font-size: 0.85em;
+    color: var(--ns-muted);
+}
+
+.ns-row-input {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ns-row-input > select,
+.ns-row-input > input,
+.ns-row-input > .input-group {
+    width: auto;
+    min-width: 180px;
+}
+
+/* Rows whose control is wide stack on narrow panes; toggles and buttons stay
+   inline, matching Trilium's own container query. */
+@container (max-width: 600px) {
+    .ns-row:not(.ns-row-compact) {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .ns-row:not(.ns-row-compact) .ns-row-input,
+    .ns-row:not(.ns-row-compact) .ns-row-input > * {
+        width: 100%;
+    }
+}
+
+/* A row that spans the full card width with the control underneath the label. */
+.ns-row-stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.ns-row-stacked .ns-row-input,
+.ns-row-stacked .ns-row-input > * {
+    width: 100%;
+}
+
+/* Clickable row that navigates elsewhere, with a chevron affordance. */
+.ns-row-link {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    margin-inline: calc(-1 * var(--ns-card-padding));
+    padding-inline: var(--ns-card-padding);
+    transition: background-color 250ms ease-in-out;
+}
+
+.ns-row-link:hover {
+    background: var(--hover-item-background-color);
+    color: inherit;
+    text-decoration: none;
+}
+
+/* ---------------------------------------------------------------- toggle */
+
+/* Markup-compatible clone of Trilium's FormToggle (.switch-widget), so plugin
+   toggles are the same object the rest of the app uses. */
+.ns-switch {
+    --switch-track-width: 50px;
+    --switch-track-height: 24px;
+
+    display: flex;
+    align-items: center;
+}
+
+.ns-switch .ns-switch-button {
+    display: block;
+    position: relative;
+    width: var(--switch-track-width);
+    height: var(--switch-track-height);
+    border-radius: 24px;
+    background-color: var(--more-accented-background-color);
+    cursor: pointer;
+    transition: background 200ms ease-in;
+}
+
+.ns-switch .ns-switch-button.on {
+    background: var(--main-text-color);
+    transition: background 100ms ease-out;
+}
+
+.ns-switch .ns-switch-button::after {
+    --thumb: 16px;
+    --y: calc((var(--switch-track-height) - var(--thumb)) / 2);
+    --x: var(--y);
+
+    content: "";
+    position: absolute;
+    top: 0;
+    inset-inline-start: 0;
+    width: var(--thumb);
+    height: var(--thumb);
+    border-radius: 50%;
+    background-color: var(--main-background-color);
+    transform: translate(var(--x), var(--y));
+    transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1), background 200ms ease-out;
+}
+
+.ns-switch .ns-switch-button.on::after {
+    --x: calc(var(--switch-track-width) - var(--thumb) - var(--y));
+    transition: transform 200ms cubic-bezier(0.64, 0, 0.78, 0), background 100ms ease-in;
+}
+
+body[dir="rtl"] .ns-switch .ns-switch-button::after {
+    --x: calc(var(--y) * -1);
+}
+
+body[dir="rtl"] .ns-switch .ns-switch-button.on::after {
+    --x: calc((var(--switch-track-width) - var(--thumb) - var(--y)) * -1);
+}
+
+.ns-switch input[type="checkbox"] {
+    position: absolute;
+    top: 0;
+    inset-inline-start: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.ns-switch .ns-switch-button:has(input:focus-visible) {
+    outline: 2px solid var(--button-border-color, var(--main-border-color));
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------- list of items */
+
+/* Rules, templates and attributes are lists of peers, not a stack of cards. They
+   render as hairline-separated rows inside one card — the same shape as .ns-row —
+   so nesting never produces a card inside a card inside a card. */
+.ns-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.ns-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6em 0;
+    border-bottom: 1px solid var(--ns-border);
+}
+
+.ns-list-item:last-child {
+    border-bottom: none;
+}
+
+.ns-list-item-main {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+}
+
+.ns-list-item-icon {
+    flex: 0 0 auto;
+    margin-top: 2px;
+    font-size: 1.1em;
+    color: var(--ns-muted);
+}
+
+.ns-list-item-title {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.ns-list-item-desc {
+    margin-top: 0.2em;
+    line-height: 1.3;
+    font-size: 0.85em;
+    color: var(--ns-muted);
+}
+
+.ns-list-item-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Row-level icon actions sit in a denser context than a section header, so they
+   scale down from Trilium's default 37x35. */
+.ns-list-item-actions .icon-action,
+.ns-row-input .icon-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 28px;
+    padding: 0;
+    font-size: 1.2em;
+}
+
+/* Only the state that matters gets colour: a disabled rule is dimmed rather than
+   given a competing badge. */
+.ns-list-item.is-disabled .ns-list-item-title,
+.ns-list-item.is-disabled .ns-list-item-icon {
+    opacity: 0.55;
+}
+
+.ns-empty {
+    padding: 0.75em 0;
+    font-size: 0.85em;
+    color: var(--ns-muted);
+}
+
+/* ------------------------------------------------------------------ meta text */
+
+/* Secondary facts (markers, ids, counts) are muted body text, not pill badges. */
+.ns-meta {
+    font-size: 0.85em;
+    color: var(--ns-muted);
+}
+
+.ns-count {
+    font-weight: normal;
+    color: var(--ns-muted);
+}
+
+/* ------------------------------------------------------------- two-pane layout */
+
+.ns-split {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    max-width: var(--ns-card-max-width);
+}
+
+.ns-split-rail {
+    flex: 0 0 240px;
+    min-width: 0;
+    position: sticky;
+    top: 70px;
+}
+
+.ns-split-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ns-split-main .ns-section {
+    max-width: none;
+}
+
+@container (max-width: 700px) {
+    .ns-split {
+        flex-direction: column;
+    }
+
+    .ns-split-rail {
+        position: static;
+        flex-basis: auto;
+        width: 100%;
+    }
+}
+
+/* ----------------------------------------------------------------------- tree */
+
+/* The rail reuses the note tree's selection language: hover tint, accented
+   selection, no filled brand-colour blocks. */
+.ns-tree {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.ns-tree ul {
+    list-style: none;
+    margin: 0;
+    padding-inline-start: 14px;
+}
+
+.ns-tree-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: inherit;
+    line-height: 1.3;
+}
+
+.ns-tree-item:hover {
+    background: var(--hover-item-background-color);
+}
+
+.ns-tree-item.selected {
+    background: var(--active-item-background-color);
+    color: var(--active-item-text-color);
+}
+
+.ns-tree-item-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ns-tree-item .ns-count {
+    flex: 0 0 auto;
+}
+
+.ns-tree-item.selected .ns-count {
+    color: inherit;
+    opacity: 0.75;
+}
+
+/* --------------------------------------------------------------- note preview */
+
+/* A template preview is the note you would get, not a report about it: Trilium's
+   own title chrome, its promoted-attributes grid, and note typography, with no
+   surrounding card, badge, or explanatory panel.
+
+   The promoted-attribute rules below are copies of the app's own
+   (widgets/PromotedAttributes.css), scoped to .ns-note so they cannot reach real
+   notes and so the preview still holds up if that stylesheet is not loaded. */
+.ns-note {
+    max-width: var(--ns-card-max-width);
+}
+
+.ns-note-title-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--ns-border);
+}
+
+/* Bare glyph, not the circular badge the page header uses — so it takes the text
+   colour rather than --note-icon-color, which is meant to sit on that badge. */
+.ns-note-icon {
+    flex: 0 0 auto;
+    padding: 6px;
+    font-size: 22px;
+    line-height: 1;
+    color: inherit;
+}
+
+/* Out-specifies the theme's input styling so the title reads as note text, the way
+   Trilium's own borderless `input.note-title` does. */
+.ns-note input.ns-note-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 12px;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: inherit;
+    font-size: 180%;
+    line-height: 1;
+}
+
+.ns-note .promoted-attributes-container {
+    display: table;
+    flex-wrap: wrap;
+    margin: 0 1.5em;
+}
+
+.ns-note .promoted-attribute-cell {
+    display: flex;
+    align-items: center;
+    margin: 10px;
+}
+
+.ns-note .promoted-attribute-cell > * {
+    display: table-cell;
+    padding: 1px 0;
+}
+
+.ns-note .promoted-attribute-cell > label {
+    user-select: none;
+    font-weight: bold;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.ns-note .promoted-attribute-cell div.input-group {
+    display: flex;
+    min-height: 40px;
+    margin-inline-start: 10px;
+}
+
+/* The note body. `ck-content` is the class Trilium's own note text carries, so the
+   skeleton renders with the typography it will actually have. */
+.ns-note-body {
+    padding: 10px 1.5em;
+}
+
+/* ------------------------------------------------------------- dashboard grid */
+
+/* The grid responds to the note pane, not the window, so a dashboard in a split
+   behaves like one in a narrow window. `auto` fits as many readable columns as fit;
+   a fixed count still steps down rather than squeezing. */
+.ns-grid {
+    display: grid;
+    gap: 0 20px;
+    max-width: var(--ns-card-max-width);
+}
+
+.ns-grid > .ns-section {
+    max-width: none;
+}
+
+.ns-grid-auto {
+    grid-template-columns: repeat(auto-fit, minmax(var(--ns-grid-min, 280px), 1fr));
+}
+
+.ns-cols-1 { grid-template-columns: minmax(0, 1fr); }
+.ns-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ns-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.ns-grid > .ns-section.ns-span-2 {
+    grid-column: span 2;
+}
+
+.ns-grid > .ns-section.ns-span-full {
+    grid-column: 1 / -1;
+}
+
+/* A three-across grid has no room for three at tablet width; two does not at phone
+   width. Spans are dropped with the columns, or a two-wide widget would overflow. */
+@container (max-width: 820px) {
+    .ns-cols-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@container (max-width: 560px) {
+    .ns-cols-2,
+    .ns-cols-3,
+    .ns-grid-auto {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ns-grid > .ns-section.ns-span-2 {
+        grid-column: auto;
+    }
+}
+
+/* Compact density: the same layout with less air, for people who want more of the
+   dashboard visible at once. */
+.ns-compact {
+    --ns-card-padding: 12px;
+    --ns-section-gap: 16px;
+}
+
+.ns-compact .ns-row,
+.ns-compact .ns-list-item {
+    padding-block: 0.45em;
+}
+
+.ns-compact .ns-section-description {
+    margin-bottom: 10px;
+}
+
+.ns-kanban {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+@container (max-width: 600px) {
+    .ns-kanban {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* -------------------------------------------------------------------- weather */
+
+.ns-weather-now {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.ns-weather-icon {
+    flex: 0 0 auto;
+    font-size: 2.6rem;
+    line-height: 1;
+    color: var(--ns-muted);
+}
+
+.ns-weather-temp {
+    font-size: 1.9rem;
+    line-height: 1.1;
+}
+
+.ns-weather-forecast {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--ns-border);
+}
+
+.ns-weather-day {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-align: center;
+}
+
+.ns-weather-day .bx {
+    font-size: 1.3rem;
+    color: var(--ns-muted);
+}
+
+/* ------------------------------------------------------------- local insights */
+
+.ns-heatmap {
+    display: flex;
+    gap: 3px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.ns-heatmap-week {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.ns-heatmap-day {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    background: var(--ns-border);
+}
+
+.ns-heatmap-day.level-1 { background: color-mix(in srgb, var(--main-text-color) 25%, transparent); }
+.ns-heatmap-day.level-2 { background: color-mix(in srgb, var(--main-text-color) 45%, transparent); }
+.ns-heatmap-day.level-3 { background: color-mix(in srgb, var(--main-text-color) 65%, transparent); }
+.ns-heatmap-day.level-4 { background: color-mix(in srgb, var(--main-text-color) 85%, transparent); }
+
+.ns-quote {
+    margin: 0 0 14px;
+    padding-left: 12px;
+    border-left: 2px solid var(--ns-border);
+}
+
+.ns-quote p {
+    margin: 0 0 4px;
+    font-style: italic;
+}
+
+.ns-quote cite {
+    font-size: 0.85rem;
+    color: var(--ns-muted);
+    font-style: normal;
+}
+
+.ns-progress {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--ns-border);
+    overflow: hidden;
+}
+
+.ns-progress-fill {
+    height: 100%;
+    background: color-mix(in srgb, var(--main-text-color) 70%, transparent);
+    transition: width 0.2s ease;
+}
+
+.ns-progress-label {
+    margin-top: 6px;
+}
+
+.ns-kanban-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------- modal */
+
+/* Uses Trilium's modal tokens instead of hardcoded hex, so the dialog matches the
+   app's own dialogs in every theme. */
+.ns-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1055;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--modal-backdrop-color, #000);
+    /* Bootstrap's .modal-backdrop.show opacity, matched so plugin dialogs dim the
+       app by the same amount Trilium's own dialogs do. */
+    background: color-mix(in srgb, var(--modal-backdrop-color, #000) 50%, transparent);
+}
+
+.ns-modal {
+    width: 580px;
+    max-width: 92vw;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--ns-border);
+    border-radius: 8px;
+    background: var(--modal-background-color);
+    color: var(--main-text-color);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.ns-modal-header,
+.ns-modal-footer {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 17px;
+}
+
+.ns-modal-header {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--ns-border);
+}
+
+.ns-modal-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: normal;
+}
+
+.ns-modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 17px;
+}
+
+.ns-modal-footer {
+    justify-content: flex-end;
+    border-top: 1px solid var(--ns-border);
+}
+
+/* --------------------------------------------------------------------- fields */
+
+.ns-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ns-field > label {
+    margin: 0;
+    font-size: 0.9em;
+}
+
+.ns-field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+}
+
+.ns-code {
+    font-family: var(--monospace-font-family, monospace);
+    font-size: 0.9em;
+}
+
+/* --------------------------------------------------------------------- tables */
+
+.ns-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.ns-table th {
+    text-align: start;
+    font-weight: 600;
+    font-size: var(--ns-title-size);
+    text-transform: uppercase;
+    letter-spacing: 0.4pt;
+    color: var(--ns-muted);
+    padding: 0 0 0.5em;
+    border-bottom: 1px solid var(--ns-border);
+}
+
+.ns-table td {
+    padding: 0.5em 0;
+    border-bottom: 1px solid var(--ns-border);
+}
+
+.ns-table tr:last-child td {
+    border-bottom: none;
+}
+
+.ns-table td + td,
+.ns-table th + th {
+    padding-inline-start: 12px;
+}
+
+/* ------------------------------------------------------------------ utilities */
+
+.ns-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ns-actions-end {
+    justify-content: flex-end;
+}
+
+.ns-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* --------------------------------------------------------------------- tabs */
+
+/* Top-level view switcher. Trilium marks the active item with an underline and a
+   text-colour change rather than a filled pill, so this does the same. */
+.ns-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    margin: 0 0 20px;
+    padding: 0;
+    list-style: none;
+    border-bottom: 1px solid var(--ns-border);
+}
+
+.ns-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    margin-bottom: -1px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--ns-muted);
+    cursor: pointer;
+    font: inherit;
+}
+
+.ns-tab:hover {
+    color: var(--main-text-color);
+    background: var(--hover-item-background-color);
+}
+
+.ns-tab.active {
+    color: var(--main-text-color);
+    border-bottom-color: var(--accent-color, var(--main-text-color));
+}
+
+/* Segmented either/or controls (Schema vs Preview, Templates vs Categories) are
+   plain .btn-group markup: Trilium already styles `.btn.active` with the active
+   item colours, so there is nothing to add here. */
+
+/* ------------------------------------------------------ today homepage surfaces */
+
 .today-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: var(--ns-card-padding);
+    border: 1px solid var(--ns-card-border);
+    border-radius: 8px;
     background: var(--ns-card-bg);
-    border: 1px solid var(--ns-border-color);
-    border-radius: var(--ns-border-radius);
+    box-shadow: var(--ns-card-shadow);
 }
 
-.nav-pills .nav-link {
-    color: var(--ns-muted-text);
-    border-radius: 6px;
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    transition: all 0.15s ease-in-out;
-}
-
-.nav-pills .nav-link:hover {
-    color: var(--ns-text-color);
-    background-color: rgba(128, 128, 128, 0.1);
-}
-
-.nav-pills .nav-link.active {
-    background-color: var(--ns-accent-color) !important;
-    color: #ffffff !important;
-}
-
-/* Component Grid & Cards */
-.today-grid .card, .card {
-    background-color: var(--ns-card-bg);
-    border: 1px solid var(--ns-border-color);
-    border-radius: var(--ns-border-radius);
-    color: var(--ns-text-color);
-}
-
-.card-header {
-    border-bottom: 1px solid var(--ns-border-color);
-    padding: 0.75rem 1rem;
-    background: transparent;
-}
-
-/* Kanban Board Styling */
 .kanban-col {
+    padding: 12px;
+    min-height: 140px;
+    border: 1px solid var(--ns-card-border);
+    border-radius: 8px;
     background: var(--ns-card-bg);
-    border: 1px solid var(--ns-border-color);
-    border-radius: 6px;
-    padding: 0.75rem;
-    min-height: 220px;
 }
 
 .kanban-card {
-    background: var(--ns-main-bg);
-    border: 1px solid var(--ns-border-color);
+    padding: 8px 10px;
+    border: 1px solid var(--ns-border);
     border-radius: 6px;
-    padding: 0.6rem 0.8rem;
+    background: var(--main-background-color);
     cursor: grab;
-    transition: transform 0.15s ease, border-color 0.15s ease;
+    transition: border-color 0.15s ease;
 }
 
 .kanban-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--ns-accent-color);
+    border-color: var(--accent-color, var(--main-text-color));
 }
 
 .kanban-card:active {

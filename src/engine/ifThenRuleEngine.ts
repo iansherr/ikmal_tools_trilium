@@ -1,10 +1,10 @@
 /**
- * IF-THIS-THEN-THAT (IFTTT) Engine: Automation rule engine for Trilium Notes.
+ * If/Then Rules Engine: event-triggered automation rule engine for Trilium Notes.
  */
 
-import { IftttRuleDef, IftttCondition, IftttAction, TriggerType } from './types.js';
+import { IfThenRuleDef, IfThenCondition, IfThenAction, TriggerType } from './types.js';
 
-export const BUILTIN_IFTTT_RULES: IftttRuleDef[] = [
+export const BUILTIN_IF_THEN_RULES: IfThenRuleDef[] = [
     // 1. Global System Rules
     {
         id: 'rule_project_autoclone',
@@ -115,27 +115,36 @@ export interface NoteContext {
     templateId: string;
     category?: string;
     attributes: Record<string, any>;
-    relations: Record<string, string[]>;
+    /** A relation may hold one target or several. */
+    relations: Record<string, string | string[]>;
 }
 
-export class IftttEngine {
-    private rules: Map<string, IftttRuleDef> = new Map();
+/** One rule that fired, with its actions after placeholder substitution. */
+export interface IfThenRuleResult {
+    ruleId: string;
+    ruleName: string;
+    matched: boolean;
+    executedActions: IfThenAction[];
+}
 
-    constructor(initialRules: IftttRuleDef[] = BUILTIN_IFTTT_RULES) {
+export class IfThenRuleEngine {
+    private rules: Map<string, IfThenRuleDef> = new Map();
+
+    constructor(initialRules: IfThenRuleDef[] = BUILTIN_IF_THEN_RULES) {
         for (const rule of initialRules) {
             this.rules.set(rule.id, rule);
         }
     }
 
-    public registerRule(rule: IftttRuleDef): void {
+    public registerRule(rule: IfThenRuleDef): void {
         this.rules.set(rule.id, rule);
     }
 
-    public getRule(ruleId: string): IftttRuleDef | undefined {
+    public getRule(ruleId: string): IfThenRuleDef | undefined {
         return this.rules.get(ruleId);
     }
 
-    public getAllRules(): IftttRuleDef[] {
+    public getAllRules(): IfThenRuleDef[] {
         return Array.from(this.rules.values());
     }
 
@@ -150,12 +159,17 @@ export class IftttEngine {
         return this.rules.delete(ruleId);
     }
 
+    /**
+     * Every enabled rule whose trigger and conditions match, each with its actions
+     * resolved. Callers need to know which rule fired — to report it and to avoid
+     * re-running it — so this returns rule results rather than a flat action list.
+     */
     public evaluateEvent(
         eventType: TriggerType,
         context: NoteContext,
         changedAttribute?: string
-    ): IftttAction[] {
-        const triggeredActions: IftttAction[] = [];
+    ): IfThenRuleResult[] {
+        const results: IfThenRuleResult[] = [];
 
         for (const rule of this.rules.values()) {
             if (!rule.enabled) continue;
@@ -170,19 +184,44 @@ export class IftttEngine {
                 continue;
             }
 
-            if (rule.trigger.attributeName && rule.trigger.attributeName !== changedAttribute) {
+            // The attribute filter only narrows the event it belongs to; a creation
+            // rule that names an attribute is scoping, not waiting for a change.
+            if (eventType === 'onAttributeChanged' && rule.trigger.attributeName && rule.trigger.attributeName !== changedAttribute) {
                 continue;
             }
 
             if (this.checkConditions(rule.conditions, context)) {
-                triggeredActions.push(...rule.actions);
+                results.push({
+                    ruleId: rule.id,
+                    ruleName: rule.name,
+                    matched: true,
+                    executedActions: rule.actions.map((action) => this.processActionTemplates(action, context)),
+                });
             }
         }
 
-        return triggeredActions;
+        return results;
     }
 
-    private checkConditions(conditions: IftttCondition[], context: NoteContext): boolean {
+    /** Substitutes the placeholders an action's params may carry. */
+    private processActionTemplates(action: IfThenAction, context: NoteContext): IfThenAction {
+        const copy: IfThenAction = JSON.parse(JSON.stringify(action));
+        const today = new Date().toISOString().split('T')[0];
+
+        for (const key of Object.keys(copy.params)) {
+            const value = copy.params[key];
+            if (typeof value === 'string') {
+                copy.params[key] = value
+                    .replace('{TODAY}', today)
+                    .replace('{NOTE_TITLE}', context.title)
+                    .replace('{NOTE_ID}', context.noteId);
+            }
+        }
+
+        return copy;
+    }
+
+    private checkConditions(conditions: IfThenCondition[], context: NoteContext): boolean {
         for (const cond of conditions) {
             const val = context.attributes[cond.field] ?? context.relations[cond.field];
 

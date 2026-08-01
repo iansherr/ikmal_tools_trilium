@@ -1,6 +1,6 @@
 /*
  * Notes System Backend Worker & Endpoint Handler
- * Implements server-side note creation, IFTTT automation execution, and ETAPI custom endpoints.
+ * Implements server-side note creation, if/then automation execution, and ETAPI custom endpoints.
  */
 
 function handleCustomRequest(req, res) {

@@ -1,12 +1,13 @@
 /**
  * Note Creation Engine: Unified pipeline for note instantiation, title formatting,
- * relation mapping, auto-cloning, and IFTTT trigger execution.
+ * relation mapping, auto-cloning, and if/then rule execution.
  * Faithfully implements original startStory logic for 'story' (mode: project) vs 'edit' (mode: edit).
  */
 
 import { TemplateEngine } from './templateEngine.js';
 import { RelationshipEngine } from './relationshipEngine.js';
-import { IftttEngine } from './iftttEngine.js';
+import { IfThenRuleEngine } from './ifThenRuleEngine.js';
+import { SettingsEngine } from './settingsEngine.js';
 
 export interface NoteCreationRequest {
     type: string; // Template ID (e.g. task, meeting, projectHub, story, edit)
@@ -29,15 +30,23 @@ export interface NoteCreationPlan {
     relationsToCreate: Array<{ name: string; value: string }>;
     autoCloneContainers: string[];
     inheritedTopicSources: string[];
-    executedIftttRules: Array<{ ruleId: string; ruleName: string }>;
+    executedIfThenRules: Array<{ ruleId: string; ruleName: string }>;
     childNotesToCreate?: Array<{ title: string; templateId: string; labels: Array<{ name: string; value: string }> }>;
+    /**
+     * Whether this note should be referenced under today's journal note. True
+     * only when nothing else already claims it (no relation-based auto-clone
+     * container), the template and its category both allow it, and the
+     * "File new notes under today's journal note" setting is on.
+     */
+    journalClone: boolean;
 }
 
 export class NoteCreationEngine {
     constructor(
         private templateEngine: TemplateEngine,
         private relationshipEngine: RelationshipEngine,
-        private iftttEngine: IftttEngine
+        private ifThenRuleEngine: IfThenRuleEngine,
+        private settingsEngine: SettingsEngine = new SettingsEngine()
     ) {}
 
     public planNoteCreation(request: NoteCreationRequest): NoteCreationPlan {
@@ -97,14 +106,20 @@ export class NoteCreationEngine {
 
         // 2. Process Relationships & Auto-Cloning via RelationshipEngine
         const relValues = request.relations || {};
-        const { autoCloneContainers, inheritedTopicSources, relationLabels } =
-            this.relationshipEngine.resolveCreationRelations(template.id, relValues);
+        const resolved = this.relationshipEngine.resolveCreationRelations(template.id, relValues);
+        const autoCloneContainers = resolved.autoCloneContainers;
+        // Derived topic propagation is an opt-out: the relation graph is still
+        // resolved above (it also drives auto-cloning), but nothing is inherited
+        // when the setting is off.
+        const inheritedTopicSources = this.settingsEngine.get('enableDerivedTopics')
+            ? resolved.inheritedTopicSources
+            : [];
 
-        for (const relLabel of relationLabels) {
+        for (const relLabel of resolved.relationLabels) {
             relationsToCreate.push(relLabel);
         }
 
-        // 3. Evaluate IFTTT Automation Rules
+        // 3. Evaluate if/then automation rules, unless disabled in settings
         const noteContext = {
             noteId: 'PREVIEW_ID',
             title: formattedTitle,
@@ -113,27 +128,37 @@ export class NoteCreationEngine {
             relations: relValues,
         };
 
-        const iftttResults = this.iftttEngine.evaluateEvent('onNoteCreated', noteContext);
-        const executedIftttRules: Array<{ ruleId: string; ruleName: string }> = [];
+        const executedIfThenRules: Array<{ ruleId: string; ruleName: string }> = [];
 
-        for (const res of iftttResults) {
-            if (res.matched) {
-                executedIftttRules.push({ ruleId: res.ruleId, ruleName: res.ruleName });
-                for (const action of res.executedActions) {
-                    if (action.type === 'setLabel' && action.params.labelName) {
-                        labelsToCreate.push({
-                            name: action.params.labelName,
-                            value: action.params.labelValue || '',
-                        });
-                    } else if (action.type === 'setRelation' && action.params.relationName && action.params.targetNoteId) {
-                        relationsToCreate.push({
-                            name: action.params.relationName,
-                            value: action.params.targetNoteId,
-                        });
+        if (this.settingsEngine.get('autoRunIfThenRulesOnCreation')) {
+            const ruleResults = this.ifThenRuleEngine.evaluateEvent('onNoteCreated', noteContext);
+            for (const res of ruleResults) {
+                if (res.matched) {
+                    executedIfThenRules.push({ ruleId: res.ruleId, ruleName: res.ruleName });
+                    for (const action of res.executedActions) {
+                        if (action.type === 'setLabel' && action.params.labelName) {
+                            labelsToCreate.push({
+                                name: action.params.labelName,
+                                value: action.params.labelValue || '',
+                            });
+                        } else if (action.type === 'setRelation' && action.params.relationName && action.params.targetNoteId) {
+                            relationsToCreate.push({
+                                name: action.params.relationName,
+                                value: action.params.targetNoteId,
+                            });
+                        }
                     }
                 }
             }
         }
+
+        // 4. Journal auto-clone: only when nothing else already claims the note.
+        const category = this.templateEngine.getCategory(template.category);
+        const journalClone =
+            this.settingsEngine.get('autoJournalClone') &&
+            !template.noJournalClone &&
+            category?.autoJournalClone !== false &&
+            autoCloneContainers.length === 0;
 
         return {
             templateId: template.id,
@@ -146,8 +171,9 @@ export class NoteCreationEngine {
             relationsToCreate,
             autoCloneContainers,
             inheritedTopicSources,
-            executedIftttRules,
+            executedIfThenRules,
             childNotesToCreate,
+            journalClone,
         };
     }
 }

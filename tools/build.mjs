@@ -15,6 +15,12 @@ if (!fs.existsSync(distArtifactsDir)) {
 
 // 1. Bundle jsx/ts artifacts into standalone browser/backend JS using esbuild
 try {
+    // The engines and components are compiled to dist/ as well as bundled into the
+    // artifacts. The test suite imports dist/, so without this step it would keep
+    // asserting against whatever was compiled last rather than the current source.
+    console.log('🔨 Compiling engines and components to dist/...');
+    execSync('npx tsc -p tsconfig.build.json', { stdio: 'inherit' });
+
     console.log('🔨 Bundling dashboard render artifact...');
     execSync('npx esbuild src/artifacts/notes-system-dashboard.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-dashboard.js', { stdio: 'inherit' });
 

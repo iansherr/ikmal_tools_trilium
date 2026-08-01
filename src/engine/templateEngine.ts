@@ -3,7 +3,7 @@
  * Contains 100% complete original template definitions, attributes, relations, and HTML content skeletons.
  */
 
-import { TemplateDefinition, PromotedAttributeDef, TemplateRelationshipDef } from './types.js';
+import { TemplateDefinition, PromotedAttributeDef, TemplateRelationshipDef, TemplateCategoryDef } from './types.js';
 
 export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
     {
