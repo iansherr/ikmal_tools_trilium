@@ -1,7 +1,6 @@
 /**
- * Template Studio Component: Multi-Parent Tree Highlighting, Integrated Relationship Editing,
- * and Multi-Parent Inheritance Live Preview.
- * Styled natively with Trilium Boxicons and design tokens.
+ * Template Studio Component: True Nested Visual Tree View & Native Trilium Settings Proportions.
+ * Styled natively with Trilium Boxicons and standard Trilium form components.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
@@ -19,20 +18,20 @@ export function renderTemplateStudio(
         container.innerHTML = '';
 
         const wrapper = document.createElement('div');
-        wrapper.className = 'template-studio-wrapper d-flex flex-column gap-3';
+        wrapper.className = 'template-studio-wrapper d-flex flex-column gap-4';
 
-        // Header Banner
+        // Header Banner (Trilium Settings Style)
         const header = document.createElement('div');
-        header.className = 'p-3 rounded border d-flex align-items-center justify-content-between shadow-sm';
+        header.className = 'p-3 rounded border d-flex align-items-center justify-content-between';
         header.style.backgroundColor = 'var(--sub-background-color, transparent)';
         header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
         header.innerHTML = `
             <div class="d-flex align-items-center gap-3">
                 <i class="bx bx-layer h3 m-0 text-primary"></i>
                 <div>
-                    <h2 class="h5 m-0 font-weight-bold">Template Studio & Multi-Parent Relationship Manager</h2>
+                    <h2 class="h5 m-0 font-weight-bold">Template Studio & Relationship Tree</h2>
                     <p class="text-muted small m-0 mt-1">
-                        Manage nested template schemas, configure parent-child relationship links, and preview multi-parent metadata inheritance.
+                        Configure nested template schemas, parent relationship links, promoted attributes, and note previews.
                     </p>
                 </div>
             </div>
@@ -46,96 +45,86 @@ export function renderTemplateStudio(
         wrapper.appendChild(header);
 
         const layoutRow = document.createElement('div');
-        layoutRow.className = 'row g-3';
+        layoutRow.className = 'row g-4';
 
-        // 1. Sidebar: Multi-Parent Hierarchy Tree with Live Highlighting
+        // 1. Sidebar: True Nested Visual Tree View (Trilium Navigation Style)
         const sidebarCol = document.createElement('div');
         sidebarCol.className = 'col-md-3';
 
         const sidebarCard = document.createElement('div');
-        sidebarCard.className = 'card border h-100 shadow-sm';
+        sidebarCard.className = 'card border h-100';
         sidebarCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
         sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
         const sidebarHeader = document.createElement('div');
         sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center justify-content-between';
         sidebarHeader.innerHTML = `
-            <span class="d-flex align-items-center gap-1"><i class="bx bx-sitemap"></i> Template Tree</span>
-            <span class="tiny text-muted font-weight-normal">Multi-parent enabled</span>
+            <span class="d-flex align-items-center gap-1"><i class="bx bx-sitemap"></i> Nested Template Tree</span>
+            <span class="small text-muted font-weight-normal">Tree View</span>
         `;
         sidebarCard.appendChild(sidebarHeader);
 
-        const listGroup = document.createElement('div');
-        listGroup.className = 'list-group list-group-flush p-2 d-flex flex-column gap-1';
+        const treeContainer = document.createElement('div');
+        treeContainer.className = 'card-body p-2';
 
-        // Multi-Parent Hierarchy Groups (Templates can appear under multiple parent contexts!)
-        const hierarchyGroups = [
+        // Build True Nested Tree Node Structure
+        const treeNodes = [
             {
-                groupName: 'Project Hub Hierarchy',
-                icon: 'book',
-                templates: [
-                    { id: 'projectHub', role: 'Root Project Hub' },
-                    { id: 'story', role: 'Primary Child: Story Project' },
-                    { id: 'edit', role: 'Grandchild: Edit Package' },
-                    { id: 'reportingNotes', role: 'Child: Reporting Notes' },
-                    { id: 'projectTask', role: 'Child: Project Task' },
-                ],
+                id: 'projectHub',
+                children: [
+                    {
+                        id: 'story',
+                        children: [
+                            { id: 'edit', children: [] }
+                        ]
+                    },
+                    { id: 'reportingNotes', children: [] },
+                    { id: 'projectTask', children: [] },
+                    { id: 'emailDraft', children: [] }
+                ]
             },
             {
-                groupName: 'Standalone Work & Tasks',
-                icon: 'check-square',
-                templates: [
-                    { id: 'task', role: 'Standalone Task' },
-                    { id: 'projectTask', role: 'Multi-Parent: Under Project Hub' },
-                    { id: 'meeting', role: 'Meeting' },
-                    { id: 'meetingPrep', role: 'Child: Meeting Prep' },
-                    { id: 'emailDraft', role: 'Email Draft' },
-                ],
+                id: 'organization',
+                children: [
+                    {
+                        id: 'meeting',
+                        children: [
+                            { id: 'meetingPrep', children: [] }
+                        ]
+                    },
+                    { id: 'person', children: [] }
+                ]
             },
-            {
-                groupName: 'People & Client Orgs',
-                icon: 'user',
-                templates: [
-                    { id: 'person', role: 'Person' },
-                    { id: 'organization', role: 'Client Organization' },
-                    { id: 'meeting', role: 'Multi-Parent: Linked to Client' },
-                ],
-            },
-            {
-                groupName: 'System & Topic Index',
-                icon: 'purchase-tag',
-                templates: [
-                    { id: 'topic', role: 'Topic Tag' },
-                ],
-            },
+            { id: 'task', children: [] },
+            { id: 'topic', children: [] }
         ];
 
-        for (const grp of hierarchyGroups) {
-            const grpHeader = document.createElement('div');
-            grpHeader.className = 'tiny font-weight-bold text-muted text-uppercase tracking-wider px-2 pt-2 pb-1 border-bottom';
-            grpHeader.style.borderColor = 'var(--border-color, rgba(128,128,128,0.1)) !important;';
-            grpHeader.innerHTML = `<i class="bx bx-${grp.icon}"></i> ${grp.groupName}`;
-            listGroup.appendChild(grpHeader);
+        function renderTreeBranch(nodes: Array<{ id: string; children: any[] }>, depth = 0): HTMLElement {
+            const ul = document.createElement('ul');
+            ul.className = 'list-unstyled m-0 d-flex flex-column gap-1';
+            if (depth > 0) ul.style.paddingLeft = '1.25rem';
 
-            for (const tItem of grp.templates) {
-                const tpl = templateEngine.getTemplate(tItem.id);
+            for (const node of nodes) {
+                const tpl = templateEngine.getTemplate(node.id);
                 if (!tpl) continue;
 
+                const li = document.createElement('li');
                 const isSelected = tpl.id === selectedTemplateId;
 
-                const item = document.createElement('a');
-                item.href = '#';
-                item.className = `list-group-item list-group-item-action d-flex align-items-center justify-content-between p-2 rounded border-0 transition-all ${isSelected ? 'active font-weight-bold' : ''}`;
-                item.style.backgroundColor = isSelected ? 'var(--active-item-background-color, #3b82f6)' : 'transparent';
-                item.style.color = isSelected ? '#fff' : 'var(--main-text-color, inherit)';
-                item.style.borderColor = 'var(--border-color, rgba(128,128,128,0.1))';
+                const item = document.createElement('div');
+                item.className = `d-flex align-items-center justify-content-between p-2 rounded cursor-pointer transition-all ${isSelected ? 'bg-primary text-white font-weight-bold' : 'text-body'}`;
+                item.style.cursor = 'pointer';
+                if (!isSelected) {
+                    item.style.backgroundColor = 'transparent';
+                }
 
                 item.innerHTML = `
                     <div class="d-flex align-items-center gap-2">
+                        ${depth > 0 ? '<i class="bx bx-subdirectory-right text-muted" style="font-size: 14px;"></i>' : ''}
                         <i class="bx bx-${tpl.icon}"></i>
                         <span class="small">${tpl.title}</span>
                     </div>
-                    ${isSelected ? '<span class="badge bg-white text-primary tiny">Active</span>' : ''}
+                    ${isSelected ? '<span class="badge bg-white text-primary small">Active</span>' : ''}
                 `;
 
                 item.addEventListener('click', (e) => {
@@ -143,15 +132,25 @@ export function renderTemplateStudio(
                     selectedTemplateId = tpl.id;
                     refresh();
                 });
-                listGroup.appendChild(item);
+
+                li.appendChild(item);
+
+                if (node.children && node.children.length > 0) {
+                    li.appendChild(renderTreeBranch(node.children, depth + 1));
+                }
+
+                ul.appendChild(li);
             }
+
+            return ul;
         }
 
-        sidebarCard.appendChild(listGroup);
+        treeContainer.appendChild(renderTreeBranch(treeNodes));
+        sidebarCard.appendChild(treeContainer);
         sidebarCol.appendChild(sidebarCard);
         layoutRow.appendChild(sidebarCol);
 
-        // 2. Editor Column (5 cols) with Integrated Relationship Rule Editor
+        // 2. Editor Column (5 cols) with Native Trilium Component Proportions
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
 
         if (activeTpl) {
@@ -159,19 +158,19 @@ export function renderTemplateStudio(
             editorCol.className = 'col-md-5';
 
             const editorCard = document.createElement('div');
-            editorCard.className = 'card border shadow-sm';
+            editorCard.className = 'card border';
             editorCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
             editorCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
             const editorHeader = document.createElement('div');
-            editorHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between';
+            editorHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between p-3';
             editorHeader.innerHTML = `
                 <h5 class="m-0 h6 font-weight-bold d-flex align-items-center gap-2">
                     <i class="bx bx-${activeTpl.icon} text-primary"></i>
                     <span>Template: ${activeTpl.title}</span>
                 </h5>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-xs btn-outline-secondary export-html-btn d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary export-html-btn d-flex align-items-center gap-1">
                         <i class="bx bx-download"></i> Export .html
                     </button>
                     <span class="badge ${activeTpl.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${activeTpl.isBuiltin ? 'Built-in' : 'Custom'}</span>
@@ -193,33 +192,33 @@ export function renderTemplateStudio(
             editorCard.appendChild(editorHeader);
 
             const editorBody = document.createElement('div');
-            editorBody.className = 'card-body d-flex flex-column gap-3';
+            editorBody.className = 'card-body p-3 d-flex flex-column gap-3';
 
             editorBody.innerHTML = `
                 <div>
                     <label class="form-label small font-weight-bold">Template Title</label>
-                    <input type="text" id="tpl-title" class="form-control form-control-sm" value="${activeTpl.title}">
+                    <input type="text" id="tpl-title" class="form-control" value="${activeTpl.title}">
                 </div>
                 <div>
                     <label class="form-label small font-weight-bold">Title Pattern</label>
-                    <input type="text" id="tpl-pattern" class="form-control form-control-sm" value="${activeTpl.titlePattern}">
+                    <input type="text" id="tpl-pattern" class="form-control" value="${activeTpl.titlePattern}">
                     <div class="form-text small text-muted">Variables: <code>{title}</code>, <code>{isoDate}</code>, <code>{weekDay}</code></div>
                 </div>
                 <div>
                     <label class="form-label small font-weight-bold">Icon (Boxicons Class)</label>
-                    <div class="input-group input-group-sm">
+                    <div class="input-group">
                         <span class="input-group-text"><i class="bx bx-${activeTpl.icon}"></i></span>
                         <input type="text" id="tpl-icon" class="form-control" value="${activeTpl.icon}">
                     </div>
                 </div>
 
-                <!-- Integrated Relationship Rule Editor (Parent Links & Inheritance) -->
+                <!-- Relationship Rules Section -->
                 <div class="border-top pt-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <h6 class="m-0 font-weight-bold small text-info d-flex align-items-center gap-1">
-                            <i class="bx bx-git-repo-forked"></i> Parent Relationship Rules & Links (${activeTpl.relationships.length})
+                            <i class="bx bx-git-repo-forked"></i> Parent Relationship Links (${activeTpl.relationships.length})
                         </h6>
-                        <button type="button" class="btn btn-xs btn-outline-info add-rel-rule-btn d-flex align-items-center gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-info add-rel-rule-btn d-flex align-items-center gap-1">
                             <i class="bx bx-plus"></i> Add Parent Link
                         </button>
                     </div>
@@ -231,35 +230,35 @@ export function renderTemplateStudio(
                                     <div class="font-weight-bold">
                                         <i class="bx bx-right-arrow-alt text-success"></i> <code>~${r.relationName}</code> &rarr; ${r.targetTemplateName}
                                     </div>
-                                    <div class="tiny text-muted mt-0.5">
+                                    <div class="small text-muted mt-0.5">
                                         Auto-clone: <strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong> • Inherit Topics/Client: <strong>${r.inheritTopics ? 'Yes' : 'No'}</strong>
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-xs btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
+                                <button type="button" class="btn btn-sm btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
                                     <i class="bx bx-trash"></i>
                                 </button>
                             </div>
-                        `).join('') : '<div class="text-muted small p-2 border rounded border-dashed text-center">Root template (No parent link required).</div>'}
+                        `).join('') : '<div class="text-muted small p-3 border rounded text-center">Root template (No parent link required).</div>'}
                     </div>
                 </div>
 
-                <!-- Promoted Attributes with Interactive Help Chips -->
+                <!-- Promoted Attributes Section -->
                 <div class="border-top pt-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="m-0 font-weight-bold small d-flex align-items-center gap-1">
-                            <i class="bx bx-list-check text-success"></i> Promoted Attributes (${activeTpl.attributes.length})
+                        <h6 class="m-0 font-weight-bold small text-success d-flex align-items-center gap-1">
+                            <i class="bx bx-list-check"></i> Promoted Attributes (${activeTpl.attributes.length})
                         </h6>
                     </div>
 
-                    <div class="d-flex flex-wrap gap-1.5 mb-2">
-                        <span class="badge bg-secondary bg-opacity-20 text-muted font-weight-normal small">Quick Add Chips:</span>
-                        <button type="button" class="btn btn-xs btn-outline-info chip-btn" data-chip="label-text">Label: Priority</button>
-                        <button type="button" class="btn btn-xs btn-outline-info chip-btn" data-chip="label-date">Label: Due Date</button>
-                        <button type="button" class="btn btn-xs btn-outline-info chip-btn" data-chip="relation-project">Relation: Project</button>
-                        <button type="button" class="btn btn-xs btn-outline-info chip-btn" data-chip="relation-client">Relation: Client</button>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <span class="text-muted small">Quick Add:</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary chip-btn" data-chip="label-text">Priority</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary chip-btn" data-chip="label-date">Due Date</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary chip-btn" data-chip="relation-project">Project Link</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary chip-btn" data-chip="relation-client">Client Link</button>
                     </div>
 
-                    <table class="table table-sm table-borderless small m-0">
+                    <table class="table table-sm align-middle small m-0 border">
                         <thead>
                             <tr class="text-muted border-bottom">
                                 <th>Name</th>
@@ -277,21 +276,22 @@ export function renderTemplateStudio(
                             `).join('')}
                         </tbody>
                     </table>
-                    <button type="button" class="btn btn-xs btn-outline-success mt-2 add-attr-btn d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-success mt-2 add-attr-btn d-flex align-items-center gap-1">
                         <i class="bx bx-plus"></i> Add Promoted Attribute
                     </button>
                 </div>
 
+                <!-- Content Skeleton -->
                 <div class="border-top pt-3">
                     <h6 class="m-0 font-weight-bold small mb-2 d-flex align-items-center gap-1">
                         <i class="bx bx-code-alt text-info"></i> Content Skeleton (HTML)
                     </h6>
-                    <textarea id="tpl-content" class="form-control font-monospace small" rows="5" style="font-size: 12px;">${activeTpl.defaultContent}</textarea>
+                    <textarea id="tpl-content" class="form-control font-monospace" rows="6">${activeTpl.defaultContent}</textarea>
                 </div>
 
                 <div class="pt-2 d-flex justify-content-end">
                     <button type="button" class="btn btn-sm btn-primary save-tpl-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-save"></i> Save Template
+                        <i class="bx bx-save"></i> Save Template Configuration
                     </button>
                 </div>
             `;
@@ -351,57 +351,57 @@ export function renderTemplateStudio(
             editorCol.appendChild(editorCard);
             layoutRow.appendChild(editorCol);
 
-            // 3. Multi-Parent Inheritance Live Preview Column (4 cols)
+            // 3. Live Note Preview Column (4 cols) with Standard Proportions
             const previewCol = document.createElement('div');
             previewCol.className = 'col-md-4';
 
             const previewCard = document.createElement('div');
-            previewCard.className = 'card border shadow-sm h-100';
+            previewCard.className = 'card border h-100';
             previewCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
             previewCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
             const previewHeader = document.createElement('div');
-            previewHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between';
+            previewHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between p-3';
             previewHeader.innerHTML = `
                 <h5 class="m-0 h6 font-weight-bold text-info d-flex align-items-center gap-2">
-                    <i class="bx bx-show"></i> Multi-Parent Render Model
+                    <i class="bx bx-show"></i> Live Note Preview
                 </h5>
-                <span class="badge bg-success bg-opacity-20 text-success">Live Inheritance</span>
+                <span class="badge bg-success bg-opacity-20 text-success">Render Model</span>
             `;
             previewCard.appendChild(previewHeader);
 
             const previewBody = document.createElement('div');
-            previewBody.className = 'card-body d-flex flex-column gap-3';
+            previewBody.className = 'card-body p-3 d-flex flex-column gap-3';
 
             const formattedTitle = templateEngine.formatTitle(activeTpl.id, 'Sample Note Title');
 
             previewBody.innerHTML = `
                 <div class="p-3 rounded border flex-grow-1 d-flex flex-column" style="background-color: var(--main-background-color, transparent);">
-                    <div class="d-flex align-items-center gap-2 mb-2 border-bottom pb-2">
+                    <div class="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
                         <i class="bx bx-${activeTpl.icon} h4 m-0 text-primary"></i>
                         <div>
                             <h4 class="h6 m-0 font-weight-bold">${formattedTitle}</h4>
                             <div class="small text-muted mt-0.5">
-                                <i class="bx bx-folder"></i> Subtree: <code>${activeTpl.noJournalClone ? '#projectRoot' : '#calendarRoot / Journal'}</code>
+                                Subtree: <code>${activeTpl.noJournalClone ? '#projectRoot' : '#calendarRoot / Journal'}</code>
                             </div>
                         </div>
                     </div>
 
                     <!-- Direct Form Attributes -->
-                    <div class="border-bottom pb-2.5 mb-2.5">
+                    <div class="border-bottom pb-3 mb-3">
                         <div class="small text-muted font-weight-bold mb-2 d-flex align-items-center gap-1">
                             <i class="bx bx-slider-alt"></i> Direct Form Attributes
                         </div>
                         <div class="d-flex flex-column gap-2">
                             ${activeTpl.attributes.map(a => `
-                                <div class="d-flex align-items-center justify-content-between p-1.5 rounded border" style="background-color: var(--sub-background-color, transparent);">
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--sub-background-color, transparent);">
                                     <span class="badge bg-primary bg-opacity-10 text-primary">#${a.name}</span>
                                     ${a.options ? `
-                                        <select class="form-select form-select-sm py-0" style="width: 120px; font-size: 11px;">
+                                        <select class="form-select form-select-sm" style="width: 140px;">
                                             ${a.options.map(opt => `<option>${opt}</option>`).join('')}
                                         </select>
                                     ` : `
-                                        <input type="text" class="form-control form-control-sm py-0 px-2" value="${a.defaultValue ?? ''}" placeholder="Value..." style="width: 120px; font-size: 11px;">
+                                        <input type="text" class="form-control form-control-sm" value="${a.defaultValue ?? ''}" placeholder="Value..." style="width: 140px;">
                                     `}
                                 </div>
                             `).join('')}
@@ -409,11 +409,11 @@ export function renderTemplateStudio(
                     </div>
 
                     <!-- Multi-Parent Inherited Attributes & Topics -->
-                    <div class="border-bottom pb-2.5 mb-2.5">
+                    <div class="border-bottom pb-3 mb-3">
                         <div class="small text-info font-weight-bold mb-2 d-flex align-items-center gap-1">
-                            <i class="bx bx-git-repo-forked"></i> Multi-Parent Inherited Context
+                            <i class="bx bx-git-repo-forked"></i> Inherited Parent Context
                         </div>
-                        <div class="d-flex flex-column gap-1.5 small text-muted">
+                        <div class="d-flex flex-column gap-2 small text-muted">
                             <div class="d-flex align-items-center justify-content-between">
                                 <span>Parent 1 (Project Hub):</span>
                                 <span class="badge bg-primary bg-opacity-20 text-primary">~project</span>
@@ -423,7 +423,7 @@ export function renderTemplateStudio(
                                 <span class="badge bg-info bg-opacity-20 text-info">~client</span>
                             </div>
                             <div class="d-flex align-items-center justify-content-between">
-                                <span>Derived Topics (Dual Inherited):</span>
+                                <span>Derived Topics:</span>
                                 <span class="badge bg-success bg-opacity-20 text-success">#TechNews</span>
                             </div>
                         </div>
@@ -434,7 +434,7 @@ export function renderTemplateStudio(
                         <div class="small text-muted font-weight-bold mb-2 d-flex align-items-center gap-1">
                             <i class="bx bx-file-blank"></i> Content Skeleton Body
                         </div>
-                        <div class="p-2.5 rounded border flex-grow-1 font-monospace" style="background-color: var(--sub-background-color, transparent); font-size: 11.5px; max-height: 160px; overflow-y: auto;">
+                        <div class="p-3 rounded border flex-grow-1 font-monospace small" style="background-color: var(--sub-background-color, transparent); min-height: 180px;">
                             ${activeTpl.defaultContent || '<em class="text-muted">Empty note body</em>'}
                         </div>
                     </div>
