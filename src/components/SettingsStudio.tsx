@@ -135,6 +135,7 @@ export function renderSettingsStudio(
             { id: 'notes-system-weather', title: 'Ikmal Weather & Climate Card', icon: 'bx-sun', desc: 'Open-Meteo weather forecast, temperature, daylight hours, and moon phase.' },
             { id: 'notes-system-on-this-day', title: 'Ikmal Time Machine (On This Day)', icon: 'bx-history', desc: 'Notes created on the exact calendar day in previous years.' },
             { id: 'notes-system-stale-notes', title: 'Ikmal Stale Note Reviewer', icon: 'bx-time-five', desc: 'Active notes unmodified longer than the configured threshold.' },
+            { id: 'notes-system-canvas', title: 'Ikmal Interactive Canvas (Beta)', icon: 'bx-network-chart', desc: 'Interactive visual whiteboard and node graph for project notes and mind-mapping.' },
         ];
 
         for (const tool of microTools) {

@@ -42,6 +42,9 @@ try {
     console.log('🔨 Bundling standalone stale-notes render artifact...');
     execSync('npx esbuild src/artifacts/notes-system-stale-notes.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-stale-notes.js', { stdio: 'inherit' });
 
+    console.log('🔨 Bundling standalone canvas render artifact (beta)...');
+    execSync('npx esbuild src/artifacts/notes-system-canvas.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-canvas.js', { stdio: 'inherit' });
+
     console.log('🔨 Bundling launcher artifact...');
     execSync('npx esbuild src/artifacts/notes-system-launcher.js --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-launcher.js', { stdio: 'inherit' });
 

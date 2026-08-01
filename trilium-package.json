@@ -74,7 +74,7 @@
       "id": "notes-system-dashboard",
       "type": "render",
       "source": "src/artifacts/notes-system-dashboard.jsx",
-      "integrity": "sha256-XidRj4uOkEzlUvlD0vpQK2Ar4aZh2OdWPfw6qGic1lQ=",
+      "integrity": "sha256-lxF3R8t0+eCO7VMF7BOV+5U1CpC29dW4Bjw+5WsGsiE=",
       "title": "Ikmal Tools for Trilium: Today Homepage & Workspace Dashboard",
       "activation": "manual"
     },
@@ -124,6 +124,14 @@
       "source": "src/artifacts/notes-system-stale-notes.jsx",
       "integrity": "sha256-yB/9Y0evzeUMSntprKTXVXDU+GrVcRqnXNaU9Ez2iz8=",
       "title": "Ikmal Tools for Trilium: Standalone Stale Notes Reviewer",
+      "activation": "manual"
+    },
+    {
+      "id": "notes-system-canvas",
+      "type": "render",
+      "source": "src/artifacts/notes-system-canvas.jsx",
+      "integrity": "sha256-ZKfb1dJpBc1lSDHzIX6k6cwLPRb7pWk+VyZ8gTlpiZg=",
+      "title": "Ikmal Tools for Trilium: Standalone Interactive Canvas (Beta)",
       "activation": "manual"
     },
     {
