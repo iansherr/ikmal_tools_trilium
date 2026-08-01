@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: 100% Standardized Button Proportions, Unified Headers, and Consistent Empty States.
+ * Template Studio Component: Crystal-Clear Human-Readable Descriptions, Behavior Toggles, and Friendly Action Labels.
  * Styled natively with Trilium Boxicons and standard Trilium design tokens.
  */
 
@@ -299,7 +299,7 @@ export function renderTemplateStudio(
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix & Automations (${cats.length})</h5>
-                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide IFTTT rules.</p>
+                    <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide automation rules.</p>
                 </div>
                 <button type="button" class="btn btn-sm btn-primary add-cat-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
                     <i class="bx bx-plus"></i> New Category Type
@@ -318,31 +318,35 @@ export function renderTemplateStudio(
                                     </div>
                                     <div>
                                         <h6 class="font-weight-bold m-0">${c.title}</h6>
-                                        <code class="small text-muted">Category ID: ${c.id}</code>
+                                        <div class="text-muted tiny mt-0.5">${c.description}</div>
                                     </div>
                                 </div>
                                 <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted px-3 py-1.5">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
                             </div>
 
-                            <div class="row g-3 small mb-3">
+                            <div class="row g-4 small mb-3">
                                 <div class="col-md-4">
-                                    <label class="form-label font-weight-bold text-muted">Default Root Container</label>
+                                    <label class="form-label font-weight-bold text-muted mb-1">Default Root Container Target</label>
                                     <input type="text" class="form-control form-control-sm cat-root-input" data-cat-id="${c.id}" value="${c.defaultRootMarker || 'projectRoot'}">
+                                    <div class="text-muted tiny mt-1">Target container tag (e.g. #projectRoot, #calendarRoot)</div>
                                 </div>
                                 <div class="col-md-8">
-                                    <label class="form-label font-weight-bold text-muted">Behavior Toggles</label>
-                                    <div class="d-flex flex-wrap gap-4 pt-1">
+                                    <label class="form-label font-weight-bold text-muted mb-1">Category Behavior Toggles</label>
+                                    <div class="d-flex flex-column gap-2 pt-1">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input cat-journal-check" type="checkbox" data-cat-id="${c.id}" ${c.autoJournalClone !== false ? 'checked' : ''}>
-                                            <label class="form-check-label">Daily Journal Clone</label>
+                                            <label class="form-check-label font-weight-bold">📅 Auto-File Under Daily Journal</label>
+                                            <div class="text-muted tiny">When enabled, notes created in this category automatically clone reference links into today's journal note.</div>
                                         </div>
                                         <div class="form-check form-switch">
                                             <input class="form-check-input cat-topic-check" type="checkbox" data-cat-id="${c.id}" ${c.inheritParentTopics !== false ? 'checked' : ''}>
-                                            <label class="form-check-label">Inherit Parent Topics</label>
+                                            <label class="form-check-label font-weight-bold">🌿 Inherit Parent Topics & Metadata</label>
+                                            <div class="text-muted tiny">When enabled, notes automatically absorb #topic tags and client details from parent projects & organizations.</div>
                                         </div>
                                         <div class="form-check form-switch">
                                             <input class="form-check-input cat-project-check" type="checkbox" data-cat-id="${c.id}" ${c.projectScopedDefault ? 'checked' : ''}>
-                                            <label class="form-check-label">Project Scoped</label>
+                                            <label class="form-check-label font-weight-bold">🎯 Scope To Project Hub Container</label>
+                                            <div class="text-muted tiny">When enabled, notes created in this category require a parent project hub link.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -364,7 +368,7 @@ export function renderTemplateStudio(
                                                 <i class="bx bx-bolt-circle text-primary fs-5"></i>
                                                 <div>
                                                     <strong class="text-body">${r.name}</strong>
-                                                    <div class="text-muted tiny mt-0.5">Trigger: <code>${r.trigger.type}</code> • Actions: <code>${r.actions.map(a => a.type).join(', ')}</code></div>
+                                                    <div class="text-muted tiny mt-0.5">${r.description}</div>
                                                 </div>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
@@ -490,7 +494,7 @@ export function renderTemplateStudio(
         `;
         formWrapper.appendChild(basicCard);
 
-        // 2. UNIFIED IFTTT AUTOMATION RULES CARD (ONE SINGLE CLEAN ADD BUTTON AT TOP!)
+        // 2. UNIFIED IFTTT AUTOMATION RULES CARD
         const behaviorCard = document.createElement('div');
         behaviorCard.className = 'card border p-4 shadow-sm rounded-3';
         behaviorCard.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -525,7 +529,7 @@ export function renderTemplateStudio(
                                     <i class="bx bx-globe text-primary fs-5"></i>
                                     <div>
                                         <strong class="text-body">${r.name}</strong>
-                                        <div class="text-muted tiny mt-0.5">System-wide rule (Inherited across all notes)</div>
+                                        <div class="text-muted tiny mt-0.5">${r.description}</div>
                                     </div>
                                 </div>
                                 <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
@@ -551,7 +555,7 @@ export function renderTemplateStudio(
                                     <i class="bx bx-category text-info fs-5"></i>
                                     <div>
                                         <strong class="text-body">${r.name}</strong>
-                                        <div class="text-muted tiny mt-0.5">Inherited from Category '${tpl.category}'</div>
+                                        <div class="text-muted tiny mt-0.5">${r.description}</div>
                                     </div>
                                 </div>
                                 <button type="button" class="btn btn-xs btn-outline-info edit-cat-rules-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
@@ -597,7 +601,7 @@ export function renderTemplateStudio(
                                     <i class="bx bx-bolt-circle text-success fs-5"></i>
                                     <div>
                                         <strong class="text-body">${r.name}</strong>
-                                        <div class="text-muted tiny mt-0.5">Template-specific automation rule for '${tpl.title}'</div>
+                                        <div class="text-muted tiny mt-0.5">${r.description}</div>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
@@ -637,7 +641,6 @@ export function renderTemplateStudio(
                 openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab('preview'));
             });
         });
-
 
         behaviorCard.querySelectorAll('.edit-parent-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
@@ -969,8 +972,8 @@ export function renderTemplateStudio(
                 <div class="col-md-6">
                     <label class="form-label font-weight-bold small">Trigger Event Type</label>
                     <select id="rule-trigger-type" class="form-select form-select-sm">
-                        <option value="onNoteCreated" ${rule.trigger.type === 'onNoteCreated' ? 'selected' : ''}>onNoteCreated</option>
-                        <option value="onAttributeChanged" ${rule.trigger.type === 'onAttributeChanged' ? 'selected' : ''}>onAttributeChanged</option>
+                        <option value="onNoteCreated" ${rule.trigger.type === 'onNoteCreated' ? 'selected' : ''}>onNoteCreated (When Note is Created)</option>
+                        <option value="onAttributeChanged" ${rule.trigger.type === 'onAttributeChanged' ? 'selected' : ''}>onAttributeChanged (When Attribute Value Changes)</option>
                     </select>
                 </div>
                 <div class="col-md-6">
@@ -982,9 +985,9 @@ export function renderTemplateStudio(
             <div class="border-top pt-3">
                 <label class="form-label font-weight-bold small text-primary"><i class="bx bx-check-circle"></i> Executed Action Type</label>
                 <select id="rule-action-type" class="form-select form-select-sm mb-2">
-                    <option value="cloneToContainer" ${rule.actions[0]?.type === 'cloneToContainer' ? 'selected' : ''}>cloneToContainer (Auto-clone under Parent Container)</option>
-                    <option value="setLabel" ${rule.actions[0]?.type === 'setLabel' ? 'selected' : ''}>setLabel (Set Label / Attribute Value)</option>
-                    <option value="syncDerivedTopics" ${rule.actions[0]?.type === 'syncDerivedTopics' ? 'selected' : ''}>syncDerivedTopics (Recalculate Topic Inheritance)</option>
+                    <option value="cloneToContainer" ${rule.actions[0]?.type === 'cloneToContainer' ? 'selected' : ''}>📁 File & Auto-Clone Under Parent Container</option>
+                    <option value="setLabel" ${rule.actions[0]?.type === 'setLabel' ? 'selected' : ''}>🏷️ Assign Label / Promoted Attribute Value</option>
+                    <option value="syncDerivedTopics" ${rule.actions[0]?.type === 'syncDerivedTopics' ? 'selected' : ''}>🌿 Inherit & Recalculate Parent Topics</option>
                 </select>
             </div>
         `;
