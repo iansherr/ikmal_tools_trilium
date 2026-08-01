@@ -61,17 +61,19 @@ def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy") -> None:
 
     # 3. Create or update declared artifacts
     for artifact in manifest["artifacts"]:
-        source_rel_path = artifact["source"]
-        source_file = ROOT_DIR / source_rel_path
+        dist_rel_path = artifact["source"].replace("src/", "dist/").replace(".jsx", ".js")
+        dist_file = ROOT_DIR / dist_rel_path
+        source_file = dist_file if dist_file.exists() else (ROOT_DIR / artifact["source"])
         
         if not source_file.exists():
-            print(f"  ⚠️ Skipping missing source: {source_rel_path}")
+            print(f"  ⚠️ Skipping missing source: {artifact['source']}")
             continue
 
         code_content = source_file.read_text()
         artifact_id = artifact["id"]
         artifact_type = artifact["type"]
         title = artifact.get("title", artifact_id)
+
 
         if artifact_type == "render":
             # For render notes, create a parent render note + child code note (mime: application/javascript;env=frontend)

@@ -5,15 +5,29 @@ import { execSync } from 'node:child_process';
 
 const rootDir = process.cwd();
 const packageManifestPath = path.join(rootDir, 'trilium-package.json');
+const distArtifactsDir = path.join(rootDir, 'dist', 'artifacts');
 
-console.log('📦 Building Trilium Notes System Plugin...');
+console.log('📦 Building Trilium Notes System Plugin Bundle...');
 
-// 1. Run TypeScript check & emit JS to dist/
+if (!fs.existsSync(distArtifactsDir)) {
+    fs.mkdirSync(distArtifactsDir, { recursive: true });
+}
+
+// 1. Bundle jsx/ts artifacts into standalone browser/backend JS using esbuild
 try {
-    console.log('🔨 Running TypeScript compilation...');
-    execSync('npx tsc --noEmit false --outDir dist --moduleResolution nodeNext --module nodeNext --target ES2022 --jsx react --jsxFactory TriliumReact.createElement --jsxFragmentFactory TriliumReact.Fragment', { stdio: 'inherit' });
+    console.log('🔨 Bundling dashboard render artifact...');
+    execSync('npx esbuild src/artifacts/notes-system-dashboard.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-dashboard.js', { stdio: 'inherit' });
+
+    console.log('🔨 Bundling backend worker artifact...');
+    execSync('npx esbuild src/artifacts/notes-system-backend.js --bundle --format=cjs --target=es2020 --outfile=dist/artifacts/notes-system-backend.js', { stdio: 'inherit' });
+
+    console.log('🔨 Bundling launcher artifact...');
+    execSync('npx esbuild src/artifacts/notes-system-launcher.js --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-launcher.js', { stdio: 'inherit' });
+
+    console.log('🔨 Copying CSS stylesheet...');
+    fs.copyFileSync(path.join(rootDir, 'src', 'artifacts', 'notes-system.css'), path.join(distArtifactsDir, 'notes-system.css'));
 } catch (err) {
-    console.error('❌ TypeScript compilation failed:', err.message);
+    console.error('❌ Bundling failed:', err.message);
     process.exit(1);
 }
 
@@ -21,11 +35,12 @@ try {
 const manifestRaw = fs.readFileSync(packageManifestPath, 'utf8');
 const manifest = JSON.parse(manifestRaw);
 
-// 3. Calculate SRI sha256 integrity hashes for artifacts
+// 3. Calculate SRI sha256 integrity hashes for bundled dist/artifacts
 for (const artifact of manifest.artifacts) {
-    const artifactPath = path.join(rootDir, artifact.source);
+    const distRelPath = artifact.source.replace(/^src\//, 'dist/').replace(/\.jsx$/, '.js');
+    const artifactPath = path.join(rootDir, distRelPath);
     if (!fs.existsSync(artifactPath)) {
-        console.warn(`⚠️ Artifact source file missing: ${artifact.source}`);
+        console.warn(`⚠️ Bundled artifact file missing: ${distRelPath}`);
         continue;
     }
 

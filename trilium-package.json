@@ -48,7 +48,7 @@
       "id": "notes-system-dashboard",
       "type": "render",
       "source": "src/artifacts/notes-system-dashboard.jsx",
-      "integrity": "sha256-uKfNxhOMOaTYxJ4WTLK7zuAyc1f1jUrEljLJxfd2yxM=",
+      "integrity": "sha256-sSEVM08ZiHBH/V9FZBaE+0Ot90Qz+qtRGeknnTYCB/w=",
       "title": "Notes System & Today Homepage",
       "activation": "manual"
     },
@@ -56,7 +56,7 @@
       "id": "notes-system-backend",
       "type": "backend",
       "source": "src/artifacts/notes-system-backend.js",
-      "integrity": "sha256-90D16W2alkhA8/cOhvy6gzqv9k0ao2+ZYhCWR3SyYnc=",
+      "integrity": "sha256-52MUYYBMkT+IqwMND0T692kuFrCxAerEw0ymF09k1To=",
       "title": "Notes System Backend Worker",
       "activation": "startup"
     },
@@ -64,7 +64,7 @@
       "id": "notes-system-endpoint",
       "type": "endpoint",
       "source": "src/artifacts/notes-system-backend.js",
-      "integrity": "sha256-90D16W2alkhA8/cOhvy6gzqv9k0ao2+ZYhCWR3SyYnc=",
+      "integrity": "sha256-52MUYYBMkT+IqwMND0T692kuFrCxAerEw0ymF09k1To=",
       "title": "Notes System HTTP API Endpoint",
       "activation": "request",
       "route": "notes-system/(create|ifttt|templates|settings)"
@@ -73,7 +73,7 @@
       "id": "notes-system-launcher",
       "type": "launcher",
       "source": "src/artifacts/notes-system-launcher.js",
-      "integrity": "sha256-77Et4ZanTTrCtuNLP/h87B4ia51RM/PxUqAOUspJAtU=",
+      "integrity": "sha256-9MbXSzRK2Zr7cjn/Dmk2K6/q+JrGRbpUIWJvTWdsNaw=",
       "title": "Notes Launcher Bar",
       "activation": "manual"
     },
