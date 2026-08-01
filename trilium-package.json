@@ -74,7 +74,7 @@
       "id": "notes-system-dashboard",
       "type": "render",
       "source": "src/artifacts/notes-system-dashboard.jsx",
-      "integrity": "sha256-y5MoHpSYR5HWLnKH5G2GoOcOquoikTm4/HRxAQzlxYA=",
+      "integrity": "sha256-XidRj4uOkEzlUvlD0vpQK2Ar4aZh2OdWPfw6qGic1lQ=",
       "title": "Ikmal Notes for Trilium: Today Homepage & Workspace Dashboard",
       "activation": "manual"
     },

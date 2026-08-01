@@ -20,7 +20,7 @@ import { TodayEngine } from './todayEngine.js';
 import { YamlParser } from './yamlParser.js';
 
 export const SPEC_VERSION = '1.1.0';
-export const PACKAGE_ID = 'iansherr/notes-system';
+export const PACKAGE_ID = 'iansherr/ikmal_tools';
 
 export interface NotesSystemYamlSpec {
     version: string;

@@ -73,7 +73,7 @@ copy can propagate the bad state back in.
 
 ## Removing the package
 
-Find its manifest note (`#packageOwner="iansherr/notes-system" #packageArtifact="manifest"`)
+Find its manifest note (`#packageOwner="iansherr/ikmal_tools" #packageArtifact="manifest"`)
 and delete it along with its child artifact notes — everything the package
 owns is filed under that note. This does not touch any notes the package
 created for you (tasks, projects, journal entries); those are ordinary notes

@@ -2,8 +2,8 @@
 
 ## Is this a Trilium plugin?
 
-Yes — a package (`iansherr/notes-system`) made of one render note (the
-dashboard), a launcher entry, and a stylesheet. No backend script and no
+Yes — a package (`iansherr/ikmal_tools`) made of one render note (the
+dashboard), standalone micro-tools, launcher entries, and a stylesheet. No backend script and no
 custom HTTP endpoint — everything runs from the frontend. See `README.md`
 for the artifact list and `trilium-package.json` for the manifest.
 
@@ -27,7 +27,7 @@ Today widget.
 ## I toggled a setting / saved the Specification — will it still be there after I reload?
 
 Yes. Both persist as labels on the package's manifest note (searched by
-`#packageOwner="iansherr/notes-system" #packageArtifact="manifest"`) and are
+`#packageOwner="iansherr/ikmal_tools" #packageArtifact="manifest"`) and are
 re-applied automatically the next time the dashboard loads. See `README.md` →
 Persistence for exactly how and why (not `runOnBackend`, not note content).
 

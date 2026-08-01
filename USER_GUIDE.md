@@ -1,9 +1,6 @@
-# Using the Notes System dashboard
+# Using Ikmal Notes for Trilium
 
-The dashboard is one render note with three tabs: **Today**, **Template
-Studio**, and **Settings**. Everything below describes what's actually wired
-up today; anywhere behavior differs outside Trilium (the static preview
-page, tests) that's called out explicitly rather than glossed over.
+Ikmal Notes for Trilium is a component-driven plugin suite featuring the **Today Homepage & Workspace Dashboard**, **Template Studio**, **If/Then Automations**, **Package Settings**, and a **Standalone Micro-Tools Suite**.
 
 ## Today
 

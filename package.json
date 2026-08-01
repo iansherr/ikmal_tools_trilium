@@ -1,7 +1,7 @@
 {
-  "name": "trilium-notes-system",
+  "name": "ikmal-notes-for-trilium",
   "version": "1.0.0",
-  "description": "Editable, organizable, component-driven notes system plugin for Trilium Notes with Today Homepage, Template Studio, and If/Then Automation Rules.",
+  "description": "Ikmal Notes for Trilium: Component-driven notes system layer for Trilium Notes with Today Homepage, Template Studio, micro-tools suite, and automations.",
   "type": "module",
   "main": "dist/notes-system-dashboard.js",
   "scripts": {
@@ -14,7 +14,8 @@
   "keywords": [
     "trilium",
     "trilium-plugin",
-    "notes-system",
+    "ikmal-tools",
+    "ikmal-notes",
     "if-then-rules",
     "templates",
     "dashboard"

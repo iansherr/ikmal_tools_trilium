@@ -11,23 +11,23 @@ in [`FAQ.md`](FAQ.md). Backup and recovery is in
 
 ## What this is
 
-`trilium-package.json` declares one installable package (`iansherr/notes-system`)
-made of a handful of artifacts:
+`trilium-package.json` declares one installable package (`iansherr/ikmal_tools`)
+made of a main workspace dashboard, global launcher, live editor status bar word counter, and standalone micro-tool render artifacts:
 
-| Artifact | Type | Source |
-|---|---|---|
-| `notes-system-dashboard` | render note | `src/artifacts/notes-system-dashboard.jsx` |
-| `notes-system-launcher` | launcher bar entry | `src/artifacts/notes-system-launcher.js` |
-| `notes-system-css` | stylesheet | `src/artifacts/notes-system.css` |
+| Artifact | Type | Source | Description |
+|---|---|---|---|
+| `notes-system-dashboard` | render note | `src/artifacts/notes-system-dashboard.jsx` | Main 3-tab workspace UI (Today, Template Studio, Package Settings) |
+| `notes-system-kanban` | render note | `src/artifacts/notes-system-kanban.jsx` | Ikmal Standalone Task Kanban Board |
+| `notes-system-insights` | render note | `src/artifacts/notes-system-insights.jsx` | Ikmal Standalone Writing & Productivity Insights |
+| `notes-system-quick-capture` | render note | `src/artifacts/notes-system-quick-capture.jsx` | Ikmal Standalone Quick Capture Toolbar |
+| `notes-system-weather` | render note | `src/artifacts/notes-system-weather.jsx` | Ikmal Standalone Weather & Climate Card |
+| `notes-system-on-this-day` | render note | `src/artifacts/notes-system-on-this-day.jsx` | Ikmal Standalone Time Machine (On This Day) |
+| `notes-system-stale-notes` | render note | `src/artifacts/notes-system-stale-notes.jsx` | Ikmal Standalone Stale Notes Reviewer |
+| `notes-system-launcher` | launcher entry | `src/artifacts/notes-system-launcher.js` | Global Header Launcher Bar & `Cmd/Ctrl+Shift+K` Hotkey |
+| `notes-system-word-count` | launcher entry | `src/artifacts/notes-system-word-count.js` | Live Editor Status Bar Word & Char Counter |
+| `notes-system-css` | stylesheet | `src/artifacts/notes-system.css` | Theme & UI Stylesheet |
 
-The dashboard render note is the whole UI: it mounts three tabs (Today,
-Template Studio, Settings) into a container div and owns all state in memory
-for the session. Nothing here talks to Trilium's database schema directly, and
-there is no backend script or custom HTTP endpoint — notes are created and
-read entirely from the frontend, through the standard frontend script API
-(`api.searchForNotes`, `api.createNote`, etc.) and a small set of authenticated
-`fetch` calls for anything that API doesn't expose (see "Persistence" and
-"Creating notes" below).
+The workspace dashboard render note mounts three tabs (Today, Template Studio, Settings) into a container div and owns state in memory for the session. Nothing here talks to Trilium's database schema directly, and there is no backend script or custom HTTP endpoint — notes are created and read entirely from the frontend, through the standard script API (`api.searchForNotes`, `api.createNote`, etc.) and a small set of authenticated `fetch` calls.
 
 ## Architecture
 

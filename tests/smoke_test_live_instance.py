@@ -22,7 +22,7 @@ class LiveInstanceSmokeTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.api = Etapi(URL, TOKEN)
-        cls.pkg_owner = "iansherr/notes-system"
+        cls.pkg_owner = "iansherr/ikmal_tools"
 
     def test_01_manifest_and_artifacts_exist(self):
         notes = self.api.search(f'#packageOwner="{self.pkg_owner}"')
