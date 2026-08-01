@@ -61,7 +61,7 @@
       "id": "notes-system-launcher",
       "type": "launcher",
       "source": "src/artifacts/notes-system-launcher.js",
-      "integrity": "sha256-9MbXSzRK2Zr7cjn/Dmk2K6/q+JrGRbpUIWJvTWdsNaw=",
+      "integrity": "sha256-EKXd4g2XOH8bQSpnuLf1jwWx9a4g0NLtHWPZawtToag=",
       "title": "Notes Launcher Bar",
       "activation": "manual"
     },
