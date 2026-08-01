@@ -16,14 +16,14 @@
 
 ---
 
-## 1-Click Go Manager CLI (`ikmal-languagetool`)
+## Standalone Go Manager CLI (`ikmal-languagetool`)
 
-The standalone Go manager binary (`bin/ikmal-languagetool`) automates local server setup:
+The standalone Go manager binary ([`iansherr/ikmal-languagetool`](https://github.com/iansherr/ikmal-languagetool)) automates local server setup:
 
 ```bash
 # Build & run the 1-click manager
-npm run build:cli
-./bin/ikmal-languagetool
+go build -o ikmal-languagetool main.go
+./ikmal-languagetool
 ```
 
 ### What the Manager CLI Automates:
@@ -31,3 +31,12 @@ npm run build:cli
 - **FastText Model Auto-Downloader**: Auto-downloads Meta's FastText language identification model (`lid.176.bin`, 120MB) to `~/.ikmal-languagetool/models/`.
 - **Syntactic Conciseness Rule Pack**: Mounts 30+ Plain English conciseness rules (`style_conciseness.xml`) compiled from PlainLanguage.gov, Vale, and proselint.
 - **Background Daemon Installation**: Configures a persistent macOS LaunchAgent (`com.ikmal.languagetool.plist`) so LanguageTool runs silently in the background on boot on port 8081.
+
+---
+
+## Official LanguageTool Documentation References
+
+- **[LanguageTool HTTP Server Specification](https://dev.languagetool.org/http-server)**
+- **[LanguageTool Rule Syntax & XML Schema](https://dev.languagetool.org/rule-syntax)**
+- **[LanguageTool Developer Overview](https://dev.languagetool.org/development-overview)**
+- **[LanguageTool Conciseness & Writing Insights](https://languagetool.org/insights/post/conciseness-in-writing/)**
