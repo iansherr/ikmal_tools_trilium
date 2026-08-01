@@ -860,36 +860,55 @@ export function renderTemplateStudio(
 
     function createSolidModal(titleHtml: string, bodyHtml: string, footerButtonsHtml: string): { overlay: HTMLElement; content: HTMLElement } {
         const overlay = document.createElement('div');
-        overlay.className = 'modal-backdrop fade show d-flex align-items-center justify-content-center';
-        overlay.style.zIndex = '1060';
-        overlay.style.backgroundColor = 'rgba(0,0,0,0.75)';
+        overlay.className = 'notes-modal-overlay d-flex align-items-center justify-content-center';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.right = '0';
+        overlay.style.bottom = '0';
+        overlay.style.zIndex = '99999';
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.75)';
         overlay.style.backdropFilter = 'blur(6px)';
 
         const dialog = document.createElement('div');
-        dialog.className = 'modal-dialog modal-dialog-centered';
+        dialog.className = 'notes-modal-dialog';
         dialog.style.width = '580px';
-        dialog.style.maxWidth = '90vw';
+        dialog.style.maxWidth = '92vw';
+        dialog.style.zIndex = '100000';
 
         const content = document.createElement('div');
-        content.className = 'modal-content shadow-lg border rounded-3';
-        // Force 100% solid high-contrast background to eliminate transparency bleed
-        content.style.backgroundColor = 'var(--main-background-color, #ffffff)';
-        content.style.color = 'var(--main-text-color, #212529)';
-        content.style.borderColor = 'var(--border-color, rgba(128,128,128,0.25))';
-        content.style.opacity = '1';
+        content.className = 'notes-modal-card shadow-lg rounded-3 border';
+
+        // Detect dark vs light Trilium theme
+        const isDark = document.body.classList.contains('dark') || 
+            window.getComputedStyle(document.body).backgroundColor.includes('rgb(') && 
+            parseInt(window.getComputedStyle(document.body).backgroundColor.split(',')[0].replace(/\D/g, '') || '255') < 128;
+
+        const solidBg = isDark ? '#22262f' : '#ffffff';
+        const textColor = isDark ? '#f0f4f8' : '#1e293b';
+        const borderColor = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
+        const headerSubBg = isDark ? '#1a1d24' : '#f8fafc';
+
+        content.style.setProperty('background-color', solidBg, 'important');
+        content.style.setProperty('background', solidBg, 'important');
+        content.style.setProperty('color', textColor, 'important');
+        content.style.setProperty('border-color', borderColor, 'important');
+        content.style.setProperty('box-shadow', '0 20px 40px rgba(0,0,0,0.4)', 'important');
+        content.style.setProperty('opacity', '1', 'important');
 
         content.innerHTML = `
-            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, rgba(0,0,0,0.03));">
+            <div class="modal-header border-bottom p-3.5 d-flex align-items-center justify-content-between" style="background-color: ${headerSubBg} !important; border-color: ${borderColor} !important;">
                 ${titleHtml}
-                <button type="button" class="btn-close close-modal-btn" aria-label="Close"></button>
+                <button type="button" class="btn-close close-modal-btn ${isDark ? 'btn-close-white' : ''}" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4 d-flex flex-column gap-3">
+            <div class="modal-body p-4 d-flex flex-column gap-3" style="background-color: ${solidBg} !important; color: ${textColor} !important;">
                 ${bodyHtml}
             </div>
-            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2" style="background-color: var(--sub-background-color, rgba(0,0,0,0.03));">
+            <div class="modal-footer border-top p-3 d-flex justify-content-end gap-2" style="background-color: ${headerSubBg} !important; border-color: ${borderColor} !important;">
                 ${footerButtonsHtml}
             </div>
         `;
+
 
         content.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => overlay.remove()));
         dialog.appendChild(content);
