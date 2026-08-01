@@ -39,12 +39,13 @@ export function initNotesSystemDashboard(containerEl) {
         nav.className = 'nav nav-pills mb-4 border-bottom pb-3';
 
         const tabs = [
-            { id: 'today', label: '⚡ Today Homepage', icon: 'home' },
-            { id: 'templates', label: '📐 Template Studio', icon: 'layer' },
-            { id: 'relationships', label: '🔗 Relationship Tree', icon: 'git-repo-forked' },
-            { id: 'ifttt', label: '🤖 IFTTT Automation Rules', icon: 'git-commit' },
-            { id: 'settings', label: '⚙️ Settings & Components', icon: 'cog' },
+            { id: 'today', label: 'Today Homepage', icon: 'home-alt' },
+            { id: 'templates', label: 'Template Studio', icon: 'layer' },
+            { id: 'relationships', label: 'Relationship Tree', icon: 'git-repo-forked' },
+            { id: 'ifttt', label: 'IFTTT Automation', icon: 'git-commit' },
+            { id: 'settings', label: 'Settings & Spec', icon: 'slider-alt' },
         ];
+
 
         for (const t of tabs) {
             const li = document.createElement('li');

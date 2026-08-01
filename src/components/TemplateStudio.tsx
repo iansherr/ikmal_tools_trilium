@@ -1,10 +1,10 @@
 /**
- * Template Studio Component: Interactive editor & YAML / JSON settings loader for Trilium templates.
+ * Template Studio Component: Interactive editor & Live Note Preview for Trilium templates.
+ * Styled natively with Trilium Boxicons and design tokens.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
 import { TemplateDefinition, PromotedAttributeDef, AttributeDataType } from '../engine/types.js';
-import { YamlParser } from '../engine/yamlParser.js';
 
 export function renderTemplateStudio(
     container: HTMLElement,
@@ -16,288 +16,295 @@ export function renderTemplateStudio(
     function refresh() {
         container.innerHTML = '';
 
-        // Top Action Bar: Declarative YAML / JSON Settings Loader
-        const actionBar = document.createElement('div');
-        actionBar.className = 'd-flex align-items-center justify-content-between p-3 mb-3 rounded border';
-        actionBar.style.backgroundColor = 'var(--sub-background-color, #252538)';
-        actionBar.innerHTML = `
-            <div>
-                <h6 class="m-0 font-weight-bold text-info"><i class="bx bx-cog"></i> Declarative YAML / JSON Settings Engine</h6>
-                <small class="text-muted">Import or export your entire notes system schema in YAML with inline comments (#).</small>
+        const wrapper = document.createElement('div');
+        wrapper.className = 'template-studio-wrapper d-flex flex-column gap-3';
+
+        // Header Banner
+        const header = document.createElement('div');
+        header.className = 'p-3 rounded border d-flex align-items-center justify-content-between';
+        header.style.backgroundColor = 'var(--sub-background-color, transparent)';
+        header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
+        header.innerHTML = `
+            <div class="d-flex align-items-center gap-3">
+                <i class="bx bx-layer h3 m-0 text-primary"></i>
+                <div>
+                    <h2 class="h5 m-0 font-weight-bold">Template Studio & Live Note Preview</h2>
+                    <p class="text-muted small m-0 mt-1">
+                        Configure template title patterns, promoted attribute forms, and content skeletons with live preview.
+                    </p>
+                </div>
             </div>
+            <button type="button" class="btn btn-sm btn-outline-primary new-template-btn d-flex align-items-center gap-1">
+                <i class="bx bx-plus"></i> New Template
+            </button>
         `;
 
-        const configBtns = document.createElement('div');
-        configBtns.className = 'd-flex gap-2';
-
-        const exportYamlBtn = document.createElement('button');
-        exportYamlBtn.type = 'button';
-        exportYamlBtn.className = 'btn btn-sm btn-outline-warning';
-        exportYamlBtn.innerHTML = '<i class="bx bx-download"></i> Export YAML Spec';
-        exportYamlBtn.addEventListener('click', () => {
-            const configData = {
-                name: "Custom Notes Setup",
-                version: "1.0.0",
-                templates: templateEngine.getAllTemplates(),
-            };
-            const yamlStr = `# Notes System Configuration (YAML)\n` + YamlParser.stringify(configData);
-            const blob = new Blob([yamlStr], { type: 'text/yaml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'ians_notes_setup.yaml';
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-
-        const importYamlBtn = document.createElement('button');
-        importYamlBtn.type = 'button';
-        importYamlBtn.className = 'btn btn-sm btn-outline-success';
-        importYamlBtn.innerHTML = '<i class="bx bx-upload"></i> Import YAML / JSON Spec';
-        importYamlBtn.addEventListener('click', () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.yaml,.yml,.json,.jsonc';
-            input.onchange = (e: any) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    try {
-                        const parsed = YamlParser.parse(evt.target?.result as string);
-                        if (parsed && parsed.templates && Array.isArray(parsed.templates)) {
-                            for (const tpl of parsed.templates) {
-                                templateEngine.registerTemplate(tpl);
-                            }
-                            alert(`Loaded ${parsed.templates.length} templates from YAML specification!`);
-                            onSave();
-                            refresh();
-                        } else {
-                            alert('Invalid notes system configuration YAML.');
-                        }
-                    } catch (err: any) {
-                        alert(`Parse error: ${err.message}`);
-                    }
-                };
-                reader.readAsText(file);
-            };
-            input.click();
-        });
-
-        configBtns.append(exportYamlBtn, importYamlBtn);
-        actionBar.appendChild(configBtns);
-        container.appendChild(actionBar);
+        const newTplBtn = header.querySelector('.new-template-btn') as HTMLButtonElement;
+        newTplBtn.addEventListener('click', () => showCreateTemplateModal());
+        wrapper.appendChild(header);
 
         const layoutRow = document.createElement('div');
         layoutRow.className = 'row g-3';
 
-        // Sidebar: Template List & Create Button
+        // 1. Sidebar: Template Selector
         const sidebarCol = document.createElement('div');
         sidebarCol.className = 'col-md-3';
 
         const sidebarCard = document.createElement('div');
-        sidebarCard.className = 'card shadow-sm border-0';
-        sidebarCard.style.backgroundColor = 'var(--sub-background-color, #252538)';
+        sidebarCard.className = 'card border';
+        sidebarCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
+        sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
         const sidebarHeader = document.createElement('div');
-        sidebarHeader.className = 'card-header d-flex align-items-center justify-content-between bg-transparent border-bottom';
-        sidebarHeader.innerHTML = '<h6 class="m-0 font-weight-bold"><i class="bx bx-layer text-primary"></i> Templates</h6>';
-
-        const createBtn = document.createElement('button');
-        createBtn.type = 'button';
-        createBtn.className = 'btn btn-xs btn-primary';
-        createBtn.textContent = '+ New';
-        createBtn.addEventListener('click', () => showNewTemplateModal());
-        sidebarHeader.appendChild(createBtn);
+        sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center gap-1';
+        sidebarHeader.innerHTML = '<i class="bx bx-list-ul"></i> Templates';
+        sidebarCard.appendChild(sidebarHeader);
 
         const listGroup = document.createElement('div');
         listGroup.className = 'list-group list-group-flush';
 
         for (const tpl of templateEngine.getAllTemplates()) {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = `list-group-item list-group-item-action d-flex align-items-center justify-content-between ${tpl.id === selectedTemplateId ? 'active' : ''}`;
-            btn.style.backgroundColor = tpl.id === selectedTemplateId ? 'var(--primary-color, #705df2)' : 'transparent';
-            btn.style.color = tpl.id === selectedTemplateId ? '#fff' : 'inherit';
-            btn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            const item = document.createElement('a');
+            item.href = '#';
+            item.className = `list-group-item list-group-item-action d-flex align-items-center justify-content-between p-2.5 ${tpl.id === selectedTemplateId ? 'active' : ''}`;
+            item.style.backgroundColor = tpl.id === selectedTemplateId ? 'var(--active-item-background-color, #3b82f6)' : 'transparent';
+            item.style.color = tpl.id === selectedTemplateId ? '#fff' : 'var(--main-text-color, inherit)';
+            item.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.1))';
 
-            const label = document.createElement('div');
-            label.className = 'd-flex align-items-center gap-2';
-            label.innerHTML = `<i class="bx bx-${tpl.icon}"></i> <span>${tpl.title}</span>`;
+            item.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bx bx-${tpl.icon}"></i>
+                    <span class="font-weight-medium small">${tpl.title}</span>
+                </div>
+                ${tpl.noJournalClone ? '<i class="bx bx-unlink small text-muted" title="No Journal clone"></i>' : ''}
+            `;
 
-            btn.appendChild(label);
-            btn.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
                 selectedTemplateId = tpl.id;
                 refresh();
             });
-            listGroup.appendChild(btn);
+            listGroup.appendChild(item);
         }
 
-        sidebarCard.append(sidebarHeader, listGroup);
+        sidebarCard.appendChild(listGroup);
         sidebarCol.appendChild(sidebarCard);
         layoutRow.appendChild(sidebarCol);
 
-        // Main Editor Panel
-        const editorCol = document.createElement('div');
-        editorCol.className = 'col-md-9';
-
+        // 2. Editor & Live Note Preview Columns
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
 
         if (activeTpl) {
+            // Editor Column
+            const editorCol = document.createElement('div');
+            editorCol.className = 'col-md-5';
+
             const editorCard = document.createElement('div');
-            editorCard.className = 'card shadow-sm border-0';
-            editorCard.style.backgroundColor = 'var(--sub-background-color, #252538)';
+            editorCard.className = 'card border';
+            editorCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
+            editorCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
             const editorHeader = document.createElement('div');
             editorHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between';
             editorHeader.innerHTML = `
-                <h5 class="m-0 d-flex align-items-center gap-2">
-                    <i class="bx bx-${activeTpl.icon} text-warning"></i>
+                <h5 class="m-0 h6 font-weight-bold d-flex align-items-center gap-2">
+                    <i class="bx bx-${activeTpl.icon} text-primary"></i>
                     <span>Template: ${activeTpl.title}</span>
-                    ${activeTpl.isBuiltin ? '<span class="badge badge-secondary">Built-in</span>' : '<span class="badge badge-info">Custom</span>'}
                 </h5>
+                <span class="badge ${activeTpl.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${activeTpl.isBuiltin ? 'Built-in' : 'Custom'}</span>
             `;
+            editorCard.appendChild(editorHeader);
 
             const editorBody = document.createElement('div');
-            editorBody.className = 'card-body';
+            editorBody.className = 'card-body d-flex flex-column gap-3';
 
-            // Form: Basic Settings
-            const basicForm = document.createElement('div');
-            basicForm.className = 'row g-3 mb-4';
-            basicForm.innerHTML = `
-                <div class="col-md-4">
+            // Form Fields
+            editorBody.innerHTML = `
+                <div>
                     <label class="form-label small font-weight-bold">Template Title</label>
                     <input type="text" id="tpl-title" class="form-control form-control-sm" value="${activeTpl.title}">
                 </div>
-                <div class="col-md-4">
+                <div>
                     <label class="form-label small font-weight-bold">Title Pattern</label>
                     <input type="text" id="tpl-pattern" class="form-control form-control-sm" value="${activeTpl.titlePattern}">
-                    <div class="form-text small text-muted">Variables: {title}, YYYY-MM-DD</div>
+                    <div class="form-text small text-muted">Variables: <code>{title}</code>, <code>{isoDate}</code>, <code>{weekDay}</code></div>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label small font-weight-bold">Icon (Boxicons)</label>
-                    <input type="text" id="tpl-icon" class="form-control form-control-sm" value="${activeTpl.icon}">
+                <div>
+                    <label class="form-label small font-weight-bold">Icon (Boxicons Class)</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="bx bx-${activeTpl.icon}"></i></span>
+                        <input type="text" id="tpl-icon" class="form-control" value="${activeTpl.icon}">
+                    </div>
+                </div>
+
+                <div class="border-top pt-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="m-0 font-weight-bold small d-flex align-items-center gap-1">
+                            <i class="bx bx-list-check text-success"></i> Promoted Attributes (${activeTpl.attributes.length})
+                        </h6>
+                    </div>
+                    <table class="table table-sm table-borderless small m-0">
+                        <thead>
+                            <tr class="text-muted border-bottom">
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${activeTpl.attributes.map(a => `
+                                <tr>
+                                    <td><code>#${a.name}</code></td>
+                                    <td><span class="badge bg-secondary bg-opacity-20 text-muted">${a.type}</span></td>
+                                    <td>${a.options ? a.options.join(', ') : a.defaultValue ?? '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-xs btn-outline-success mt-2 add-attr-btn d-flex align-items-center gap-1">
+                        <i class="bx bx-plus"></i> Add Promoted Attribute
+                    </button>
+                </div>
+
+                <div class="border-top pt-3">
+                    <h6 class="m-0 font-weight-bold small mb-2 d-flex align-items-center gap-1">
+                        <i class="bx bx-code-alt text-info"></i> Content Skeleton (HTML)
+                    </h6>
+                    <textarea id="tpl-content" class="form-control font-monospace small" rows="5" style="font-size: 12px;">${activeTpl.defaultContent}</textarea>
+                </div>
+
+                <div class="pt-2 d-flex justify-content-end">
+                    <button type="button" class="btn btn-sm btn-primary save-tpl-btn d-flex align-items-center gap-1">
+                        <i class="bx bx-save"></i> Save Template
+                    </button>
                 </div>
             `;
-            editorBody.appendChild(basicForm);
 
-            // Section: Promoted Attributes
-            const attrSection = document.createElement('div');
-            attrSection.className = 'mb-4 border-top pt-3';
-            attrSection.innerHTML = `
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="m-0 font-weight-bold"><i class="bx bx-list-check text-success"></i> Promoted Attributes (${activeTpl.attributes.length})</h6>
-                </div>
-            `;
-
-            const attrTable = document.createElement('table');
-            attrTable.className = 'table table-sm table-borderless text-white small';
-            attrTable.innerHTML = `
-                <thead>
-                    <tr class="text-muted">
-                        <th>Attribute Name</th>
-                        <th>Label / Relation</th>
-                        <th>Data Type</th>
-                        <th>Default / Options</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${activeTpl.attributes.map(a => `
-                        <tr>
-                            <td><code>#${a.name}</code></td>
-                            <td><span class="badge badge-outline-info">${a.type}</span></td>
-                            <td>${a.dataType}</td>
-                            <td>${a.options ? a.options.join(', ') : a.defaultValue ?? '-'}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            `;
-            attrSection.appendChild(attrTable);
-
-            const addAttrBtn = document.createElement('button');
-            addAttrBtn.type = 'button';
-            addAttrBtn.className = 'btn btn-xs btn-outline-success mt-2';
-            addAttrBtn.innerHTML = '+ Add Promoted Attribute';
+            const addAttrBtn = editorBody.querySelector('.add-attr-btn') as HTMLButtonElement;
             addAttrBtn.addEventListener('click', () => showAddAttrModal(activeTpl));
-            attrSection.appendChild(addAttrBtn);
 
-            editorBody.appendChild(attrSection);
-
-            // Section: Default Content Skeleton
-            const contentSection = document.createElement('div');
-            contentSection.className = 'border-top pt-3';
-            contentSection.innerHTML = '<h6 class="m-0 font-weight-bold mb-2"><i class="bx bx-code-alt text-info"></i> Content Skeleton (HTML/Markdown)</h6>';
-
-            const contentArea = document.createElement('textarea');
-            contentArea.className = 'form-control font-monospace small';
-            contentArea.rows = 6;
-            contentArea.value = activeTpl.defaultContent;
-            contentSection.appendChild(contentArea);
-
-            editorBody.appendChild(contentSection);
-
-            const saveBtnBox = document.createElement('div');
-            saveBtnBox.className = 'mt-4 d-flex justify-content-end';
-            const saveBtn = document.createElement('button');
-            saveBtn.type = 'button';
-            saveBtn.className = 'btn btn-primary';
-            saveBtn.innerHTML = '<i class="bx bx-save"></i> Save Template Configuration';
+            const saveBtn = editorBody.querySelector('.save-tpl-btn') as HTMLButtonElement;
             saveBtn.addEventListener('click', () => {
-                const newTitle = (document.getElementById('tpl-title') as HTMLInputElement).value;
-                const newPattern = (document.getElementById('tpl-pattern') as HTMLInputElement).value;
-                const newIcon = (document.getElementById('tpl-icon') as HTMLInputElement).value;
+                const newTitle = (editorBody.querySelector('#tpl-title') as HTMLInputElement).value;
+                const newPattern = (editorBody.querySelector('#tpl-pattern') as HTMLInputElement).value;
+                const newIcon = (editorBody.querySelector('#tpl-icon') as HTMLInputElement).value;
+                const newContent = (editorBody.querySelector('#tpl-content') as HTMLTextAreaElement).value;
+
                 templateEngine.updateTemplate(activeTpl.id, {
                     title: newTitle,
                     titlePattern: newPattern,
                     icon: newIcon,
-                    defaultContent: contentArea.value,
+                    defaultContent: newContent,
                 });
                 onSave();
                 refresh();
             });
-            saveBtnBox.appendChild(saveBtn);
-            editorBody.appendChild(saveBtnBox);
 
-            editorCard.append(editorHeader, editorBody);
+            editorCard.appendChild(editorBody);
             editorCol.appendChild(editorCard);
+            layoutRow.appendChild(editorCol);
+
+            // 3. Live Note Preview Column
+            const previewCol = document.createElement('div');
+            previewCol.className = 'col-md-4';
+
+            const previewCard = document.createElement('div');
+            previewCard.className = 'card border shadow-sm';
+            previewCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
+            previewCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
+
+            const previewHeader = document.createElement('div');
+            previewHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between';
+            previewHeader.innerHTML = `
+                <h5 class="m-0 h6 font-weight-bold text-info d-flex align-items-center gap-2">
+                    <i class="bx bx-show"></i> Live Note Preview
+                </h5>
+                <span class="badge bg-success bg-opacity-20 text-success">Active Note Model</span>
+            `;
+            previewCard.appendChild(previewHeader);
+
+            const previewBody = document.createElement('div');
+            previewBody.className = 'card-body d-flex flex-column gap-3';
+
+            const formattedTitle = templateEngine.formatTitle(activeTpl.id, 'Sample Note Title');
+
+            previewBody.innerHTML = `
+                <div class="p-3 rounded border" style="background-color: var(--main-background-color, transparent);">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bx bx-${activeTpl.icon} h4 m-0 text-primary"></i>
+                        <h4 class="h6 m-0 font-weight-bold">${formattedTitle}</h4>
+                    </div>
+                    <div class="small text-muted mb-3">
+                        <i class="bx bx-folder"></i> Target Folder: <code>${activeTpl.noJournalClone ? '#projectRoot' : '#calendarRoot / Journal'}</code>
+                    </div>
+
+                    <!-- Promoted Attributes Form Preview -->
+                    <div class="border-top pt-2 mb-3">
+                        <div class="small text-muted font-weight-bold mb-2"><i class="bx bx-slider-alt"></i> Promoted Form Controls</div>
+                        <div class="d-flex flex-column gap-2">
+                            ${activeTpl.attributes.map(a => `
+                                <div class="d-flex align-items-center justify-content-between small">
+                                    <span class="text-muted">#${a.name}</span>
+                                    ${a.options ? `
+                                        <select class="form-select form-select-sm py-0" style="width: 140px; font-size: 11px;">
+                                            ${a.options.map(opt => `<option>${opt}</option>`).join('')}
+                                        </select>
+                                    ` : `
+                                        <input type="text" class="form-control form-control-sm py-0 px-2" value="${a.defaultValue ?? ''}" placeholder="Value" style="width: 140px; font-size: 11px;">
+                                    `}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Content Skeleton Preview -->
+                    <div class="border-top pt-2">
+                        <div class="small text-muted font-weight-bold mb-2"><i class="bx bx-file-blank"></i> Note Body Skeleton</div>
+                        <div class="p-2.5 rounded border small font-monospace" style="background-color: var(--main-background-color, inherit); font-size: 11.5px; max-height: 180px; overflow-y: auto;">
+                            ${activeTpl.defaultContent || '<em class="text-muted">Empty note body</em>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            previewCard.appendChild(previewBody);
+            previewCol.appendChild(previewCard);
+            layoutRow.appendChild(previewCol);
         }
 
-        layoutRow.appendChild(editorCol);
-        container.appendChild(layoutRow);
+        wrapper.appendChild(layoutRow);
+        container.appendChild(wrapper);
     }
 
-    function showNewTemplateModal() {
-        const name = prompt('Enter new template name (e.g., Weekly Review):');
-        if (!name) return;
-        const id = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    function showCreateTemplateModal() {
+        const title = prompt('Enter new Template ID (e.g. researchNote):');
+        if (!title) return;
         templateEngine.registerTemplate({
-            id,
-            marker: `ext${id.charAt(0).toUpperCase() + id.slice(1)}`,
-            title: name,
-            icon: 'file-blank',
-            category: 'custom',
-            rootContainerMarker: 'unassignedRoot',
+            id: title.toLowerCase().replace(/\s+/g, '-'),
+            title,
             titlePattern: '{title}',
-            defaultContent: '<h2>NOTES</h2><p></p>',
+            icon: 'file-blank',
             attributes: [],
-            relationships: [],
-            isBuiltin: false,
+            defaultContent: `<h2>${title}</h2><p>Notes content...</p>`,
         });
-        selectedTemplateId = id;
+        onSave();
         refresh();
     }
 
     function showAddAttrModal(tpl: TemplateDefinition) {
-        const attrName = prompt('Enter attribute name (e.g. priority, status, reviewer):');
-        if (!attrName) return;
-        const dataType = (prompt('Enter data type (string, number, date, boolean, select, relation):') || 'string') as AttributeDataType;
-        templateEngine.addPromotedAttribute(tpl.id, {
-            name: attrName,
-            type: dataType === 'relation' ? 'relation' : 'label',
-            dataType,
-            isPromoted: true,
-            label: attrName.charAt(0).toUpperCase() + attrName.slice(1),
+        const name = prompt('Attribute name (e.g. priority, status, dueDate):');
+        if (!name) return;
+        const type = prompt('Attribute type (label or relation):', 'label') as any;
+        const dataType = prompt('Data type (text, number, select, date):', 'text') as any;
+        const optionsRaw = dataType === 'select' ? prompt('Comma-separated options (e.g. low, medium, high):') : null;
+
+        tpl.attributes.push({
+            name,
+            type: type === 'relation' ? 'relation' : 'label',
+            dataType: dataType || 'text',
+            options: optionsRaw ? optionsRaw.split(',').map(s => s.trim()) : undefined,
         });
+        onSave();
         refresh();
     }
 
