@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: 100% Accurate Trilium Reference-Linking Terminology (No 'Clone' jargon).
+ * Template Studio Component: Prominent Mode Switcher Card, In-Place Active/Disabled Toggling (No tab-switching glitch).
  * Styled natively with Trilium Boxicons and standard Trilium design tokens.
  */
 
@@ -15,7 +15,7 @@ export function renderTemplateStudio(
     onSave: () => void
 ): void {
     let selectedTemplateId: string = templateEngine.getAllTemplates()[0]?.id || 'story';
-    let activeEditorTab: 'editor' | 'preview' | 'categories' = 'editor';
+    let activeEditorTab: 'editor' | 'categories' | 'preview' = 'editor';
 
     function refresh() {
         container.innerHTML = '';
@@ -23,7 +23,7 @@ export function renderTemplateStudio(
         const wrapper = document.createElement('div');
         wrapper.className = 'template-studio-wrapper d-flex flex-column gap-4';
 
-        // 1. Sleek Header Banner
+        // 1. Sleek Header Banner with Primary Creation Action
         const header = document.createElement('div');
         header.className = 'p-4 rounded-3 border d-flex align-items-center justify-content-between shadow-sm';
         header.style.backgroundColor = 'var(--sub-background-color, rgba(255, 255, 255, 0.05))';
@@ -45,20 +45,11 @@ export function renderTemplateStudio(
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-outline-primary manage-cats-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
-                    <i class="bx bx-category fs-6"></i> Category Matrix
-                </button>
                 <button type="button" class="btn btn-sm btn-primary new-template-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
                     <i class="bx bx-plus fs-6"></i> New Template
                 </button>
             </div>
         `;
-
-        const manageCatsBtn = header.querySelector('.manage-cats-btn') as HTMLButtonElement;
-        manageCatsBtn.addEventListener('click', () => {
-            activeEditorTab = 'categories';
-            refresh();
-        });
 
         const newTplBtn = header.querySelector('.new-template-btn') as HTMLButtonElement;
         newTplBtn.addEventListener('click', () => openNewTemplateModal(wrapper, templateEngine, () => { onSave(); refresh(); }));
@@ -199,7 +190,7 @@ export function renderTemplateStudio(
         sidebarCol.appendChild(sidebarCard);
         layoutRow.appendChild(sidebarCol);
 
-        // 3. Workspace Column
+        // 3. Workspace Column: High-Visibility Segmented Mode Selector + Editor / Matrix
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
 
         const mainCol = document.createElement('div');
@@ -210,50 +201,67 @@ export function renderTemplateStudio(
         workspaceCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
         workspaceCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
-        // Workspace Header
+        // Workspace Header with Segmented Mode Switcher Cards
         const mainHeader = document.createElement('div');
-        mainHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between p-3.5';
+        mainHeader.className = 'card-header bg-transparent border-bottom p-3.5';
+
         mainHeader.innerHTML = `
-            <div class="d-flex align-items-center gap-3">
-                <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary">
-                    <i class="bx bx-${activeEditorTab === 'categories' ? 'category' : (activeTpl?.icon || 'layer')} fs-4 m-0"></i>
-                </div>
-                <div>
-                    <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        <span>${activeEditorTab === 'categories' ? 'Category Behaviors & Automations' : `Template: ${activeTpl?.title}`}</span>
-                        ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
-                    </h3>
-                    <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure category root markers, daily reference filing, topic inheritance, and category-wide rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary">
+                        <i class="bx bx-${activeEditorTab === 'categories' ? 'category' : (activeTpl?.icon || 'layer')} fs-4 m-0"></i>
+                    </div>
+                    <div>
+                        <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
+                            <span>${activeEditorTab === 'categories' ? 'Category Behaviors & Automations' : `Template: ${activeTpl?.title}`}</span>
+                            ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
+                        </h3>
+                        <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure category root markers, daily reference filing, topic inheritance, and category-wide rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
+                    </div>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-3">
-                <ul class="nav nav-pills bg-body bg-opacity-50 p-1 rounded-3 border">
-                    <li class="nav-item">
-                        <button class="nav-link btn-sm py-1.5 px-3 ${activeEditorTab === 'editor' ? 'active font-weight-bold' : ''} editor-tab-btn" type="button">
-                            <i class="bx bx-edit-alt"></i> Schema & Rules
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link btn-sm py-1.5 px-3 ${activeEditorTab === 'preview' ? 'active font-weight-bold' : ''} preview-tab-btn" type="button">
-                            <i class="bx bx-show"></i> Live Preview
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link btn-sm py-1.5 px-3 ${activeEditorTab === 'categories' ? 'active font-weight-bold' : ''} categories-tab-btn" type="button">
-                            <i class="bx bx-category"></i> Category Matrix
-                        </button>
-                    </li>
-                </ul>
+
+            <!-- PROMINENT SEGMENTED MODE PICKER BOXES -->
+            <div class="row g-2 pt-1">
+                <div class="col-md-4">
+                    <div class="mode-box p-3 rounded-3 border cursor-pointer transition-all d-flex align-items-center gap-3 ${activeEditorTab === 'editor' ? 'bg-primary text-white shadow-sm border-primary font-weight-bold' : 'bg-body bg-opacity-50 text-body hover-border-primary'}" data-mode="editor" style="cursor: pointer;">
+                        <i class="bx bx-slider fs-4 ${activeEditorTab === 'editor' ? 'text-white' : 'text-primary'}"></i>
+                        <div>
+                            <div class="small font-weight-bold">Template Schema</div>
+                            <div class="tiny ${activeEditorTab === 'editor' ? 'text-white-50' : 'text-muted'}">Attributes & Link Rules</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="mode-box p-3 rounded-3 border cursor-pointer transition-all d-flex align-items-center gap-3 ${activeEditorTab === 'categories' ? 'bg-primary text-white shadow-sm border-primary font-weight-bold' : 'bg-body bg-opacity-50 text-body hover-border-primary'}" data-mode="categories" style="cursor: pointer;">
+                        <i class="bx bx-category fs-4 ${activeEditorTab === 'categories' ? 'text-white' : 'text-info'}"></i>
+                        <div>
+                            <div class="small font-weight-bold">Category Matrix</div>
+                            <div class="tiny ${activeEditorTab === 'categories' ? 'text-white-50' : 'text-muted'}">Inherited Behaviors</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="mode-box p-3 rounded-3 border cursor-pointer transition-all d-flex align-items-center gap-3 ${activeEditorTab === 'preview' ? 'bg-primary text-white shadow-sm border-primary font-weight-bold' : 'bg-body bg-opacity-50 text-body hover-border-primary'}" data-mode="preview" style="cursor: pointer;">
+                        <i class="bx bx-show fs-4 ${activeEditorTab === 'preview' ? 'text-white' : 'text-success'}"></i>
+                        <div>
+                            <div class="small font-weight-bold">Live Note Preview</div>
+                            <div class="tiny ${activeEditorTab === 'preview' ? 'text-white-50' : 'text-muted'}">Render & Topic Test</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
-        const editorTabBtn = mainHeader.querySelector('.editor-tab-btn') as HTMLButtonElement;
-        const previewTabBtn = mainHeader.querySelector('.preview-tab-btn') as HTMLButtonElement;
-        const categoriesTabBtn = mainHeader.querySelector('.categories-tab-btn') as HTMLButtonElement;
-
-        editorTabBtn.addEventListener('click', () => { activeEditorTab = 'editor'; refresh(); });
-        previewTabBtn.addEventListener('click', () => { activeEditorTab = 'preview'; refresh(); });
-        categoriesTabBtn.addEventListener('click', () => { activeEditorTab = 'categories'; refresh(); });
+        mainHeader.querySelectorAll('.mode-box').forEach(box => {
+            box.addEventListener('click', (e: any) => {
+                const mode = e.currentTarget.dataset.mode as any;
+                activeEditorTab = mode;
+                refresh();
+            });
+        });
 
         workspaceCard.appendChild(mainHeader);
 
@@ -462,7 +470,7 @@ export function renderTemplateStudio(
         const parentRules = tpl.relationships.map(r => ({
             id: `rel_${tpl.id}_${r.relationName}`,
             name: `Parent Link ~${r.relationName} -> ${r.targetTemplateName}`,
-            description: `IF note has ~${r.relationName} -> THEN link to ${r.targetTemplateName}, file reference under parent container, and inherit parent topics.`,
+            description: `IF note has ~${r.relationName} -> THEN link to ${r.targetTemplateName}, file reference link under parent container, and inherit parent topics.`,
             scope: 'template',
             enabled: true,
             isParentLink: true,
@@ -657,7 +665,7 @@ export function renderTemplateStudio(
 
         behaviorCard.querySelectorAll('.edit-global-rules-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                openRuleEditorModal(wrapper, iftttEngine, {}, () => switchTab('preview'));
+                openRuleEditorModal(wrapper, iftttEngine, {}, () => switchTab('editor'));
             });
         });
 
@@ -665,17 +673,18 @@ export function renderTemplateStudio(
             btn.addEventListener('click', (e: any) => {
                 const ruleId = e.currentTarget.dataset.ruleId;
                 const rule = ruleId ? iftttEngine.getRule(ruleId) : undefined;
-                openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab('preview'));
+                openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab('editor'));
             });
         });
 
+        // Stay on current tab when toggling rule active state!
         behaviorCard.querySelectorAll('.toggle-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const ruleId = e.currentTarget.dataset.ruleId;
                 const rule = iftttEngine.getRule(ruleId);
                 if (rule) {
                     iftttEngine.toggleRule(ruleId, !rule.enabled);
-                    switchTab('preview');
+                    switchTab('editor');
                 }
             });
         });
@@ -683,23 +692,24 @@ export function renderTemplateStudio(
         behaviorCard.querySelectorAll('.edit-parent-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const idx = Number(e.currentTarget.dataset.relIdx);
-                openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, idx, () => switchTab('preview'));
+                openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, idx, () => switchTab('editor'));
             });
         });
 
         const addRelBtn = behaviorCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
         if (addRelBtn) {
-            addRelBtn.addEventListener('click', () => openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, undefined, () => switchTab('preview')));
+            addRelBtn.addEventListener('click', () => openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, undefined, () => switchTab('editor')));
         }
 
         const addTplRuleBtn = behaviorCard.querySelector('.add-tpl-rule-btn') as HTMLButtonElement;
-        addTplRuleBtn.addEventListener('click', () => openRuleEditorModal(wrapper, iftttEngine, { targetTemplateId: tpl.id }, () => switchTab('preview')));
+        addTplRuleBtn.addEventListener('click', () => openRuleEditorModal(wrapper, iftttEngine, { targetTemplateId: tpl.id }, () => switchTab('editor')));
 
         behaviorCard.querySelectorAll('.del-rel-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const idx = Number(e.currentTarget.dataset.relIdx);
                 tpl.relationships.splice(idx, 1);
                 engine.updateTemplate(tpl.id, tpl);
+                switchTab('editor');
             });
         });
 
@@ -707,6 +717,7 @@ export function renderTemplateStudio(
             btn.addEventListener('click', (e: any) => {
                 const ruleId = e.currentTarget.dataset.ruleId;
                 iftttEngine.deleteRule(ruleId);
+                switchTab('editor');
             });
         });
 
@@ -750,7 +761,7 @@ export function renderTemplateStudio(
         `;
 
         const addAttrBtn = attrCard.querySelector('.add-attr-btn') as HTMLButtonElement;
-        addAttrBtn.addEventListener('click', () => openAddAttrModal(wrapper, tpl, engine, () => switchTab('preview')));
+        addAttrBtn.addEventListener('click', () => openAddAttrModal(wrapper, tpl, engine, () => switchTab('editor')));
 
         formWrapper.appendChild(attrCard);
 
