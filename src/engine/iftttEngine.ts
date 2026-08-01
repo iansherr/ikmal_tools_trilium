@@ -76,6 +76,7 @@ export interface NoteContext {
     noteId: string;
     title: string;
     templateId?: string;
+    category?: string;
     attributes: Record<string, any>;
     relations: Record<string, string | string[]>;
 }
@@ -143,6 +144,10 @@ export class IftttEngine {
             // 1. Trigger matching
             if (rule.trigger.type !== eventType) continue;
 
+            if (rule.trigger.targetCategory && rule.trigger.targetCategory !== context.category) {
+                continue;
+            }
+
             if (rule.trigger.targetTemplateId && rule.trigger.targetTemplateId !== context.templateId) {
                 continue;
             }
@@ -150,6 +155,7 @@ export class IftttEngine {
             if (eventType === 'onAttributeChanged' && rule.trigger.attributeName && rule.trigger.attributeName !== changedAttribute) {
                 continue;
             }
+
 
             // 2. Conditions matching
             const conditionsMet = this.evaluateConditions(rule.conditions, context);

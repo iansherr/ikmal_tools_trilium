@@ -62,10 +62,12 @@ export type TriggerType = 'onNoteCreated' | 'onAttributeChanged' | 'onManualActi
 
 export interface IftttTrigger {
     type: TriggerType;
+    targetCategory?: string; // Target all templates in a category (e.g. work, drafts, people)
     targetTemplateId?: string; // Limit to specific template
     targetContainerMarker?: string; // Limit to specific root
     attributeName?: string; // For onAttributeChanged
 }
+
 
 export type OperatorType = 'equals' | 'notEquals' | 'contains' | 'isSet' | 'isEmpty' | 'greaterThan' | 'lessThan';
 
