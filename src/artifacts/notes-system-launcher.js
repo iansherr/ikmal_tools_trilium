@@ -42,7 +42,8 @@ import { showQuickCaptureModal } from '../components/QuickCaptureModal.js';
 
         buttonEl.addEventListener('click', (e) => {
             e.preventDefault();
-            showQuickCaptureModal('task', templateEngine, noteCreationEngine);
+            const targetTpl = settingsEngine.get('defaultQuickCaptureTemplate') || 'task';
+            showQuickCaptureModal(targetTpl, templateEngine, noteCreationEngine);
         });
 
         container.prepend(buttonEl);

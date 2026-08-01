@@ -133,16 +133,28 @@ export async function loadAutomationSettings(): Promise<AutomationSettings> {
     for (const key of Object.keys(DEFAULT_AUTOMATION_SETTINGS) as (keyof AutomationSettings)[]) {
         const raw = note ? note.getOwnedLabelValue(settingLabelName(key)) : memoryStore.get(key) ?? null;
         if (raw !== null) {
-            result[key] = parseStoredBoolean(raw, DEFAULT_AUTOMATION_SETTINGS[key]);
+            const def = DEFAULT_AUTOMATION_SETTINGS[key];
+            if (typeof def === 'boolean') {
+                (result[key] as boolean) = parseStoredBoolean(raw, def);
+            } else if (typeof def === 'number') {
+                const num = Number(raw);
+                (result[key] as number) = isNaN(num) ? def : num;
+            } else {
+                (result[key] as string) = String(raw);
+            }
         }
     }
 
     return result;
 }
 
-export async function saveAutomationSetting(key: keyof AutomationSettings, value: boolean): Promise<void> {
-    const serialized = JSON.stringify(value);
+export async function saveAutomationSetting<K extends keyof AutomationSettings>(
+    key: K,
+    value: AutomationSettings[K]
+): Promise<void> {
+    const serialized = typeof value === 'string' ? value : JSON.stringify(value);
     const note = await findManifestNote();
+
     if (note) {
         await writeLabel(note, settingLabelName(key), serialized);
     } else {

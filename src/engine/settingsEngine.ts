@@ -11,12 +11,18 @@ export interface AutomationSettings {
     autoRunIfThenRulesOnCreation: boolean;
     enableDerivedTopics: boolean;
     autoJournalClone: boolean;
+    defaultQuickCaptureTemplate: string;
+    staleThresholdDays: number;
+    writingGoalWords: number;
 }
 
 export const DEFAULT_AUTOMATION_SETTINGS: AutomationSettings = {
     autoRunIfThenRulesOnCreation: true,
     enableDerivedTopics: true,
     autoJournalClone: true,
+    defaultQuickCaptureTemplate: 'task',
+    staleThresholdDays: 14,
+    writingGoalWords: 500,
 };
 
 export class SettingsEngine {

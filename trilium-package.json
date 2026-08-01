@@ -46,6 +46,27 @@
       "title": "File New Notes Under Today's Journal Note",
       "description": "Add a reference link for newly created tasks, meetings, and story drafts to the current day note.",
       "default": true
+    },
+    {
+      "key": "defaultQuickCaptureTemplate",
+      "type": "string",
+      "title": "Default Quick Capture Template",
+      "description": "Template ID triggered by default when clicking the global header Quick Capture button.",
+      "default": "task"
+    },
+    {
+      "key": "staleThresholdDays",
+      "type": "number",
+      "title": "Stale Notes Inactivity Threshold (Days)",
+      "description": "Number of inactive days before active notes appear in the Stale Notes review list.",
+      "default": 14
+    },
+    {
+      "key": "writingGoalWords",
+      "type": "number",
+      "title": "Daily Writing Goal (Words)",
+      "description": "Target daily word count for the Writing Goal progress bar and activity heatmaps.",
+      "default": 500
     }
   ],
   "artifacts": [
@@ -53,15 +74,23 @@
       "id": "notes-system-dashboard",
       "type": "render",
       "source": "src/artifacts/notes-system-dashboard.jsx",
-      "integrity": "sha256-Z/gii2G7kacU4MO230vsB5izSeZe9uhyJwUAgkG9IfE=",
+      "integrity": "sha256-U8RwrLMaEiAQd9kR08ALKuzpFcc5NheP88zImKfIYCA=",
       "title": "Notes System & Today Homepage",
+      "activation": "manual"
+    },
+    {
+      "id": "notes-system-kanban",
+      "type": "render",
+      "source": "src/artifacts/notes-system-kanban.jsx",
+      "integrity": "sha256-PKyy8c1ccEbjajKiD4BlC6zlJQK1hyZgQn+7cObXZ1Y=",
+      "title": "Standalone Task Kanban Board",
       "activation": "manual"
     },
     {
       "id": "notes-system-launcher",
       "type": "launcher",
       "source": "src/artifacts/notes-system-launcher.js",
-      "integrity": "sha256-EKXd4g2XOH8bQSpnuLf1jwWx9a4g0NLtHWPZawtToag=",
+      "integrity": "sha256-Atu75RL5lRVC5m7Rcc6bW0LvYqIFTDQvHqZqw/0dpLg=",
       "title": "Notes Launcher Bar",
       "activation": "manual"
     },

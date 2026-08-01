@@ -24,6 +24,9 @@ try {
     console.log('🔨 Bundling dashboard render artifact...');
     execSync('npx esbuild src/artifacts/notes-system-dashboard.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-dashboard.js', { stdio: 'inherit' });
 
+    console.log('🔨 Bundling standalone kanban render artifact...');
+    execSync('npx esbuild src/artifacts/notes-system-kanban.jsx --loader:.jsx=tsx --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-kanban.js', { stdio: 'inherit' });
+
     console.log('🔨 Bundling launcher artifact...');
     execSync('npx esbuild src/artifacts/notes-system-launcher.js --bundle --format=iife --target=es2020 --outfile=dist/artifacts/notes-system-launcher.js', { stdio: 'inherit' });
 

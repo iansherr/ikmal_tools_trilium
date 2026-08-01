@@ -14,7 +14,7 @@ import { IfThenRuleEngine } from '../engine/ifThenRuleEngine.js';
 import { AutomationSettings, SettingsEngine } from '../engine/settingsEngine.js';
 import { saveAutomationSetting } from '../engine/packagePersistence.js';
 import { dumpYamlSpec, parseAndApplyYamlSpec } from '../engine/yamlSpec.js';
-import { escapeHtml, pageHeader, section, switchRow } from './nativeUi.js';
+import { escapeHtml, pageHeader, row, section, switchRow } from './nativeUi.js';
 
 export function renderSettingsStudio(
     container: HTMLElement,
@@ -83,13 +83,49 @@ export function renderSettingsStudio(
             checked: settingsEngine.get('autoJournalClone'),
             onChange: (checked) => applySetting('autoJournalClone', checked),
         }));
+
+        const tplInput = document.createElement('input');
+        tplInput.type = 'text';
+        tplInput.className = 'form-control form-control-sm';
+        tplInput.id = 'default-capture-tpl';
+        tplInput.value = settingsEngine.get('defaultQuickCaptureTemplate') || 'task';
+        tplInput.addEventListener('change', () => applySetting('defaultQuickCaptureTemplate', tplInput.value.trim() || 'task'));
+        card.appendChild(row(tplInput, {
+            label: 'Default Quick Capture template ID',
+            description: 'Template ID opened by default when clicking the global header Quick Capture button (e.g. task, meeting, story).',
+            htmlFor: 'default-capture-tpl',
+        }));
+
+        const staleInput = document.createElement('input');
+        staleInput.type = 'number';
+        staleInput.className = 'form-control form-control-sm';
+        staleInput.id = 'stale-threshold-input';
+        staleInput.value = String(settingsEngine.get('staleThresholdDays') ?? 14);
+        staleInput.addEventListener('change', () => applySetting('staleThresholdDays', Math.max(1, parseInt(staleInput.value, 10) || 14)));
+        card.appendChild(row(staleInput, {
+            label: 'Stale Notes inactivity threshold (days)',
+            description: 'Active notes unmodified for longer than this threshold appear in the Stale Notes review list.',
+            htmlFor: 'stale-threshold-input',
+        }));
+
+        const goalInput = document.createElement('input');
+        goalInput.type = 'number';
+        goalInput.className = 'form-control form-control-sm';
+        goalInput.id = 'writing-goal-input';
+        goalInput.value = String(settingsEngine.get('writingGoalWords') ?? 500);
+        goalInput.addEventListener('change', () => applySetting('writingGoalWords', Math.max(50, parseInt(goalInput.value, 10) || 500)));
+        card.appendChild(row(goalInput, {
+            label: 'Daily writing target (words)',
+            description: 'Word count target for the Writing Goal progress bar and activity heatmap on the Today Homepage.',
+            htmlFor: 'writing-goal-input',
+        }));
     }
 
-    function applySetting(key: keyof AutomationSettings, value: boolean): void {
+    function applySetting<K extends keyof AutomationSettings>(key: K, value: AutomationSettings[K]): void {
         const previous = settingsEngine.get(key);
         settingsEngine.set(key, value);
         settingsError = '';
-        saveAutomationSetting(key, value).catch((err: Error) => {
+        saveAutomationSetting(key, value as any).catch((err: Error) => {
             settingsEngine.set(key, previous);
             settingsError = `Could not save this setting: ${err.message}`;
             render();

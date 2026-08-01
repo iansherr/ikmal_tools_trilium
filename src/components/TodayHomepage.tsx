@@ -44,11 +44,14 @@ const KANBAN_COLUMNS = [
     { id: 'done', title: 'Completed' },
 ];
 
+import { SettingsEngine } from '../engine/settingsEngine.js';
+
 export function renderTodayHomepage(
     container: HTMLElement,
     todayEngine: TodayEngine,
     templateEngine: TemplateEngine,
-    onQuickCapture: (templateId: string) => void
+    onQuickCapture: (templateId: string) => void,
+    settingsEngine?: SettingsEngine
 ): void {
     let mode: 'edit' | 'preview' = 'preview';
 
@@ -694,7 +697,7 @@ export function renderTodayHomepage(
     function renderStaleNotesWidget(card: HTMLElement) {
         if (!ensureNoteSummariesLoaded(card)) return;
 
-        const threshold = todayEngine.getLayout().staleThresholdDays ?? 14;
+        const threshold = settingsEngine?.get('staleThresholdDays') ?? todayEngine.getLayout().staleThresholdDays ?? 14;
         const stale = findStaleNotes(noteSummaryCache!, new Date(), threshold);
         if (!stale.length) {
             card.appendChild(emptyState('Nothing has gone stale.'));
@@ -729,7 +732,7 @@ export function renderTodayHomepage(
             return;
         }
 
-        const goal = todayEngine.getLayout().writingGoalWords ?? 500;
+        const goal = settingsEngine?.get('writingGoalWords') ?? todayEngine.getLayout().writingGoalWords ?? 500;
         const progress = computeWritingGoalProgress(wordsTodayCache, goal);
 
         const bar = document.createElement('div');
