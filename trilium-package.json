@@ -1,0 +1,89 @@
+{
+  "id": "iansherr/notes-system",
+  "version": "1.0.0",
+  "name": "Trilium Notes System & Template Studio",
+  "description": "Component-driven, editable, and organizable notes system layer for Trilium Notes with Today Homepage, Template Studio, Relationship Manager, and IFTTT Automation Trees.",
+  "author": "Ian Sherr",
+  "maintainer": "Ian Sherr",
+  "repository": "https://github.com/iansherr/trilium_notes",
+  "homepage": "https://github.com/iansherr/trilium_notes",
+  "license": "MIT",
+  "maintenance": "active",
+  "securityStatus": "reviewed",
+  "compatibility": {
+    "minTriliumVersion": "0.104.0"
+  },
+  "permissions": [
+    "read-notes",
+    "write-notes",
+    "delete-notes",
+    "backend",
+    "custom-endpoint"
+  ],
+  "settings": [
+    {
+      "key": "defaultJournalWidth",
+      "type": "number",
+      "title": "Journal Split Width (%)",
+      "description": "Default width percentage allocated to the Journal side panel on the Today Homepage.",
+      "default": 65
+    },
+    {
+      "key": "autoRunIftttOnCreation",
+      "type": "boolean",
+      "title": "Execute IFTTT Rules on Note Creation",
+      "description": "Automatically evaluate IF-THIS-THEN-THAT automation rules when new notes are created.",
+      "default": true
+    },
+    {
+      "key": "enableDerivedTopics",
+      "type": "boolean",
+      "title": "Enable Derived Topic Propagation",
+      "description": "Automatically calculate and assign derived topics from parent project, client, or organization relations.",
+      "default": true
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "notes-system-dashboard",
+      "type": "render",
+      "source": "src/artifacts/notes-system-dashboard.jsx",
+      "integrity": "sha256-uKfNxhOMOaTYxJ4WTLK7zuAyc1f1jUrEljLJxfd2yxM=",
+      "title": "Notes System & Today Homepage",
+      "activation": "manual"
+    },
+    {
+      "id": "notes-system-backend",
+      "type": "backend",
+      "source": "src/artifacts/notes-system-backend.js",
+      "integrity": "sha256-90D16W2alkhA8/cOhvy6gzqv9k0ao2+ZYhCWR3SyYnc=",
+      "title": "Notes System Backend Worker",
+      "activation": "startup"
+    },
+    {
+      "id": "notes-system-endpoint",
+      "type": "endpoint",
+      "source": "src/artifacts/notes-system-backend.js",
+      "integrity": "sha256-90D16W2alkhA8/cOhvy6gzqv9k0ao2+ZYhCWR3SyYnc=",
+      "title": "Notes System HTTP API Endpoint",
+      "activation": "request",
+      "route": "notes-system/(create|ifttt|templates|settings)"
+    },
+    {
+      "id": "notes-system-launcher",
+      "type": "launcher",
+      "source": "src/artifacts/notes-system-launcher.js",
+      "integrity": "sha256-77Et4ZanTTrCtuNLP/h87B4ia51RM/PxUqAOUspJAtU=",
+      "title": "Notes Launcher Bar",
+      "activation": "manual"
+    },
+    {
+      "id": "notes-system-css",
+      "type": "css",
+      "source": "src/artifacts/notes-system.css",
+      "integrity": "sha256-aUSM7Y2BpzE1eWACW1+828EM9l+mXq7S70zgZD5x0lg=",
+      "title": "Notes System Theme & Styles",
+      "activation": "startup"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "trilium-notes-system",
+  "version": "1.0.0",
+  "description": "Editable, organizable, component-driven notes system plugin for Trilium Notes with Today Homepage, Template Studio, Relationship Manager, and IFTTT Automation Trees.",
+  "type": "module",
+  "main": "dist/notes-system-dashboard.js",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "node tools/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "register": "node tools/register_plugin.mjs"
+  },
+  "keywords": [
+    "trilium",
+    "trilium-plugin",
+    "notes-system",
+    "ifttt",
+    "templates",
+    "dashboard"
+  ],
+  "author": "Ian Sherr",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
