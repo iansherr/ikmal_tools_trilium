@@ -52,11 +52,12 @@ def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy") -> None:
     else:
         print(f"  ✓ Found package manifest note: {pkg_manifest_note_id}")
 
-    # Set package manifest labels
+    # Set package manifest labels (including packageArtifact="manifest")
     api.set_label(pkg_manifest_note_id, "packageManaged", "")
     api.set_label(pkg_manifest_note_id, "packageOwner", pkg_owner)
     api.set_label(pkg_manifest_note_id, "packageVersion", manifest["version"])
-    api.set_label(pkg_manifest_note_id, "packageEnabled", "")
+    api.set_label(pkg_manifest_note_id, "packageArtifact", "manifest")
+    api.set_label(pkg_manifest_note_id, "packageEnabled", "true")
 
     # 3. Create or update declared artifacts
     for artifact in manifest["artifacts"]:
@@ -105,7 +106,7 @@ def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy") -> None:
         api.set_label(art_note_id, "packageOwner", pkg_owner)
         api.set_label(art_note_id, "packageVersion", manifest["version"])
         api.set_label(art_note_id, "packageArtifact", artifact_id)
-        api.set_label(art_note_id, "packageEnabled", "")
+        api.set_label(art_note_id, "packageEnabled", "true")
 
         if artifact_type == "render":
             api.set_label(art_note_id, "renderNote", "")
@@ -114,7 +115,7 @@ def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy") -> None:
         elif artifact_type == "backend" and artifact.get("activation") == "startup":
             api.set_label(art_note_id, "run", "backendStartup")
 
-    print("\n🎉 Plugin deployed successfully into Trilium instance!")
+    print("\n🎉 Plugin deployed successfully into Trilium instance with manifest label!")
 
 if __name__ == "__main__":
     url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:37843"
