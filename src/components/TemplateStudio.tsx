@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: Prominent Mode Switcher Card, In-Place Active/Disabled Toggling (No tab-switching glitch).
+ * Template Studio Component: Integrated Category Matrix Selector in the Left Tree Rail.
  * Styled natively with Trilium Boxicons and standard Trilium design tokens.
  */
 
@@ -15,7 +15,9 @@ export function renderTemplateStudio(
     onSave: () => void
 ): void {
     let selectedTemplateId: string = templateEngine.getAllTemplates()[0]?.id || 'story';
-    let activeEditorTab: 'editor' | 'categories' | 'preview' = 'editor';
+    let activeEditorTab: 'editor' | 'preview' = 'editor';
+    let railMode: 'templates' | 'categories' = 'templates';
+    let selectedCategoryId: string = templateEngine.getAllCategories()[0]?.id || 'work';
 
     function refresh() {
         container.innerHTML = '';
@@ -23,7 +25,7 @@ export function renderTemplateStudio(
         const wrapper = document.createElement('div');
         wrapper.className = 'template-studio-wrapper d-flex flex-column gap-4';
 
-        // 1. Sleek Header Banner with Primary Creation Action
+        // 1. Sleek Header Banner
         const header = document.createElement('div');
         header.className = 'p-4 rounded-3 border d-flex align-items-center justify-content-between shadow-sm';
         header.style.backgroundColor = 'var(--sub-background-color, rgba(255, 255, 255, 0.05))';
@@ -58,7 +60,7 @@ export function renderTemplateStudio(
         const layoutRow = document.createElement('div');
         layoutRow.className = 'row g-4';
 
-        // 2. Sidebar: Nested Tree View (3 Cols)
+        // 2. Sidebar: Segmented Toggle (Templates / Categories) swaps tree content
         const sidebarCol = document.createElement('div');
         sidebarCol.className = 'col-md-3';
 
@@ -67,131 +69,165 @@ export function renderTemplateStudio(
         sidebarCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
         sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
+        // Segmented rail mode toggle in header
         const sidebarHeader = document.createElement('div');
-        sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center justify-content-between p-3.5';
-        sidebarHeader.innerHTML = `
-            <span class="d-flex align-items-center gap-2"><i class="bx bx-sitemap text-primary"></i> Template Hierarchy</span>
-            <span class="badge bg-primary bg-opacity-10 text-primary small">Tree</span>
-        `;
+        sidebarHeader.className = 'card-header bg-transparent border-bottom p-3';
+
+        const segmentedToggle = document.createElement('div');
+        segmentedToggle.className = 'd-flex rounded-3 border overflow-hidden';
+        segmentedToggle.style.backgroundColor = 'var(--main-background-color, transparent)';
+
+        const tplsCount = templateEngine.getAllTemplates().length;
+        const catsCount = templateEngine.getAllCategories().length;
+
+        const tplToggleBtn = document.createElement('button');
+        tplToggleBtn.type = 'button';
+        tplToggleBtn.className = `btn btn-sm flex-fill d-flex align-items-center justify-content-center gap-1.5 py-2 border-0 font-weight-bold ${railMode === 'templates' ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-muted'}`;
+        tplToggleBtn.innerHTML = `<i class="bx bx-sitemap"></i> Templates <span class="badge ${railMode === 'templates' ? 'bg-white text-primary' : 'bg-secondary bg-opacity-20 text-muted'} rounded-pill ms-1 tiny">${tplsCount}</span>`;
+        tplToggleBtn.addEventListener('click', () => {
+            railMode = 'templates';
+            activeEditorTab = 'editor';
+            refresh();
+        });
+
+        const catToggleBtn = document.createElement('button');
+        catToggleBtn.type = 'button';
+        catToggleBtn.className = `btn btn-sm flex-fill d-flex align-items-center justify-content-center gap-1.5 py-2 border-0 font-weight-bold ${railMode === 'categories' ? 'bg-info text-white shadow-sm' : 'bg-transparent text-muted'}`;
+        catToggleBtn.innerHTML = `<i class="bx bx-category"></i> Categories <span class="badge ${railMode === 'categories' ? 'bg-white text-info' : 'bg-secondary bg-opacity-20 text-muted'} rounded-pill ms-1 tiny">${catsCount}</span>`;
+        catToggleBtn.addEventListener('click', () => {
+            railMode = 'categories';
+            refresh();
+        });
+
+        segmentedToggle.appendChild(tplToggleBtn);
+        segmentedToggle.appendChild(catToggleBtn);
+        sidebarHeader.appendChild(segmentedToggle);
         sidebarCard.appendChild(sidebarHeader);
 
         const treeContainer = document.createElement('div');
         treeContainer.className = 'card-body p-3';
 
-        // Multi-Parent Tree Nodes
-        const treeNodes = [
-            {
-                id: 'projectHub',
-                label: 'Project Hub',
-                children: [
-                    {
-                        id: 'story',
-                        label: 'Story Project',
-                        children: [
-                            { id: 'edit', label: 'Edit Package', children: [] },
-                            { id: 'reportingNotes', label: 'Reporting Notes', children: [] }
-                        ]
-                    },
-                    { id: 'projectTask', label: 'Project Task', children: [] },
-                    { id: 'meeting', label: 'Project Meeting', children: [] },
-                    { id: 'scratch', label: 'Project Scratch Note', children: [] },
-                    { id: 'person', label: 'Project Person', children: [] },
-                    { id: 'organization', label: 'Client Organization', children: [] },
-                    { id: 'emailDraft', label: 'Email Draft', children: [] },
-                    { id: 'topic', label: 'Assigned Topic', children: [] }
-                ]
-            },
-            {
-                id: 'organization',
-                label: 'Organization Directory',
-                children: [
-                    { id: 'person', label: 'Key Contact Person', children: [] },
-                    {
-                        id: 'meeting',
-                        label: 'Client Meeting',
-                        children: [
-                            { id: 'meetingPrep', label: 'Meeting Prep', children: [] }
-                        ]
-                    }
-                ]
-            },
-            {
-                id: 'person',
-                label: 'Person Directory',
-                children: [
-                    { id: 'meeting', label: 'Person Meeting', children: [] }
-                ]
-            },
-            {
-                id: 'task',
-                label: 'Standalone Task (Unassigned)',
-                children: []
-            },
-            {
-                id: 'scratch',
-                label: 'Unassigned Scratch Note',
-                children: []
-            },
-            {
-                id: 'topic',
-                label: 'Global Topic Index',
-                children: []
-            }
-        ];
+        if (railMode === 'categories') {
+            // Category list in the rail
+            const cats = templateEngine.getAllCategories();
+            const catList = document.createElement('ul');
+            catList.className = 'list-unstyled m-0 d-flex flex-column gap-1.5';
 
-        function renderTreeBranch(nodes: Array<{ id: string; label?: string; children: any[] }>, depth = 0): HTMLElement {
-            const ul = document.createElement('ul');
-            ul.className = 'list-unstyled m-0 d-flex flex-column gap-1.5';
-            if (depth > 0) ul.style.paddingLeft = '1.2rem';
-
-            for (const node of nodes) {
-                const tpl = templateEngine.getTemplate(node.id);
-                if (!tpl) continue;
-
+            for (const cat of cats) {
                 const li = document.createElement('li');
-                const isSelected = tpl.id === selectedTemplateId && activeEditorTab !== 'categories';
+                const isSelected = cat.id === selectedCategoryId;
 
                 const item = document.createElement('div');
-                item.className = `d-flex align-items-center justify-content-between px-3 py-2 rounded-2 cursor-pointer transition-all ${isSelected ? 'bg-primary text-white font-weight-bold shadow-sm' : 'text-body'}`;
+                item.className = `d-flex align-items-center justify-content-between px-3 py-2.5 rounded-2 transition-all ${isSelected ? 'bg-info text-white font-weight-bold shadow-sm' : 'text-body'}`;
                 item.style.cursor = 'pointer';
-                if (!isSelected) {
-                    item.style.backgroundColor = 'transparent';
-                }
+                if (!isSelected) item.style.backgroundColor = 'transparent';
 
+                const tplCountForCat = templateEngine.getAllTemplates().filter(t => t.category === cat.id).length;
                 item.innerHTML = `
                     <div class="d-flex align-items-center gap-2">
-                        ${depth > 0 ? '<i class="bx bx-subdirectory-right opacity-50"></i>' : ''}
-                        <i class="bx bx-${tpl.icon}"></i>
-                        <span class="small">${node.label || tpl.title}</span>
+                        <i class="bx bx-${cat.icon} ${isSelected ? 'text-white' : 'text-info'}"></i>
+                        <span class="small">${cat.title}</span>
                     </div>
+                    <span class="badge ${isSelected ? 'bg-white text-info' : 'bg-info bg-opacity-15 text-info'} rounded-pill tiny">${tplCountForCat}</span>
                 `;
 
-                item.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    selectedTemplateId = tpl.id;
-                    if (activeEditorTab === 'categories') activeEditorTab = 'editor';
+                item.addEventListener('click', () => {
+                    selectedCategoryId = cat.id;
                     refresh();
                 });
 
                 li.appendChild(item);
-
-                if (node.children && node.children.length > 0) {
-                    li.appendChild(renderTreeBranch(node.children, depth + 1));
-                }
-
-                ul.appendChild(li);
+                catList.appendChild(li);
             }
 
-            return ul;
+            treeContainer.appendChild(catList);
+        } else {
+            // Template hierarchy tree in the rail
+            const treeNodes = [
+                {
+                    id: 'projectHub', label: 'Project Hub',
+                    children: [
+                        { id: 'story', label: 'Story Project', children: [
+                            { id: 'edit', label: 'Edit Package', children: [] },
+                            { id: 'reportingNotes', label: 'Reporting Notes', children: [] }
+                        ]},
+                        { id: 'projectTask', label: 'Project Task', children: [] },
+                        { id: 'meeting', label: 'Project Meeting', children: [] },
+                        { id: 'scratch', label: 'Project Scratch Note', children: [] },
+                        { id: 'person', label: 'Project Person', children: [] },
+                        { id: 'organization', label: 'Client Organization', children: [] },
+                        { id: 'emailDraft', label: 'Email Draft', children: [] },
+                        { id: 'topic', label: 'Assigned Topic', children: [] }
+                    ]
+                },
+                {
+                    id: 'organization', label: 'Organization Directory',
+                    children: [
+                        { id: 'person', label: 'Key Contact Person', children: [] },
+                        { id: 'meeting', label: 'Client Meeting', children: [
+                            { id: 'meetingPrep', label: 'Meeting Prep', children: [] }
+                        ]}
+                    ]
+                },
+                {
+                    id: 'person', label: 'Person Directory',
+                    children: [{ id: 'meeting', label: 'Person Meeting', children: [] }]
+                },
+                { id: 'task', label: 'Standalone Task (Unassigned)', children: [] },
+                { id: 'scratch', label: 'Unassigned Scratch Note', children: [] },
+                { id: 'topic', label: 'Global Topic Index', children: [] }
+            ];
+
+            function renderTreeBranch(nodes: Array<{ id: string; label?: string; children: any[] }>, depth = 0): HTMLElement {
+                const ul = document.createElement('ul');
+                ul.className = 'list-unstyled m-0 d-flex flex-column gap-1.5';
+                if (depth > 0) ul.style.paddingLeft = '1.2rem';
+
+                for (const node of nodes) {
+                    const tpl = templateEngine.getTemplate(node.id);
+                    if (!tpl) continue;
+
+                    const li = document.createElement('li');
+                    const isSelected = tpl.id === selectedTemplateId;
+
+                    const item = document.createElement('div');
+                    item.className = `d-flex align-items-center justify-content-between px-3 py-2 rounded-2 transition-all ${isSelected ? 'bg-primary text-white font-weight-bold shadow-sm' : 'text-body'}`;
+                    item.style.cursor = 'pointer';
+                    if (!isSelected) item.style.backgroundColor = 'transparent';
+
+                    item.innerHTML = `
+                        <div class="d-flex align-items-center gap-2">
+                            ${depth > 0 ? '<i class="bx bx-subdirectory-right opacity-50"></i>' : ''}
+                            <i class="bx bx-${tpl.icon}"></i>
+                            <span class="small">${node.label || tpl.title}</span>
+                        </div>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        selectedTemplateId = tpl.id;
+                        activeEditorTab = 'editor';
+                        refresh();
+                    });
+
+                    li.appendChild(item);
+                    if (node.children && node.children.length > 0) {
+                        li.appendChild(renderTreeBranch(node.children, depth + 1));
+                    }
+                    ul.appendChild(li);
+                }
+                return ul;
+            }
+
+            treeContainer.appendChild(renderTreeBranch(treeNodes));
         }
 
-        treeContainer.appendChild(renderTreeBranch(treeNodes));
         sidebarCard.appendChild(treeContainer);
         sidebarCol.appendChild(sidebarCard);
         layoutRow.appendChild(sidebarCol);
 
-        // 3. Workspace Column: High-Visibility Segmented Mode Selector + Editor / Matrix
+        // 3. Workspace Column
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
+        const activeCat = templateEngine.getCategory(selectedCategoryId);
 
         const mainCol = document.createElement('div');
         mainCol.className = 'col-md-9';
@@ -201,85 +237,71 @@ export function renderTemplateStudio(
         workspaceCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
         workspaceCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
 
-        // Workspace Header with Segmented Mode Switcher Cards
         const mainHeader = document.createElement('div');
         mainHeader.className = 'card-header bg-transparent border-bottom p-3.5';
 
-        mainHeader.innerHTML = `
-            <div class="d-flex align-items-center justify-content-between mb-3">
+        if (railMode === 'categories' && activeCat) {
+            // Category editor header
+            mainHeader.innerHTML = `
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary">
-                        <i class="bx bx-${activeEditorTab === 'categories' ? 'category' : (activeTpl?.icon || 'layer')} fs-4 m-0"></i>
+                    <div class="p-2.5 rounded-3 bg-info bg-opacity-10 text-info">
+                        <i class="bx bx-${activeCat.icon} fs-4 m-0"></i>
                     </div>
                     <div>
                         <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
-                            <span>${activeEditorTab === 'categories' ? 'Category Behaviors & Automations' : `Template: ${activeTpl?.title}`}</span>
-                            ${activeEditorTab !== 'categories' && activeTpl ? `<span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>` : ''}
+                            <span>Category: ${activeCat.title}</span>
+                            <span class="badge ${activeCat.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted font-weight-normal small">${activeCat.isBuiltin ? 'Built-in' : 'Custom'}</span>
                         </h3>
-                        <div class="text-muted small mt-0.5">${activeEditorTab === 'categories' ? 'Configure category root markers, daily reference filing, topic inheritance, and category-wide rules' : `Marker: #${activeTpl?.marker} • ID: ${activeTpl?.id}`}</div>
+                        <div class="text-muted small mt-0.5">${activeCat.description}</div>
                     </div>
                 </div>
-            </div>
-
-            <!-- PROMINENT SEGMENTED MODE PICKER BOXES -->
-            <div class="row g-2 pt-1">
-                <div class="col-md-4">
-                    <div class="mode-box p-3 rounded-3 border cursor-pointer transition-all d-flex align-items-center gap-3 ${activeEditorTab === 'editor' ? 'bg-primary text-white shadow-sm border-primary font-weight-bold' : 'bg-body bg-opacity-50 text-body hover-border-primary'}" data-mode="editor" style="cursor: pointer;">
-                        <i class="bx bx-slider fs-4 ${activeEditorTab === 'editor' ? 'text-white' : 'text-primary'}"></i>
+            `;
+        } else if (activeTpl) {
+            // Template header with Schema / Preview toggle
+            mainHeader.innerHTML = `
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary">
+                            <i class="bx bx-${activeTpl.icon} fs-4 m-0"></i>
+                        </div>
                         <div>
-                            <div class="small font-weight-bold">Template Schema</div>
-                            <div class="tiny ${activeEditorTab === 'editor' ? 'text-white-50' : 'text-muted'}">Attributes & Link Rules</div>
+                            <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
+                                <span>Template: ${activeTpl.title}</span>
+                                <span class="badge bg-primary bg-opacity-10 text-primary font-weight-normal small">${activeTpl.category || 'custom'}</span>
+                            </h3>
+                            <div class="text-muted small mt-0.5">Marker: #${activeTpl.marker} &bull; ID: ${activeTpl.id}</div>
                         </div>
                     </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="mode-box p-3 rounded-3 border cursor-pointer transition-all d-flex align-items-center gap-3 ${activeEditorTab === 'categories' ? 'bg-primary text-white shadow-sm border-primary font-weight-bold' : 'bg-body bg-opacity-50 text-body hover-border-primary'}" data-mode="categories" style="cursor: pointer;">
-                        <i class="bx bx-category fs-4 ${activeEditorTab === 'categories' ? 'text-white' : 'text-info'}"></i>
-                        <div>
-                            <div class="small font-weight-bold">Category Matrix</div>
-                            <div class="tiny ${activeEditorTab === 'categories' ? 'text-white-50' : 'text-muted'}">Inherited Behaviors</div>
-                        </div>
+                    <div class="d-flex rounded-3 border overflow-hidden" style="background-color: var(--main-background-color, transparent);">
+                        <button type="button" class="btn btn-sm px-3 py-1.5 border-0 font-weight-bold d-flex align-items-center gap-1.5 mode-btn ${activeEditorTab === 'editor' ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-muted'}" data-mode="editor">
+                            <i class="bx bx-slider"></i> Schema & Rules
+                        </button>
+                        <button type="button" class="btn btn-sm px-3 py-1.5 border-0 font-weight-bold d-flex align-items-center gap-1.5 mode-btn ${activeEditorTab === 'preview' ? 'bg-success text-white shadow-sm' : 'bg-transparent text-muted'}" data-mode="preview">
+                            <i class="bx bx-show"></i> Preview
+                        </button>
                     </div>
                 </div>
+            `;
 
-                <div class="col-md-4">
-                    <div class="mode-box p-3 rounded-3 border cursor-pointer transition-all d-flex align-items-center gap-3 ${activeEditorTab === 'preview' ? 'bg-primary text-white shadow-sm border-primary font-weight-bold' : 'bg-body bg-opacity-50 text-body hover-border-primary'}" data-mode="preview" style="cursor: pointer;">
-                        <i class="bx bx-show fs-4 ${activeEditorTab === 'preview' ? 'text-white' : 'text-success'}"></i>
-                        <div>
-                            <div class="small font-weight-bold">Live Note Preview</div>
-                            <div class="tiny ${activeEditorTab === 'preview' ? 'text-white-50' : 'text-muted'}">Render & Topic Test</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        mainHeader.querySelectorAll('.mode-box').forEach(box => {
-            box.addEventListener('click', (e: any) => {
-                const mode = e.currentTarget.dataset.mode as any;
-                activeEditorTab = mode;
-                refresh();
+            mainHeader.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', (e: any) => {
+                    activeEditorTab = e.currentTarget.dataset.mode as any;
+                    refresh();
+                });
             });
-        });
+        }
 
         workspaceCard.appendChild(mainHeader);
 
         const workspaceBody = document.createElement('div');
         workspaceBody.className = 'card-body p-4';
 
-        if (activeEditorTab === 'categories') {
-            renderCategoryTypeEditorView(workspaceBody, wrapper, templateEngine, iftttEngine, () => { onSave(); refresh(); });
+        if (railMode === 'categories' && activeCat) {
+            renderSingleCategoryEditorView(workspaceBody, wrapper, activeCat.id, templateEngine, iftttEngine, () => { onSave(); refresh(); });
         } else if (activeEditorTab === 'editor' && activeTpl) {
-            renderSchemaEditorView(workspaceBody, wrapper, activeTpl, templateEngine, iftttEngine, (tab) => {
-                activeEditorTab = tab;
-                refresh();
-            });
+            renderSchemaEditorView(workspaceBody, wrapper, activeTpl, templateEngine, iftttEngine, () => { refresh(); });
         } else if (activeTpl) {
-            renderLivePreviewView(workspaceBody, activeTpl, templateEngine, iftttEngine, (tab) => {
-                activeEditorTab = tab;
-                refresh();
-            });
+            renderLivePreviewView(workspaceBody, activeTpl, templateEngine, iftttEngine, () => { refresh(); });
         }
 
         workspaceCard.appendChild(workspaceBody);
@@ -290,126 +312,123 @@ export function renderTemplateStudio(
         container.appendChild(wrapper);
     }
 
-    function renderCategoryTypeEditorView(
+
+    function renderSingleCategoryEditorView(
         el: HTMLElement,
         wrapper: HTMLElement,
+        catId: string,
         engine: TemplateEngine,
         iftttEngine: IftttEngine,
         onSave: () => void
     ) {
+        const c = engine.getCategory(catId);
+        if (!c) return;
+
+        const allRules = iftttEngine.getAllRules();
+        const catRules = allRules.filter(r => r.trigger.targetCategory === c.id);
+        const catTemplates = engine.getAllTemplates().filter(t => t.category === c.id);
+
         const catWrapper = document.createElement('div');
         catWrapper.className = 'd-flex flex-column gap-4';
 
-        const cats = engine.getAllCategories();
-        const allRules = iftttEngine.getAllRules();
-
         catWrapper.innerHTML = `
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix & Automations (${cats.length})</h5>
-                    <p class="text-muted small m-0 mt-1">Configure default container roots, reference filing, topic inheritance, and category-wide automation rules.</p>
+            <!-- Settings Card -->
+            <div class="card border p-4 shadow-sm rounded-3" style="background-color: var(--main-background-color, transparent);">
+                <h6 class="font-weight-bold text-info mb-3 d-flex align-items-center gap-2">
+                    <i class="bx bx-slider-alt"></i> Category Settings
+                </h6>
+                <div class="row g-4 small">
+                    <div class="col-md-4">
+                        <label class="form-label font-weight-bold text-muted mb-1">Default Root Container Target</label>
+                        <input type="text" class="form-control form-control-sm cat-root-input" data-cat-id="${c.id}" value="${c.defaultRootMarker || 'projectRoot'}">
+                        <div class="text-muted tiny mt-1">Target container tag (e.g. #projectRoot, #calendarRoot)</div>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label font-weight-bold text-muted mb-1">Category Behavior Toggles</label>
+                        <div class="d-flex flex-column gap-2.5 pt-1">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input cat-journal-check" type="checkbox" data-cat-id="${c.id}" ${c.autoJournalClone !== false ? 'checked' : ''}>
+                                <label class="form-check-label font-weight-bold"><i class="bx bx-calendar text-primary me-1"></i> Auto-File Reference Under Today's Journal</label>
+                                <div class="text-muted tiny">When enabled, notes created in this category automatically file a reference link under today's journal note.</div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input cat-topic-check" type="checkbox" data-cat-id="${c.id}" ${c.inheritParentTopics !== false ? 'checked' : ''}>
+                                <label class="form-check-label font-weight-bold"><i class="bx bx-git-repo-forked text-info me-1"></i> Inherit Parent Topics & Metadata</label>
+                                <div class="text-muted tiny">When enabled, notes automatically absorb #topic tags and client details from parent projects & organizations.</div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input cat-project-check" type="checkbox" data-cat-id="${c.id}" ${c.projectScopedDefault ? 'checked' : ''}>
+                                <label class="form-check-label font-weight-bold"><i class="bx bx-folder text-success me-1"></i> Scope To Project Hub Container</label>
+                                <div class="text-muted tiny">When enabled, notes created in this category require a parent project hub link.</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-primary add-cat-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
-                    <i class="bx bx-plus"></i> New Category Type
-                </button>
             </div>
 
-            <div class="d-flex flex-column gap-4">
-                ${cats.map(c => {
-                    const catRules = allRules.filter(r => r.trigger.targetCategory === c.id);
-                    return `
-                        <div class="card border p-4 shadow-sm rounded-3" style="background-color: var(--main-background-color, transparent);">
-                            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2.5">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary">
-                                        <i class="bx bx-${c.icon} fs-4"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="font-weight-bold m-0">${c.title}</h6>
-                                        <div class="text-muted tiny mt-0.5">${c.description}</div>
-                                    </div>
-                                </div>
-                                <span class="badge ${c.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted px-3 py-1.5">${c.isBuiltin ? 'Built-in Category' : 'Custom Category'}</span>
-                            </div>
-
-                            <div class="row g-4 small mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label font-weight-bold text-muted mb-1">Default Root Container Target</label>
-                                    <input type="text" class="form-control form-control-sm cat-root-input" data-cat-id="${c.id}" value="${c.defaultRootMarker || 'projectRoot'}">
-                                    <div class="text-muted tiny mt-1">Target container tag (e.g. #projectRoot, #calendarRoot)</div>
-                                </div>
-                                <div class="col-md-8">
-                                    <label class="form-label font-weight-bold text-muted mb-1">Category Behavior Toggles</label>
-                                    <div class="d-flex flex-column gap-2.5 pt-1">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input cat-journal-check" type="checkbox" data-cat-id="${c.id}" ${c.autoJournalClone !== false ? 'checked' : ''}>
-                                            <label class="form-check-label font-weight-bold"><i class="bx bx-calendar text-primary me-1"></i> Auto-File Reference Under Today's Journal</label>
-                                            <div class="text-muted tiny">When enabled, notes created in this category automatically file a reference link under today's journal note.</div>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input cat-topic-check" type="checkbox" data-cat-id="${c.id}" ${c.inheritParentTopics !== false ? 'checked' : ''}>
-                                            <label class="form-check-label font-weight-bold"><i class="bx bx-git-repo-forked text-info me-1"></i> Inherit Parent Topics & Metadata</label>
-                                            <div class="text-muted tiny">When enabled, notes automatically absorb #topic tags and client details from parent projects & organizations.</div>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input cat-project-check" type="checkbox" data-cat-id="${c.id}" ${c.projectScopedDefault ? 'checked' : ''}>
-                                            <label class="form-check-label font-weight-bold"><i class="bx bx-folder text-success me-1"></i> Scope To Project Hub Container</label>
-                                            <div class="text-muted tiny">When enabled, notes created in this category require a parent project hub link.</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="border-top pt-3">
-                                <div class="d-flex align-items-center justify-content-between mb-2.5">
-                                    <h6 class="font-weight-bold text-primary small m-0 d-flex align-items-center gap-1.5">
-                                        <i class="bx bx-git-commit"></i> Category Automation Rules (${catRules.length})
-                                    </h6>
-                                    <button type="button" class="btn btn-xs btn-outline-primary add-cat-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-cat-id="${c.id}">
-                                        <i class="bx bx-plus"></i> Add Category Rule
-                                    </button>
-                                </div>
-                                <div class="d-flex flex-column gap-2">
-                                    ${catRules.length > 0 ? catRules.map(r => `
-                                        <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
-                                            <div class="d-flex align-items-center gap-2.5">
-                                                <i class="bx bx-bolt-circle text-primary fs-5"></i>
-                                                <div>
-                                                    <strong class="text-body">${r.name}</strong>
-                                                    <div class="text-muted tiny mt-0.5">${r.description}</div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                                    <i class="bx bx-edit-alt"></i> Edit Rule
-                                                </button>
-                                                <button type="button" class="btn btn-xs ${r.enabled ? 'btn-outline-success' : 'btn-outline-secondary'} toggle-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                                    <i class="bx bx-${r.enabled ? 'check-circle' : 'circle'}"></i> ${r.enabled ? 'Active' : 'Disabled'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    `).join('') : '<div class="text-muted tiny p-3 border rounded-3 text-center">No category-wide automation rules attached.</div>'}
+            <!-- Templates in this category -->
+            <div class="card border p-4 shadow-sm rounded-3" style="background-color: var(--main-background-color, transparent);">
+                <h6 class="font-weight-bold text-primary mb-3 d-flex align-items-center gap-2">
+                    <i class="bx bx-file"></i> Templates in this Category (${catTemplates.length})
+                </h6>
+                <div class="d-flex flex-column gap-2">
+                    ${catTemplates.length > 0 ? catTemplates.map(t => `
+                        <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <i class="bx bx-${t.icon} text-primary fs-5"></i>
+                                <div>
+                                    <strong class="text-body">${t.title}</strong>
+                                    <div class="text-muted tiny mt-0.5">Marker: #${t.marker} &bull; ${t.attributes.length} attributes, ${t.relationships.length} parent links</div>
                                 </div>
                             </div>
                         </div>
-                    `;
-                }).join('')}
+                    `).join('') : '<div class="text-muted tiny p-3 border rounded-3 text-center">No templates assigned to this category.</div>'}
+                </div>
+            </div>
+
+            <!-- Category automation rules -->
+            <div class="card border p-4 shadow-sm rounded-3" style="background-color: var(--main-background-color, transparent);">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="font-weight-bold text-info m-0 d-flex align-items-center gap-2">
+                        <i class="bx bx-git-commit"></i> Category Automation Rules (${catRules.length})
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-outline-info add-cat-rule-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-cat-id="${c.id}">
+                        <i class="bx bx-plus"></i> Add Category Rule
+                    </button>
+                </div>
+                <div class="d-flex flex-column gap-2">
+                    ${catRules.length > 0 ? catRules.map(r => `
+                        <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <i class="bx bx-bolt-circle text-info fs-5"></i>
+                                <div>
+                                    <strong class="text-body">${r.name}</strong>
+                                    <div class="text-muted tiny mt-0.5">${r.description}</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                    <i class="bx bx-edit-alt"></i> Edit Rule
+                                </button>
+                                <button type="button" class="btn btn-xs ${r.enabled ? 'btn-outline-success' : 'btn-outline-secondary'} toggle-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                    <i class="bx bx-${r.enabled ? 'check-circle' : 'circle'}"></i> ${r.enabled ? 'Active' : 'Disabled'}
+                                </button>
+                            </div>
+                        </div>
+                    `).join('') : '<div class="text-muted tiny p-3 border rounded-3 text-center">No category-wide automation rules attached.</div>'}
+                </div>
             </div>
 
             <div class="d-flex justify-content-end pt-2">
-                <button type="button" class="btn btn-primary px-4 py-2 font-weight-bold shadow-sm save-cats-btn d-flex align-items-center gap-1.5">
-                    <i class="bx bx-save fs-6"></i> Save Category Matrix
+                <button type="button" class="btn btn-primary px-4 py-2 font-weight-bold shadow-sm save-cat-btn d-flex align-items-center gap-1.5">
+                    <i class="bx bx-save fs-6"></i> Save Category Settings
                 </button>
             </div>
         `;
 
-        const addCatBtn = catWrapper.querySelector('.add-cat-btn') as HTMLButtonElement;
-        addCatBtn.addEventListener('click', () => openNewCategoryModal(wrapper, engine, onSave));
-
         catWrapper.querySelectorAll('.add-cat-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
-                const catId = e.currentTarget.dataset.catId;
-                openRuleEditorModal(wrapper, iftttEngine, { targetCategory: catId }, onSave);
+                openRuleEditorModal(wrapper, iftttEngine, { targetCategory: c.id }, onSave);
             });
         });
 
@@ -432,19 +451,14 @@ export function renderTemplateStudio(
             });
         });
 
-        const saveCatsBtn = catWrapper.querySelector('.save-cats-btn') as HTMLButtonElement;
-        saveCatsBtn.addEventListener('click', () => {
-            catWrapper.querySelectorAll('.cat-root-input').forEach((input: any) => {
-                const catId = input.dataset.catId;
-                const cat = engine.getCategory(catId);
-                if (cat) {
-                    cat.defaultRootMarker = input.value;
-                    cat.autoJournalClone = (catWrapper.querySelector(`.cat-journal-check[data-cat-id="${catId}"]`) as HTMLInputElement)?.checked;
-                    cat.inheritParentTopics = (catWrapper.querySelector(`.cat-topic-check[data-cat-id="${catId}"]`) as HTMLInputElement)?.checked;
-                    cat.projectScopedDefault = (catWrapper.querySelector(`.cat-project-check[data-cat-id="${catId}"]`) as HTMLInputElement)?.checked;
-                    engine.registerCategory(cat);
-                }
-            });
+        const saveCatBtn = catWrapper.querySelector('.save-cat-btn') as HTMLButtonElement;
+        saveCatBtn.addEventListener('click', () => {
+            const rootInput = catWrapper.querySelector('.cat-root-input') as HTMLInputElement;
+            if (rootInput) c.defaultRootMarker = rootInput.value;
+            c.autoJournalClone = (catWrapper.querySelector('.cat-journal-check') as HTMLInputElement)?.checked;
+            c.inheritParentTopics = (catWrapper.querySelector('.cat-topic-check') as HTMLInputElement)?.checked;
+            c.projectScopedDefault = (catWrapper.querySelector('.cat-project-check') as HTMLInputElement)?.checked;
+            engine.registerCategory(c);
             onSave();
         });
 
@@ -457,7 +471,7 @@ export function renderTemplateStudio(
         tpl: TemplateDefinition,
         engine: TemplateEngine,
         iftttEngine: IftttEngine,
-        switchTab: (tab: 'categories' | 'preview') => void
+        switchTab: () => void
     ) {
         const formWrapper = document.createElement('div');
         formWrapper.className = 'd-flex flex-column gap-4';
@@ -659,13 +673,13 @@ export function renderTemplateStudio(
         behaviorCard.querySelectorAll('.edit-cat-rules-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                switchTab('categories');
+                switchTab();
             });
         });
 
         behaviorCard.querySelectorAll('.edit-global-rules-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                openRuleEditorModal(wrapper, iftttEngine, {}, () => switchTab('editor'));
+                openRuleEditorModal(wrapper, iftttEngine, {}, () => switchTab());
             });
         });
 
@@ -673,18 +687,17 @@ export function renderTemplateStudio(
             btn.addEventListener('click', (e: any) => {
                 const ruleId = e.currentTarget.dataset.ruleId;
                 const rule = ruleId ? iftttEngine.getRule(ruleId) : undefined;
-                openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab('editor'));
+                openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab());
             });
         });
 
-        // Stay on current tab when toggling rule active state!
         behaviorCard.querySelectorAll('.toggle-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const ruleId = e.currentTarget.dataset.ruleId;
                 const rule = iftttEngine.getRule(ruleId);
                 if (rule) {
                     iftttEngine.toggleRule(ruleId, !rule.enabled);
-                    switchTab('editor');
+                    switchTab();
                 }
             });
         });
@@ -692,24 +705,24 @@ export function renderTemplateStudio(
         behaviorCard.querySelectorAll('.edit-parent-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const idx = Number(e.currentTarget.dataset.relIdx);
-                openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, idx, () => switchTab('editor'));
+                openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, idx, () => switchTab());
             });
         });
 
         const addRelBtn = behaviorCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
         if (addRelBtn) {
-            addRelBtn.addEventListener('click', () => openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, undefined, () => switchTab('editor')));
+            addRelBtn.addEventListener('click', () => openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, undefined, () => switchTab()));
         }
 
         const addTplRuleBtn = behaviorCard.querySelector('.add-tpl-rule-btn') as HTMLButtonElement;
-        addTplRuleBtn.addEventListener('click', () => openRuleEditorModal(wrapper, iftttEngine, { targetTemplateId: tpl.id }, () => switchTab('editor')));
+        addTplRuleBtn.addEventListener('click', () => openRuleEditorModal(wrapper, iftttEngine, { targetTemplateId: tpl.id }, () => switchTab()));
 
         behaviorCard.querySelectorAll('.del-rel-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const idx = Number(e.currentTarget.dataset.relIdx);
                 tpl.relationships.splice(idx, 1);
                 engine.updateTemplate(tpl.id, tpl);
-                switchTab('editor');
+                switchTab();
             });
         });
 
@@ -717,7 +730,7 @@ export function renderTemplateStudio(
             btn.addEventListener('click', (e: any) => {
                 const ruleId = e.currentTarget.dataset.ruleId;
                 iftttEngine.deleteRule(ruleId);
-                switchTab('editor');
+                switchTab();
             });
         });
 
@@ -761,7 +774,7 @@ export function renderTemplateStudio(
         `;
 
         const addAttrBtn = attrCard.querySelector('.add-attr-btn') as HTMLButtonElement;
-        addAttrBtn.addEventListener('click', () => openAddAttrModal(wrapper, tpl, engine, () => switchTab('editor')));
+        addAttrBtn.addEventListener('click', () => openAddAttrModal(wrapper, tpl, engine, () => switchTab()));
 
         formWrapper.appendChild(attrCard);
 
@@ -813,7 +826,7 @@ export function renderTemplateStudio(
         tpl: TemplateDefinition,
         engine: TemplateEngine,
         iftttEngine: IftttEngine,
-        switchTab: (tab: 'categories' | 'preview') => void
+        switchTab: () => void
     ) {
         const previewWrapper = document.createElement('div');
         previewWrapper.className = 'd-flex flex-column gap-4';
@@ -912,7 +925,7 @@ export function renderTemplateStudio(
         const editCatNavBtn = previewWrapper.querySelector('.edit-cat-nav-btn') as HTMLButtonElement;
         editCatNavBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            switchTab('categories');
+            switchTab();
         });
 
         el.appendChild(previewWrapper);
