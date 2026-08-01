@@ -12,11 +12,11 @@ cd "$(dirname "$0")"
 GREEN='\033[0;32m'; RED='\033[0;31m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 failed=0
 
-printf "%b\n" "${CYAN}${BOLD}== ikmal-notes (node) ==${NC}"
+printf "%b\n" "${CYAN}${BOLD}== ikmal-tools (node) ==${NC}"
 if (cd .. && npm test); then
-    printf "%b\n" "${GREEN}PASS${NC} ikmal-notes"
+    printf "%b\n" "${GREEN}PASS${NC} ikmal-tools"
 else
-    printf "%b\n" "${RED}FAIL${NC} ikmal-notes"
+    printf "%b\n" "${RED}FAIL${NC} ikmal-tools"
     failed=1
 fi
 

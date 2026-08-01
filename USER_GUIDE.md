@@ -1,6 +1,6 @@
-# Using Ikmal Notes for Trilium
+# Using Ikmal Tools for Trilium
 
-Ikmal Notes for Trilium is a component-driven plugin suite featuring the **Today Homepage & Workspace Dashboard**, **Template Studio**, **If/Then Automations**, **Package Settings**, and a **Standalone Micro-Tools Suite**.
+Ikmal Tools for Trilium is a component-driven plugin suite featuring the **Today Homepage & Workspace Dashboard**, **Template Studio**, **If/Then Automations**, **Package Settings**, and a **Standalone Micro-Tools Suite**.
 
 ## Today
 

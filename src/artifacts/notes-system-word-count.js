@@ -46,5 +46,5 @@ import { escapeHtml } from '../components/nativeUi.js';
     observer.observe(document.body, { childList: true, subtree: true });
 
     scheduleUpdate();
-    console.log('[Ikmal Notes] Live Editor Status Bar Word Count active.');
+    console.log('[Ikmal Tools] Live Editor Status Bar Word Count active.');
 })();

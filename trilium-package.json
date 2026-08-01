@@ -1,7 +1,7 @@
 {
   "id": "iansherr/ikmal_tools",
   "version": "1.0.0",
-  "name": "Ikmal Notes for Trilium",
+  "name": "Ikmal Tools for Trilium",
   "description": "Component-driven, editable, and organizable notes system layer for Trilium Notes with Today Homepage, Template Studio, and If/Then Automation Rules.",
   "author": "Ian Sherr",
   "maintainer": "Ian Sherr",
@@ -75,7 +75,7 @@
       "type": "render",
       "source": "src/artifacts/notes-system-dashboard.jsx",
       "integrity": "sha256-XidRj4uOkEzlUvlD0vpQK2Ar4aZh2OdWPfw6qGic1lQ=",
-      "title": "Ikmal Notes for Trilium: Today Homepage & Workspace Dashboard",
+      "title": "Ikmal Tools for Trilium: Today Homepage & Workspace Dashboard",
       "activation": "manual"
     },
     {
@@ -83,7 +83,7 @@
       "type": "render",
       "source": "src/artifacts/notes-system-kanban.jsx",
       "integrity": "sha256-PKyy8c1ccEbjajKiD4BlC6zlJQK1hyZgQn+7cObXZ1Y=",
-      "title": "Ikmal Notes for Trilium: Standalone Task Kanban Board",
+      "title": "Ikmal Tools for Trilium: Standalone Task Kanban Board",
       "activation": "manual"
     },
     {
@@ -91,7 +91,7 @@
       "type": "render",
       "source": "src/artifacts/notes-system-insights.jsx",
       "integrity": "sha256-lfZS1EhGzLPIQ1Z+rJnpMClse8/GtQ2DBOTaL6sBQCs=",
-      "title": "Ikmal Notes for Trilium: Standalone Productivity & Writing Insights",
+      "title": "Ikmal Tools for Trilium: Standalone Productivity & Writing Insights",
       "activation": "manual"
     },
     {
@@ -99,7 +99,7 @@
       "type": "render",
       "source": "src/artifacts/notes-system-quick-capture.jsx",
       "integrity": "sha256-gETHAwgGf9D+nHgY6G9qvaOnxwvmrU/1FzvouCHnYoo=",
-      "title": "Ikmal Notes for Trilium: Standalone Quick Capture Toolbar",
+      "title": "Ikmal Tools for Trilium: Standalone Quick Capture Toolbar",
       "activation": "manual"
     },
     {
@@ -107,7 +107,7 @@
       "type": "render",
       "source": "src/artifacts/notes-system-weather.jsx",
       "integrity": "sha256-qF2+elcB2I1Ws7qPw2+ZKU7m2mpq421ZVpYS08UjaL4=",
-      "title": "Ikmal Notes for Trilium: Standalone Weather & Climate Card",
+      "title": "Ikmal Tools for Trilium: Standalone Weather & Climate Card",
       "activation": "manual"
     },
     {
@@ -115,7 +115,7 @@
       "type": "render",
       "source": "src/artifacts/notes-system-on-this-day.jsx",
       "integrity": "sha256-3mo5oS93Ri/98/lhwJITNSxQrBHWlRJnIf8ppPveC4E=",
-      "title": "Ikmal Notes for Trilium: Standalone Time Machine (On This Day)",
+      "title": "Ikmal Tools for Trilium: Standalone Time Machine (On This Day)",
       "activation": "manual"
     },
     {
@@ -123,7 +123,7 @@
       "type": "render",
       "source": "src/artifacts/notes-system-stale-notes.jsx",
       "integrity": "sha256-yB/9Y0evzeUMSntprKTXVXDU+GrVcRqnXNaU9Ez2iz8=",
-      "title": "Ikmal Notes for Trilium: Standalone Stale Notes Reviewer",
+      "title": "Ikmal Tools for Trilium: Standalone Stale Notes Reviewer",
       "activation": "manual"
     },
     {
@@ -131,15 +131,15 @@
       "type": "launcher",
       "source": "src/artifacts/notes-system-launcher.js",
       "integrity": "sha256-uVqTMFNMBR1uuNE+iR0hUb9TOuQdlk/RvIR2LPjPotc=",
-      "title": "Ikmal Notes for Trilium: Header Launcher Bar & Hotkey",
+      "title": "Ikmal Tools for Trilium: Header Launcher Bar & Hotkey",
       "activation": "manual"
     },
     {
       "id": "notes-system-word-count",
       "type": "launcher",
       "source": "src/artifacts/notes-system-word-count.js",
-      "integrity": "sha256-JU64v8uFef+UWPHi9bG1PQ5ONpg1cdlaVsZaHnHP7Q4=",
-      "title": "Ikmal Notes for Trilium: Live Editor Status Bar Word Count",
+      "integrity": "sha256-rb8MN3p/4+ZdU7mERfpOZiHLQV+i3ZyfBvw/p6u/XlI=",
+      "title": "Ikmal Tools for Trilium: Live Editor Status Bar Word Count",
       "activation": "startup"
     },
     {
@@ -147,7 +147,7 @@
       "type": "css",
       "source": "src/artifacts/notes-system.css",
       "integrity": "sha256-IhJtWt+6gVr3bCt9HdBhmvkXSTR16wz//Bor0bMhlJA=",
-      "title": "Ikmal Notes for Trilium: Theme & Stylesheet",
+      "title": "Ikmal Tools for Trilium: Theme & Stylesheet",
       "activation": "startup"
     }
   ]

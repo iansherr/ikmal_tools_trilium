@@ -1,7 +1,7 @@
 {
-  "name": "ikmal-notes-for-trilium",
+  "name": "ikmal-tools-for-trilium",
   "version": "1.0.0",
-  "description": "Ikmal Notes for Trilium: Component-driven notes system layer for Trilium Notes with Today Homepage, Template Studio, micro-tools suite, and automations.",
+  "description": "Ikmal Tools for Trilium: Component-driven notes system layer for Trilium Notes with Today Homepage, Template Studio, micro-tools suite, and automations.",
   "type": "module",
   "main": "dist/notes-system-dashboard.js",
   "scripts": {

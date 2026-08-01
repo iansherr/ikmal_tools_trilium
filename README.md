@@ -1,4 +1,4 @@
-# Ikmal Notes for Trilium
+# Ikmal Tools for Trilium
 
 A component-driven plugin suite for Trilium Notes: a Today Homepage, Template Studio for
 editing note schemas and automation rules, standalone micro-tools, and a Settings tab —
