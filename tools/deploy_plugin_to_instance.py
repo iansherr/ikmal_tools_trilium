@@ -14,9 +14,11 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT_DIR / "trilium-package.json"
 COMMUNITY_PACKAGES_ROOT_ID = "hVY3hYDoODHc"
 
-def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy") -> None:
+def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy", manifest_path_str: str | None = None) -> None:
     api = Etapi(url, token)
-    manifest = json.loads(MANIFEST_PATH.read_text())
+    manifest_path = Path(manifest_path_str) if manifest_path_str else MANIFEST_PATH
+    manifest = json.loads(manifest_path.read_text())
+    base_dir = manifest_path.parent
     
     print(f"🚀 Deploying plugin '{manifest['id']}' v{manifest['version']} to {url}...")
     
@@ -62,8 +64,8 @@ def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy") -> None:
     # 3. Create or update declared artifacts
     for artifact in manifest["artifacts"]:
         dist_rel_path = artifact["source"].replace("src/", "dist/").replace(".jsx", ".js")
-        dist_file = ROOT_DIR / dist_rel_path
-        source_file = dist_file if dist_file.exists() else (ROOT_DIR / artifact["source"])
+        dist_file = base_dir / dist_rel_path
+        source_file = dist_file if dist_file.exists() else (base_dir / artifact["source"])
         
         if not source_file.exists():
             print(f"  ⚠️ Skipping missing source: {artifact['source']}")
@@ -171,4 +173,5 @@ def deploy(url: str = "http://127.0.0.1:37843", token: str = "dummy") -> None:
 if __name__ == "__main__":
     url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:37843"
     token = sys.argv[2] if len(sys.argv) > 2 else "dummy"
-    deploy(url, token)
+    manifest_path_str = sys.argv[3] if len(sys.argv) > 3 else None
+    deploy(url, token, manifest_path_str)
