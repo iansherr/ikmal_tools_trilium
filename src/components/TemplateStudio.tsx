@@ -1,5 +1,5 @@
 /**
- * Template Studio Component: Ultra-Sleek Polish & Solid Opaque Modals.
+ * Template Studio Component: 100% Standardized Button Proportions, Unified Headers, and Consistent Empty States.
  * Styled natively with Trilium Boxicons and standard Trilium design tokens.
  */
 
@@ -45,10 +45,10 @@ export function renderTemplateStudio(
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-outline-primary manage-cats-btn px-3 py-2 d-flex align-items-center gap-1.5 shadow-xs">
+                <button type="button" class="btn btn-sm btn-outline-primary manage-cats-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
                     <i class="bx bx-category fs-6"></i> Category Matrix
                 </button>
-                <button type="button" class="btn btn-sm btn-primary new-template-btn px-3 py-2 d-flex align-items-center gap-1.5 shadow-xs">
+                <button type="button" class="btn btn-sm btn-primary new-template-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
                     <i class="bx bx-plus fs-6"></i> New Template
                 </button>
             </div>
@@ -229,17 +229,17 @@ export function renderTemplateStudio(
             <div class="d-flex align-items-center gap-3">
                 <ul class="nav nav-pills bg-body bg-opacity-50 p-1 rounded-3 border">
                     <li class="nav-item">
-                        <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'editor' ? 'active font-weight-bold' : ''} editor-tab-btn" type="button">
+                        <button class="nav-link btn-sm py-1.5 px-3 ${activeEditorTab === 'editor' ? 'active font-weight-bold' : ''} editor-tab-btn" type="button">
                             <i class="bx bx-edit-alt"></i> Schema & Rules
                         </button>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'preview' ? 'active font-weight-bold' : ''} preview-tab-btn" type="button">
+                        <button class="nav-link btn-sm py-1.5 px-3 ${activeEditorTab === 'preview' ? 'active font-weight-bold' : ''} preview-tab-btn" type="button">
                             <i class="bx bx-show"></i> Live Preview
                         </button>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'categories' ? 'active font-weight-bold' : ''} categories-tab-btn" type="button">
+                        <button class="nav-link btn-sm py-1.5 px-3 ${activeEditorTab === 'categories' ? 'active font-weight-bold' : ''} categories-tab-btn" type="button">
                             <i class="bx bx-category"></i> Category Matrix
                         </button>
                     </li>
@@ -301,7 +301,7 @@ export function renderTemplateStudio(
                     <h5 class="h6 font-weight-bold m-0">Category Type Behavior Matrix & Automations (${cats.length})</h5>
                     <p class="text-muted small m-0 mt-1">Configure default container roots, journal cloning, topic inheritance, and category-wide IFTTT rules.</p>
                 </div>
-                <button type="button" class="btn btn-sm btn-primary add-cat-btn d-flex align-items-center gap-1.5 shadow-xs">
+                <button type="button" class="btn btn-sm btn-primary add-cat-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
                     <i class="bx bx-plus"></i> New Category Type
                 </button>
             </div>
@@ -353,7 +353,7 @@ export function renderTemplateStudio(
                                     <h6 class="font-weight-bold text-primary small m-0 d-flex align-items-center gap-1.5">
                                         <i class="bx bx-git-commit"></i> Category Automation Rules (${catRules.length})
                                     </h6>
-                                    <button type="button" class="btn btn-xs btn-outline-primary add-cat-rule-btn d-flex align-items-center gap-1 shadow-xs" data-cat-id="${c.id}">
+                                    <button type="button" class="btn btn-xs btn-outline-primary add-cat-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-cat-id="${c.id}">
                                         <i class="bx bx-plus"></i> Add Category Rule
                                     </button>
                                 </div>
@@ -368,7 +368,7 @@ export function renderTemplateStudio(
                                                 </div>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
-                                                <button type="button" class="btn btn-xs btn-outline-primary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                                <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
                                                     <i class="bx bx-edit-alt"></i> Edit Rule
                                                 </button>
                                                 <span class="badge ${r.enabled ? 'bg-success' : 'bg-secondary'} bg-opacity-20 text-muted">${r.enabled ? 'Active' : 'Disabled'}</span>
@@ -490,7 +490,7 @@ export function renderTemplateStudio(
         `;
         formWrapper.appendChild(basicCard);
 
-        // 2. UNIFIED IFTTT AUTOMATION RULES CARD (IDENTICAL CARDS ACROSS GLOBAL, CATEGORY, TEMPLATE SCOPES)
+        // 2. UNIFIED IFTTT AUTOMATION RULES CARD (ONE SINGLE CLEAN ADD BUTTON AT TOP!)
         const behaviorCard = document.createElement('div');
         behaviorCard.className = 'card border p-4 shadow-sm rounded-3';
         behaviorCard.style.backgroundColor = 'var(--main-background-color, transparent)';
@@ -504,24 +504,22 @@ export function renderTemplateStudio(
                     </h6>
                     <p class="text-muted tiny m-0 mt-0.5">Parent relationship links, auto-cloning, metadata inheritance, and custom logic rules.</p>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-primary add-rel-rule-btn d-flex align-items-center gap-1.5 shadow-xs">
-                        <i class="bx bx-link"></i> Add Parent Link Rule
-                    </button>
-                    <button type="button" class="btn btn-sm btn-primary add-tpl-rule-btn d-flex align-items-center gap-1.5 shadow-xs">
-                        <i class="bx bx-plus"></i> Add Custom Rule
-                    </button>
-                </div>
+                <button type="button" class="btn btn-sm btn-primary add-tpl-rule-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bx bx-plus"></i> Add Automation Rule
+                </button>
             </div>
 
             <div class="d-flex flex-column gap-4">
                 <!-- Group 1: Global Scope Automations -->
                 <div>
-                    <div class="text-primary font-weight-bold small mb-2 d-flex align-items-center gap-1.5">
-                        <i class="bx bx-globe"></i> Global System Rules (${globalRules.length})
+                    <div class="text-primary font-weight-bold small mb-2 d-flex align-items-center justify-content-between">
+                        <span class="d-flex align-items-center gap-1.5"><i class="bx bx-globe"></i> Global System Rules (${globalRules.length})</span>
+                        <button type="button" class="btn btn-xs btn-outline-secondary edit-global-rules-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
+                            <i class="bx bx-slider-alt"></i> Edit Global Rules
+                        </button>
                     </div>
                     <div class="d-flex flex-column gap-2">
-                        ${globalRules.map(r => `
+                        ${globalRules.length > 0 ? globalRules.map(r => `
                             <div class="p-3 rounded-3 border small d-flex align-items-center justify-content-between shadow-xs" style="background-color: var(--sub-background-color, transparent);">
                                 <div class="d-flex align-items-center gap-2.5">
                                     <i class="bx bx-globe text-primary fs-5"></i>
@@ -530,11 +528,11 @@ export function renderTemplateStudio(
                                         <div class="text-muted tiny mt-0.5">System-wide rule (Inherited across all notes)</div>
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-xs btn-outline-primary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
-                                    <i class="bx bx-edit-alt"></i> Deeplink Edit Rule
+                                <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                    <i class="bx bx-edit-alt"></i> Edit Rule
                                 </button>
                             </div>
-                        `).join('')}
+                        `).join('') : '<div class="p-3 text-center text-muted tiny border rounded-3">No global system rules.</div>'}
                     </div>
                 </div>
 
@@ -542,8 +540,8 @@ export function renderTemplateStudio(
                 <div>
                     <div class="text-info font-weight-bold small mb-2 d-flex align-items-center justify-content-between">
                         <span class="d-flex align-items-center gap-1.5"><i class="bx bx-category"></i> Category Type Rules (${catRules.length})</span>
-                        <button type="button" class="btn btn-xs btn-link p-0 text-info edit-cat-rules-btn font-weight-bold">
-                            <i class="bx bx-category"></i> Edit Category '${tpl.category}' Matrix
+                        <button type="button" class="btn btn-xs btn-outline-info edit-cat-rules-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
+                            <i class="bx bx-category"></i> Edit Category Matrix
                         </button>
                     </div>
                     <div class="d-flex flex-column gap-2">
@@ -557,17 +555,20 @@ export function renderTemplateStudio(
                                     </div>
                                 </div>
                                 <button type="button" class="btn btn-xs btn-outline-info edit-cat-rules-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
-                                    <i class="bx bx-edit-alt"></i> Deeplink Edit Category
+                                    <i class="bx bx-edit-alt"></i> Edit Category
                                 </button>
                             </div>
-                        `).join('') : '<div class="p-2.5 text-center text-muted tiny border rounded-3">No category-wide rules for category \'' + tpl.category + '\'.</div>'}
+                        `).join('') : '<div class="p-3 text-center text-muted tiny border rounded-3">No category-wide rules for category \'' + tpl.category + '\'.</div>'}
                     </div>
                 </div>
 
-                <!-- Group 3: Template Scope Automations (CLEAN HEADER WITHOUT REDUNDANT GREEN PILL) -->
+                <!-- Group 3: Template Scope Automations -->
                 <div>
-                    <div class="text-success font-weight-bold small mb-2 d-flex align-items-center gap-1.5">
-                        <i class="bx bx-file"></i> Template Direct Rules (${parentRules.length + tplRules.length})
+                    <div class="text-success font-weight-bold small mb-2 d-flex align-items-center justify-content-between">
+                        <span class="d-flex align-items-center gap-1.5"><i class="bx bx-file"></i> Template Direct Rules (${parentRules.length + tplRules.length})</span>
+                        <button type="button" class="btn btn-xs btn-outline-success add-rel-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
+                            <i class="bx bx-link"></i> Add Parent Link
+                        </button>
                     </div>
                     <div class="d-flex flex-column gap-2">
                         ${parentRules.map((r, idx) => `
@@ -580,7 +581,7 @@ export function renderTemplateStudio(
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-xs btn-outline-success edit-parent-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rel-idx="${idx}">
+                                    <button type="button" class="btn btn-xs btn-outline-secondary edit-parent-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rel-idx="${idx}">
                                         <i class="bx bx-edit-alt"></i> Edit Link
                                     </button>
                                     <button type="button" class="btn btn-xs btn-outline-danger del-rel-btn p-1" data-rel-idx="${idx}">
@@ -600,7 +601,7 @@ export function renderTemplateStudio(
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-xs btn-outline-primary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
+                                    <button type="button" class="btn btn-xs btn-outline-secondary edit-rule-btn px-2.5 py-1 font-weight-bold d-flex align-items-center gap-1 shadow-xs" data-rule-id="${r.id}">
                                         <i class="bx bx-edit-alt"></i> Edit Rule
                                     </button>
                                     <button type="button" class="btn btn-xs btn-outline-danger del-rule-btn p-1" data-rule-id="${r.id}">
@@ -623,11 +624,11 @@ export function renderTemplateStudio(
             });
         });
 
-        behaviorCard.querySelectorAll('.edit-rule-btn').forEach(btn => {
+        behaviorCard.querySelectorAll('.edit-global-rules-btn, .edit-rule-btn').forEach(btn => {
             btn.addEventListener('click', (e: any) => {
                 const ruleId = e.currentTarget.dataset.ruleId;
-                const rule = iftttEngine.getRule(ruleId);
-                if (rule) openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab('preview'));
+                const rule = ruleId ? iftttEngine.getRule(ruleId) : undefined;
+                openRuleEditorModal(wrapper, iftttEngine, { rule }, () => switchTab('preview'));
             });
         });
 
@@ -639,7 +640,9 @@ export function renderTemplateStudio(
         });
 
         const addRelBtn = behaviorCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
-        addRelBtn.addEventListener('click', () => openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, undefined, () => switchTab('preview')));
+        if (addRelBtn) {
+            addRelBtn.addEventListener('click', () => openAddRelationshipModal(wrapper, tpl, engine, iftttEngine, undefined, () => switchTab('preview')));
+        }
 
         const addTplRuleBtn = behaviorCard.querySelector('.add-tpl-rule-btn') as HTMLButtonElement;
         addTplRuleBtn.addEventListener('click', () => openRuleEditorModal(wrapper, iftttEngine, { targetTemplateId: tpl.id }, () => switchTab('preview')));
@@ -672,7 +675,7 @@ export function renderTemplateStudio(
                 <h6 class="font-weight-bold text-success m-0 d-flex align-items-center gap-2">
                     <i class="bx bx-list-check"></i> Promoted Form Attributes (${tpl.attributes.length})
                 </h6>
-                <button type="button" class="btn btn-sm btn-outline-success add-attr-btn d-flex align-items-center gap-1 shadow-xs">
+                <button type="button" class="btn btn-sm btn-outline-success add-attr-btn px-3 py-1.5 font-weight-bold d-flex align-items-center gap-1 shadow-xs">
                     <i class="bx bx-plus"></i> Add Attribute
                 </button>
             </div>
@@ -781,7 +784,7 @@ export function renderTemplateStudio(
                             <div class="d-flex flex-column gap-2.5">
                                 ${tpl.attributes.map(a => `
                                     <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
-                                        <span class="badge bg-primary bg-opacity-10 text-primary">#${a.name}</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">#${a.name}</span>
                                         ${a.options ? `
                                             <select class="form-select form-select-sm" style="width: 160px;">
                                                 ${a.options.map(opt => `<option>${opt}</option>`).join('')}
@@ -800,15 +803,15 @@ export function renderTemplateStudio(
                             <div class="d-flex flex-column gap-2.5 small text-muted">
                                 <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                                     <span>Parent 1 (Project Hub):</span>
-                                    <span class="badge bg-primary bg-opacity-20 text-primary">~project</span>
+                                    <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill">~project</span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                                     <span>Parent 2 (Client Organization):</span>
-                                    <span class="badge bg-info bg-opacity-20 text-info">~client</span>
+                                    <span class="badge bg-info bg-opacity-20 text-info rounded-pill">~client</span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                                     <span>Derived Topics (Dual Inherited):</span>
-                                    <span class="badge bg-success bg-opacity-20 text-success">#TechNews</span>
+                                    <span class="badge bg-success bg-opacity-20 text-success rounded-pill">#TechNews</span>
                                 </div>
                             </div>
                         </div>
@@ -825,15 +828,15 @@ export function renderTemplateStudio(
                     <div class="d-flex flex-column gap-2 small text-muted">
                         <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Global System Scope:</span>
-                            <span class="badge bg-primary bg-opacity-20 text-primary">Auto-Clone to Project & Sync Derived Topics</span>
+                            <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill">Auto-Clone to Project & Sync Derived Topics</span>
                         </div>
                         <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Category '${tpl.category}' Scope:</span>
-                            <span class="badge bg-info bg-opacity-20 text-info">${catRules.length} Category Rules Active</span>
+                            <span class="badge bg-info bg-opacity-20 text-info rounded-pill">${catRules.length} Category Rules Active</span>
                         </div>
                         <div class="d-flex align-items-center justify-content-between p-2 rounded-2 border" style="background-color: var(--main-background-color, transparent);">
                             <span>Template '${tpl.title}' Scope:</span>
-                            <span class="badge bg-success bg-opacity-20 text-success">${tplRules.length} Template Rules Active</span>
+                            <span class="badge bg-success bg-opacity-20 text-success rounded-pill">${tplRules.length} Template Rules Active</span>
                         </div>
                     </div>
                 </div>
@@ -879,10 +882,9 @@ export function renderTemplateStudio(
         const content = document.createElement('div');
         content.className = 'notes-modal-card shadow-lg rounded-3 border';
 
-        // Detect dark vs light Trilium theme
         const isDark = document.body.classList.contains('dark') || 
-            window.getComputedStyle(document.body).backgroundColor.includes('rgb(') && 
-            parseInt(window.getComputedStyle(document.body).backgroundColor.split(',')[0].replace(/\D/g, '') || '255') < 128;
+            (window.getComputedStyle(document.body).backgroundColor.includes('rgb(') && 
+            parseInt(window.getComputedStyle(document.body).backgroundColor.split(',')[0].replace(/\D/g, '') || '255') < 128);
 
         const solidBg = isDark ? '#22262f' : '#ffffff';
         const textColor = isDark ? '#f0f4f8' : '#1e293b';
@@ -908,7 +910,6 @@ export function renderTemplateStudio(
                 ${footerButtonsHtml}
             </div>
         `;
-
 
         content.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => overlay.remove()));
         dialog.appendChild(content);
@@ -982,7 +983,7 @@ export function renderTemplateStudio(
         `;
 
         const footer = `
-            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn font-weight-bold">Cancel</button>
             <button type="button" class="btn btn-sm btn-primary save-rule-modal-btn px-4 font-weight-bold">Save Rule</button>
         `;
 
@@ -1064,7 +1065,7 @@ export function renderTemplateStudio(
         `;
 
         const footer = `
-            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn font-weight-bold">Cancel</button>
             <button type="button" class="btn btn-sm btn-primary save-rel-modal-btn px-4 font-weight-bold">Save Link Rule</button>
         `;
 
@@ -1137,7 +1138,7 @@ export function renderTemplateStudio(
         `;
 
         const footer = `
-            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn font-weight-bold">Cancel</button>
             <button type="button" class="btn btn-sm btn-primary create-tpl-btn px-4 font-weight-bold">Create Template</button>
         `;
 
@@ -1189,7 +1190,7 @@ export function renderTemplateStudio(
         `;
 
         const footer = `
-            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn font-weight-bold">Cancel</button>
             <button type="button" class="btn btn-sm btn-primary create-cat-btn px-4 font-weight-bold">Create Category</button>
         `;
 
@@ -1243,7 +1244,7 @@ export function renderTemplateStudio(
         `;
 
         const footer = `
-            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn">Cancel</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary close-modal-btn font-weight-bold">Cancel</button>
             <button type="button" class="btn btn-sm btn-success create-attr-btn px-4 font-weight-bold">Save Attribute</button>
         `;
 
