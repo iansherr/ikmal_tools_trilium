@@ -1,6 +1,6 @@
 /**
- * Template Studio Component: Multi-Parent Tree Hierarchy with Project Scratch, Person, Org, and Unassigned Scratch.
- * Styled natively with Trilium Boxicons and standard Trilium form components.
+ * Template Studio Component: Spacious, High-Elegance Refined UI.
+ * Integrates native Trilium design tokens, generous whitespace, glassmorphism cards, and un-cramped layouts.
  */
 
 import { TemplateEngine } from '../engine/templateEngine.js';
@@ -13,6 +13,7 @@ export function renderTemplateStudio(
     onSave: () => void
 ): void {
     let selectedTemplateId: string = templateEngine.getAllTemplates()[0]?.id || 'story';
+    let activeEditorTab: 'editor' | 'preview' = 'editor';
 
     function refresh() {
         container.innerHTML = '';
@@ -20,26 +21,30 @@ export function renderTemplateStudio(
         const wrapper = document.createElement('div');
         wrapper.className = 'template-studio-wrapper d-flex flex-column gap-4';
 
-        // Header Banner (Trilium Settings Style)
+        // 1. Refined Premium Header
         const header = document.createElement('div');
-        header.className = 'p-3.5 rounded border d-flex align-items-center justify-content-between shadow-sm';
+        header.className = 'p-4 rounded border d-flex align-items-center justify-content-between shadow-sm';
         header.style.backgroundColor = 'var(--sub-background-color, transparent)';
-        header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
+        header.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
+        header.style.borderRadius = '12px';
+
         header.innerHTML = `
             <div class="d-flex align-items-center gap-3">
-                <i class="bx bx-layer h3 m-0 text-primary"></i>
+                <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bx bx-layer h3 m-0 text-primary"></i>
+                </div>
                 <div>
                     <h2 class="h5 m-0 font-weight-bold d-flex align-items-center gap-2">
-                        Template Studio & Nested Hierarchy Tree
+                        Template Studio & Hierarchy
                         <span class="badge bg-secondary font-weight-normal small">v1.0.0</span>
                     </h2>
                     <p class="text-muted small m-0 mt-1">
-                        Configure nested template schemas, parent-child relations, promoted attributes, and live note preview.
+                        Configure nested template schemas, parent-child relations, promoted attributes, and note previews.
                     </p>
                 </div>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-primary new-template-btn d-flex align-items-center gap-1">
-                <i class="bx bx-plus"></i> New Template
+            <button type="button" class="btn btn-sm btn-primary new-template-btn px-3 py-2 d-flex align-items-center gap-1.5 shadow-xs">
+                <i class="bx bx-plus fs-6"></i> New Template
             </button>
         `;
 
@@ -50,27 +55,28 @@ export function renderTemplateStudio(
         const layoutRow = document.createElement('div');
         layoutRow.className = 'row g-4';
 
-        // 1. Sidebar: True Multi-Parent Nested Visual Tree View (Trilium Navigation Style)
+        // 2. Sidebar: Spacious Nested Tree View (3 Cols)
         const sidebarCol = document.createElement('div');
         sidebarCol.className = 'col-md-3';
 
         const sidebarCard = document.createElement('div');
-        sidebarCard.className = 'card border h-100 shadow-sm';
+        sidebarCard.className = 'card border shadow-sm h-100';
         sidebarCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
-        sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
+        sidebarCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
+        sidebarCard.style.borderRadius = '12px';
 
         const sidebarHeader = document.createElement('div');
-        sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center justify-content-between p-3';
+        sidebarHeader.className = 'card-header bg-transparent border-bottom font-weight-bold small text-muted d-flex align-items-center justify-content-between p-3.5';
         sidebarHeader.innerHTML = `
-            <span class="d-flex align-items-center gap-1.5"><i class="bx bx-sitemap"></i> Nested Hierarchy Tree</span>
-            <span class="badge bg-primary bg-opacity-10 text-primary small">Multi-Parent</span>
+            <span class="d-flex align-items-center gap-2"><i class="bx bx-sitemap text-primary"></i> Template Hierarchy</span>
+            <span class="badge bg-primary bg-opacity-10 text-primary small">Tree</span>
         `;
         sidebarCard.appendChild(sidebarHeader);
 
         const treeContainer = document.createElement('div');
-        treeContainer.className = 'card-body p-2.5';
+        treeContainer.className = 'card-body p-3';
 
-        // Complete Multi-Parent Nested Tree Structure
+        // Multi-Parent Tree Nodes
         const treeNodes = [
             {
                 id: 'projectHub',
@@ -87,7 +93,7 @@ export function renderTemplateStudio(
                     { id: 'projectTask', label: 'Project Task', children: [] },
                     { id: 'meeting', label: 'Project Meeting', children: [] },
                     { id: 'scratch', label: 'Project Scratch Note', children: [] },
-                    { id: 'person', label: 'Project Person / Contact', children: [] },
+                    { id: 'person', label: 'Project Person', children: [] },
                     { id: 'organization', label: 'Client Organization', children: [] },
                     { id: 'emailDraft', label: 'Email Draft', children: [] },
                     { id: 'topic', label: 'Assigned Topic', children: [] }
@@ -116,7 +122,7 @@ export function renderTemplateStudio(
             },
             {
                 id: 'task',
-                label: 'Standalone / Unassigned Tasks',
+                label: 'Standalone Task (Unassigned)',
                 children: []
             },
             {
@@ -133,8 +139,8 @@ export function renderTemplateStudio(
 
         function renderTreeBranch(nodes: Array<{ id: string; label?: string; children: any[] }>, depth = 0): HTMLElement {
             const ul = document.createElement('ul');
-            ul.className = 'list-unstyled m-0 d-flex flex-column gap-1';
-            if (depth > 0) ul.style.paddingLeft = '1.1rem';
+            ul.className = 'list-unstyled m-0 d-flex flex-column gap-1.5';
+            if (depth > 0) ul.style.paddingLeft = '1.2rem';
 
             for (const node of nodes) {
                 const tpl = templateEngine.getTemplate(node.id);
@@ -144,7 +150,7 @@ export function renderTemplateStudio(
                 const isSelected = tpl.id === selectedTemplateId;
 
                 const item = document.createElement('div');
-                item.className = `d-flex align-items-center justify-content-between p-2 rounded cursor-pointer transition-all ${isSelected ? 'bg-primary text-white font-weight-bold shadow-xs' : 'text-body'}`;
+                item.className = `d-flex align-items-center justify-content-between px-3 py-2 rounded cursor-pointer transition-all ${isSelected ? 'bg-primary text-white font-weight-bold shadow-sm' : 'text-body'}`;
                 item.style.cursor = 'pointer';
                 if (!isSelected) {
                     item.style.backgroundColor = 'transparent';
@@ -152,11 +158,10 @@ export function renderTemplateStudio(
 
                 item.innerHTML = `
                     <div class="d-flex align-items-center gap-2">
-                        ${depth > 0 ? '<i class="bx bx-subdirectory-right text-muted" style="font-size: 13px;"></i>' : ''}
+                        ${depth > 0 ? '<i class="bx bx-subdirectory-right text-muted"></i>' : ''}
                         <i class="bx bx-${tpl.icon}"></i>
                         <span class="small">${node.label || tpl.title}</span>
                     </div>
-                    ${isSelected ? '<span class="badge bg-white text-primary small">Selected</span>' : ''}
                 `;
 
                 item.addEventListener('click', (e) => {
@@ -182,34 +187,68 @@ export function renderTemplateStudio(
         sidebarCol.appendChild(sidebarCard);
         layoutRow.appendChild(sidebarCol);
 
-        // 2. Editor Column (5 cols) with Standard Trilium Form Component Proportions
+        // 3. Workspace Column: Spacious 9-column Editor + Render Preview
         const activeTpl = templateEngine.getTemplate(selectedTemplateId);
 
         if (activeTpl) {
-            const editorCol = document.createElement('div');
-            editorCol.className = 'col-md-5';
+            const mainCol = document.createElement('div');
+            mainCol.className = 'col-md-9';
 
-            const editorCard = document.createElement('div');
-            editorCard.className = 'card border shadow-sm';
-            editorCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
-            editorCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
+            const workspaceCard = document.createElement('div');
+            workspaceCard.className = 'card border shadow-sm h-100';
+            workspaceCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
+            workspaceCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.15))';
+            workspaceCard.style.borderRadius = '12px';
 
-            const editorHeader = document.createElement('div');
-            editorHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between p-3';
-            editorHeader.innerHTML = `
-                <h5 class="m-0 h6 font-weight-bold d-flex align-items-center gap-2">
-                    <i class="bx bx-${activeTpl.icon} text-primary"></i>
-                    <span>Template Schema: ${activeTpl.title}</span>
-                </h5>
-                <div class="d-flex align-items-center gap-2">
+            // Top Workspace Header & View Mode Switcher
+            const mainHeader = document.createElement('div');
+            mainHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between p-3.5';
+            mainHeader.innerHTML = `
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
+                        <i class="bx bx-${activeTpl.icon} fs-5 m-0"></i>
+                    </div>
+                    <div>
+                        <h3 class="h6 m-0 font-weight-bold d-flex align-items-center gap-2">
+                            <span>Template: ${activeTpl.title}</span>
+                            <span class="badge ${activeTpl.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted font-weight-normal small">${activeTpl.isBuiltin ? 'Built-in' : 'Custom'}</span>
+                        </h3>
+                        <div class="text-muted small mt-0.5">Marker: <code>#${activeTpl.marker}</code> • ID: <code>${activeTpl.id}</code></div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <ul class="nav nav-pills bg-body bg-opacity-50 p-1 rounded border">
+                        <li class="nav-item">
+                            <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'editor' ? 'active font-weight-bold' : ''} editor-tab-btn" type="button">
+                                <i class="bx bx-edit-alt"></i> Schema Editor
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link btn-sm py-1 px-3 ${activeEditorTab === 'preview' ? 'active font-weight-bold' : ''} preview-tab-btn" type="button">
+                                <i class="bx bx-show"></i> Live Preview & Render Model
+                            </button>
+                        </li>
+                    </ul>
                     <button type="button" class="btn btn-sm btn-outline-secondary export-html-btn d-flex align-items-center gap-1" title="Download template HTML file">
                         <i class="bx bx-download"></i> Export .html
                     </button>
-                    <span class="badge ${activeTpl.isBuiltin ? 'bg-secondary' : 'bg-info'} bg-opacity-20 text-muted">${activeTpl.isBuiltin ? 'Built-in' : 'Custom'}</span>
                 </div>
             `;
 
-            const exportBtn = editorHeader.querySelector('.export-html-btn') as HTMLButtonElement;
+            const editorTabBtn = mainHeader.querySelector('.editor-tab-btn') as HTMLButtonElement;
+            const previewTabBtn = mainHeader.querySelector('.preview-tab-btn') as HTMLButtonElement;
+
+            editorTabBtn.addEventListener('click', () => {
+                activeEditorTab = 'editor';
+                refresh();
+            });
+
+            previewTabBtn.addEventListener('click', () => {
+                activeEditorTab = 'preview';
+                refresh();
+            });
+
+            const exportBtn = mainHeader.querySelector('.export-html-btn') as HTMLButtonElement;
             exportBtn.addEventListener('click', () => {
                 const { filename, content } = exportTemplateAsHtml(activeTpl);
                 const blob = new Blob([content], { type: 'text/html' });
@@ -221,265 +260,261 @@ export function renderTemplateStudio(
                 URL.revokeObjectURL(url);
             });
 
-            editorCard.appendChild(editorHeader);
+            workspaceCard.appendChild(mainHeader);
 
-            const editorBody = document.createElement('div');
-            editorBody.className = 'card-body p-3 d-flex flex-column gap-3';
+            const workspaceBody = document.createElement('div');
+            workspaceBody.className = 'card-body p-4';
 
-            editorBody.innerHTML = `
-                <div>
-                    <label class="form-label small font-weight-bold">Template Title</label>
-                    <input type="text" id="tpl-title" class="form-control" value="${activeTpl.title}">
-                </div>
-                <div>
-                    <label class="form-label small font-weight-bold">Title Pattern</label>
-                    <input type="text" id="tpl-pattern" class="form-control" value="${activeTpl.titlePattern}">
-                    <div class="form-text small text-muted">Variables: <code>{title}</code>, <code>{isoDate}</code>, <code>{weekDay}</code></div>
-                </div>
-                <div>
-                    <label class="form-label small font-weight-bold">Icon (Boxicons Class)</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bx bx-${activeTpl.icon}"></i></span>
-                        <input type="text" id="tpl-icon" class="form-control" value="${activeTpl.icon}">
-                    </div>
-                </div>
+            if (activeEditorTab === 'editor') {
+                renderSchemaEditorView(workspaceBody, activeTpl);
+            } else {
+                renderLivePreviewView(workspaceBody, activeTpl);
+            }
 
-                <!-- Relationship Rules Section -->
-                <div class="border-top pt-3">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="m-0 font-weight-bold small text-info d-flex align-items-center gap-1">
-                            <i class="bx bx-git-repo-forked"></i> Parent Relationship Links (${activeTpl.relationships.length})
-                        </h6>
-                        <button type="button" class="btn btn-sm btn-outline-info add-rel-rule-btn d-flex align-items-center gap-1">
-                            <i class="bx bx-plus"></i> Add Parent Link
-                        </button>
-                    </div>
-
-                    <div class="d-flex flex-column gap-2 rel-rules-list">
-                        ${activeTpl.relationships.length > 0 ? activeTpl.relationships.map((r, idx) => `
-                            <div class="p-2.5 rounded border small d-flex align-items-center justify-content-between" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.2)) !important;">
-                                <div>
-                                    <div class="font-weight-bold">
-                                        <i class="bx bx-right-arrow-alt text-success"></i> <code>~${r.relationName}</code> &rarr; ${r.targetTemplateName}
-                                    </div>
-                                    <div class="small text-muted mt-0.5">
-                                        Auto-clone: <strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong> • Inherit Topics/Client: <strong>${r.inheritTopics ? 'Yes' : 'No'}</strong>
-                                    </div>
-                                </div>
-                                <button type="button" class="btn btn-sm btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
-                                    <i class="bx bx-trash"></i>
-                                </button>
-                            </div>
-                        `).join('') : '<div class="text-muted small p-3 border rounded text-center">Root template (No parent link required).</div>'}
-                    </div>
-                </div>
-
-                <!-- Promoted Attributes Section -->
-                <div class="border-top pt-3">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="m-0 font-weight-bold small text-success d-flex align-items-center gap-1">
-                            <i class="bx bx-list-check"></i> Promoted Attributes (${activeTpl.attributes.length})
-                        </h6>
-                    </div>
-
-                    <div class="d-flex flex-wrap gap-2 mb-2">
-                        <span class="text-muted small">Quick Add:</span>
-                        <button type="button" class="btn btn-sm btn-outline-secondary chip-btn" data-chip="label-text">Priority</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary chip-btn" data-chip="label-date">Due Date</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary chip-btn" data-chip="relation-project">Project Link</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary chip-btn" data-chip="relation-client">Client Link</button>
-                    </div>
-
-                    <table class="table table-sm align-middle small m-0 border">
-                        <thead>
-                            <tr class="text-muted border-bottom">
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Data</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${activeTpl.attributes.map(a => `
-                                <tr>
-                                    <td><code>#${a.name}</code></td>
-                                    <td><span class="badge bg-secondary bg-opacity-20 text-muted">${a.type}</span></td>
-                                    <td>${a.options ? a.options.join(', ') : a.defaultValue ?? '-'}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                    <button type="button" class="btn btn-sm btn-outline-success mt-2 add-attr-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-plus"></i> Add Promoted Attribute
-                    </button>
-                </div>
-
-                <!-- Content Skeleton -->
-                <div class="border-top pt-3">
-                    <h6 class="m-0 font-weight-bold small mb-2 d-flex align-items-center gap-1">
-                        <i class="bx bx-code-alt text-info"></i> Content Skeleton (HTML)
-                    </h6>
-                    <textarea id="tpl-content" class="form-control font-monospace" rows="6">${activeTpl.defaultContent}</textarea>
-                </div>
-
-                <div class="pt-2 d-flex justify-content-end">
-                    <button type="button" class="btn btn-sm btn-primary save-tpl-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-save"></i> Save Template Configuration
-                    </button>
-                </div>
-            `;
-
-            // Relationship Editor Buttons
-            const addRelBtn = editorBody.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
-            addRelBtn.addEventListener('click', () => showAddRelationshipModal(activeTpl));
-
-            editorBody.querySelectorAll('.del-rel-btn').forEach(btn => {
-                btn.addEventListener('click', (e: any) => {
-                    const idx = Number(e.currentTarget.dataset.relIdx);
-                    activeTpl.relationships.splice(idx, 1);
-                    onSave();
-                    refresh();
-                });
-            });
-
-            // Quick Add Chips
-            editorBody.querySelectorAll('.chip-btn').forEach(btn => {
-                btn.addEventListener('click', (e: any) => {
-                    const chip = e.target.dataset.chip;
-                    if (chip === 'label-text') {
-                        activeTpl.attributes.push({ name: 'priority', type: 'label', dataType: 'select', options: ['high', 'medium', 'low'] });
-                    } else if (chip === 'label-date') {
-                        activeTpl.attributes.push({ name: 'dueDate', type: 'label', dataType: 'date' });
-                    } else if (chip === 'relation-project') {
-                        activeTpl.attributes.push({ name: 'project', type: 'relation', dataType: 'text' });
-                    } else if (chip === 'relation-client') {
-                        activeTpl.attributes.push({ name: 'client', type: 'relation', dataType: 'text' });
-                    }
-                    onSave();
-                    refresh();
-                });
-            });
-
-            const addAttrBtn = editorBody.querySelector('.add-attr-btn') as HTMLButtonElement;
-            addAttrBtn.addEventListener('click', () => showAddAttrModal(activeTpl));
-
-            const saveBtn = editorBody.querySelector('.save-tpl-btn') as HTMLButtonElement;
-            saveBtn.addEventListener('click', () => {
-                const newTitle = (editorBody.querySelector('#tpl-title') as HTMLInputElement).value;
-                const newPattern = (editorBody.querySelector('#tpl-pattern') as HTMLInputElement).value;
-                const newIcon = (editorBody.querySelector('#tpl-icon') as HTMLInputElement).value;
-                const newContent = (editorBody.querySelector('#tpl-content') as HTMLTextAreaElement).value;
-
-                templateEngine.updateTemplate(activeTpl.id, {
-                    title: newTitle,
-                    titlePattern: newPattern,
-                    icon: newIcon,
-                    defaultContent: newContent,
-                });
-                onSave();
-                refresh();
-            });
-
-            editorCard.appendChild(editorBody);
-            editorCol.appendChild(editorCard);
-            layoutRow.appendChild(editorCol);
-
-            // 3. Live Note Preview Column (4 cols) with Standard Proportions
-            const previewCol = document.createElement('div');
-            previewCol.className = 'col-md-4';
-
-            const previewCard = document.createElement('div');
-            previewCard.className = 'card border h-100 shadow-sm';
-            previewCard.style.backgroundColor = 'var(--sub-background-color, transparent)';
-            previewCard.style.borderColor = 'var(--border-color, rgba(128, 128, 128, 0.2))';
-
-            const previewHeader = document.createElement('div');
-            previewHeader.className = 'card-header bg-transparent border-bottom d-flex align-items-center justify-content-between p-3';
-            previewHeader.innerHTML = `
-                <h5 class="m-0 h6 font-weight-bold text-info d-flex align-items-center gap-2">
-                    <i class="bx bx-show"></i> Live Note Preview
-                </h5>
-                <span class="badge bg-success bg-opacity-20 text-success">Render Model</span>
-            `;
-            previewCard.appendChild(previewHeader);
-
-            const previewBody = document.createElement('div');
-            previewBody.className = 'card-body p-3 d-flex flex-column gap-3';
-
-            const formattedTitle = templateEngine.formatTitle(activeTpl.id, 'Sample Note Title');
-
-            previewBody.innerHTML = `
-                <div class="p-3 rounded border flex-grow-1 d-flex flex-column" style="background-color: var(--main-background-color, transparent);">
-                    <div class="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
-                        <i class="bx bx-${activeTpl.icon} h4 m-0 text-primary"></i>
-                        <div>
-                            <h4 class="h6 m-0 font-weight-bold">${formattedTitle}</h4>
-                            <div class="small text-muted mt-0.5">
-                                Subtree: <code>${activeTpl.noJournalClone ? '#projectRoot' : '#calendarRoot / Journal'}</code>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Direct Form Attributes -->
-                    <div class="border-bottom pb-3 mb-3">
-                        <div class="small text-muted font-weight-bold mb-2 d-flex align-items-center gap-1">
-                            <i class="bx bx-slider-alt"></i> Direct Form Attributes
-                        </div>
-                        <div class="d-flex flex-column gap-2">
-                            ${activeTpl.attributes.map(a => `
-                                <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--sub-background-color, transparent);">
-                                    <span class="badge bg-primary bg-opacity-10 text-primary">#${a.name}</span>
-                                    ${a.options ? `
-                                        <select class="form-select form-select-sm" style="width: 140px;">
-                                            ${a.options.map(opt => `<option>${opt}</option>`).join('')}
-                                        </select>
-                                    ` : `
-                                        <input type="text" class="form-control form-control-sm" value="${a.defaultValue ?? ''}" placeholder="Value..." style="width: 140px;">
-                                    `}
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    <!-- Multi-Parent Inherited Attributes & Topics -->
-                    <div class="border-bottom pb-3 mb-3">
-                        <div class="small text-info font-weight-bold mb-2 d-flex align-items-center gap-1">
-                            <i class="bx bx-git-repo-forked"></i> Multi-Parent Inherited Context
-                        </div>
-                        <div class="d-flex flex-column gap-2 small text-muted">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <span>Parent 1 (Project Hub):</span>
-                                <span class="badge bg-primary bg-opacity-20 text-primary">~project</span>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-between">
-                                <span>Parent 2 (Client Org):</span>
-                                <span class="badge bg-info bg-opacity-20 text-info">~client</span>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-between">
-                                <span>Derived Topics:</span>
-                                <span class="badge bg-success bg-opacity-20 text-success">#TechNews</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Body Skeleton -->
-                    <div class="flex-grow-1 d-flex flex-column">
-                        <div class="small text-muted font-weight-bold mb-2 d-flex align-items-center gap-1">
-                            <i class="bx bx-file-blank"></i> Content Skeleton Body
-                        </div>
-                        <div class="p-3 rounded border flex-grow-1 font-monospace small" style="background-color: var(--sub-background-color, transparent); min-height: 180px;">
-                            ${activeTpl.defaultContent || '<em class="text-muted">Empty note body</em>'}
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            previewCard.appendChild(previewBody);
-            previewCol.appendChild(previewCard);
-            layoutRow.appendChild(previewCol);
+            workspaceCard.appendChild(workspaceBody);
+            mainCol.appendChild(workspaceCard);
+            layoutRow.appendChild(mainCol);
         }
 
         wrapper.appendChild(layoutRow);
         container.appendChild(wrapper);
+    }
+
+    function renderSchemaEditorView(el: HTMLElement, tpl: TemplateDefinition) {
+        const formWrapper = document.createElement('div');
+        formWrapper.className = 'd-flex flex-column gap-4';
+
+        // 1. Basic Template Settings
+        const basicCard = document.createElement('div');
+        basicCard.className = 'card border p-3.5';
+        basicCard.style.backgroundColor = 'var(--main-background-color, transparent)';
+        basicCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
+
+        basicCard.innerHTML = `
+            <h6 class="font-weight-bold text-primary mb-3 d-flex align-items-center gap-2">
+                <i class="bx bx-slider"></i> General Settings
+            </h6>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small font-weight-bold">Template Title</label>
+                    <input type="text" id="tpl-title" class="form-control" value="${tpl.title}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small font-weight-bold">Title Naming Pattern</label>
+                    <input type="text" id="tpl-pattern" class="form-control" value="${tpl.titlePattern}">
+                    <div class="form-text small text-muted">Variables: <code>{title}</code>, <code>{isoDate}</code></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small font-weight-bold">Boxicons Icon</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bx bx-${tpl.icon}"></i></span>
+                        <input type="text" id="tpl-icon" class="form-control" value="${tpl.icon}">
+                    </div>
+                </div>
+            </div>
+        `;
+        formWrapper.appendChild(basicCard);
+
+        // 2. Parent Relationship Rules
+        const relCard = document.createElement('div');
+        relCard.className = 'card border p-3.5';
+        relCard.style.backgroundColor = 'var(--main-background-color, transparent)';
+        relCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
+
+        relCard.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="font-weight-bold text-info m-0 d-flex align-items-center gap-2">
+                    <i class="bx bx-git-repo-forked"></i> Parent Relationship Links (${tpl.relationships.length})
+                </h6>
+                <button type="button" class="btn btn-sm btn-outline-info add-rel-rule-btn d-flex align-items-center gap-1">
+                    <i class="bx bx-plus"></i> Add Parent Link
+                </button>
+            </div>
+            <div class="d-flex flex-column gap-2">
+                ${tpl.relationships.length > 0 ? tpl.relationships.map((r, idx) => `
+                    <div class="p-3 rounded border d-flex align-items-center justify-content-between" style="background-color: var(--sub-background-color, transparent);">
+                        <div>
+                            <strong class="text-body"><i class="bx bx-right-arrow-alt text-success"></i> <code>~${r.relationName}</code> &rarr; ${r.targetTemplateName}</strong>
+                            <div class="text-muted small mt-1">Auto-clone to Parent: <strong>${r.autoCloneToParent ? 'Yes' : 'No'}</strong> • Inherit Topics/Client: <strong>${r.inheritTopics ? 'Yes' : 'No'}</strong></div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger del-rel-btn" data-rel-idx="${idx}">
+                            <i class="bx bx-trash"></i> Delete
+                        </button>
+                    </div>
+                `).join('') : '<div class="p-3 text-center text-muted small border rounded">Root template (No parent link required).</div>'}
+            </div>
+        `;
+
+        const addRelBtn = relCard.querySelector('.add-rel-rule-btn') as HTMLButtonElement;
+        addRelBtn.addEventListener('click', () => showAddRelationshipModal(tpl));
+
+        relCard.querySelectorAll('.del-rel-btn').forEach(btn => {
+            btn.addEventListener('click', (e: any) => {
+                const idx = Number(e.currentTarget.dataset.relIdx);
+                tpl.relationships.splice(idx, 1);
+                onSave();
+                refresh();
+            });
+        });
+
+        formWrapper.appendChild(relCard);
+
+        // 3. Promoted Attributes
+        const attrCard = document.createElement('div');
+        attrCard.className = 'card border p-3.5';
+        attrCard.style.backgroundColor = 'var(--main-background-color, transparent)';
+        attrCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
+
+        attrCard.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="font-weight-bold text-success m-0 d-flex align-items-center gap-2">
+                    <i class="bx bx-list-check"></i> Promoted Form Attributes (${tpl.attributes.length})
+                </h6>
+                <button type="button" class="btn btn-sm btn-outline-success add-attr-btn d-flex align-items-center gap-1">
+                    <i class="bx bx-plus"></i> Add Attribute
+                </button>
+            </div>
+            <table class="table table-hover align-middle small m-0 border">
+                <thead>
+                    <tr class="text-muted border-bottom">
+                        <th>Attribute Name</th>
+                        <th>Type</th>
+                        <th>Data Type</th>
+                        <th>Default / Options</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tpl.attributes.map(a => `
+                        <tr>
+                            <td><code>#${a.name}</code></td>
+                            <td><span class="badge bg-secondary bg-opacity-20 text-muted">${a.type}</span></td>
+                            <td>${a.dataType}</td>
+                            <td>${a.options ? a.options.join(', ') : a.defaultValue ?? '-'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        const addAttrBtn = attrCard.querySelector('.add-attr-btn') as HTMLButtonElement;
+        addAttrBtn.addEventListener('click', () => showAddAttrModal(tpl));
+
+        formWrapper.appendChild(attrCard);
+
+        // 4. HTML Content Skeleton
+        const skeletonCard = document.createElement('div');
+        skeletonCard.className = 'card border p-3.5';
+        skeletonCard.style.backgroundColor = 'var(--main-background-color, transparent)';
+        skeletonCard.style.borderColor = 'var(--border-color, rgba(128,128,128,0.15)) !important';
+
+        skeletonCard.innerHTML = `
+            <h6 class="font-weight-bold text-info mb-3 d-flex align-items-center gap-2">
+                <i class="bx bx-code-alt"></i> Default Content Skeleton (HTML)
+            </h6>
+            <textarea id="tpl-content" class="form-control font-monospace" rows="8">${tpl.defaultContent}</textarea>
+        `;
+        formWrapper.appendChild(skeletonCard);
+
+        // Save Button Footer
+        const footer = document.createElement('div');
+        footer.className = 'd-flex justify-content-end';
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'btn btn-primary px-4 py-2 font-weight-bold shadow-sm d-flex align-items-center gap-1.5';
+        saveBtn.innerHTML = '<i class="bx bx-save fs-6"></i> Save Template Schema';
+        saveBtn.addEventListener('click', () => {
+            const newTitle = (formWrapper.querySelector('#tpl-title') as HTMLInputElement).value;
+            const newPattern = (formWrapper.querySelector('#tpl-pattern') as HTMLInputElement).value;
+            const newIcon = (formWrapper.querySelector('#tpl-icon') as HTMLInputElement).value;
+            const newContent = (formWrapper.querySelector('#tpl-content') as HTMLTextAreaElement).value;
+
+            templateEngine.updateTemplate(tpl.id, {
+                title: newTitle,
+                titlePattern: newPattern,
+                icon: newIcon,
+                defaultContent: newContent,
+            });
+            onSave();
+            refresh();
+        });
+
+        footer.appendChild(saveBtn);
+        formWrapper.appendChild(footer);
+
+        el.appendChild(formWrapper);
+    }
+
+    function renderLivePreviewView(el: HTMLElement, tpl: TemplateDefinition) {
+        const previewWrapper = document.createElement('div');
+        previewWrapper.className = 'd-flex flex-column gap-4';
+
+        const formattedTitle = templateEngine.formatTitle(tpl.id, 'Sample Note Title');
+
+        previewWrapper.innerHTML = `
+            <div class="p-4 rounded border" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.15)) !important;">
+                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-4">
+                    <div class="p-3 rounded bg-primary bg-opacity-10 text-primary">
+                        <i class="bx bx-${tpl.icon} h3 m-0"></i>
+                    </div>
+                    <div>
+                        <h3 class="h5 m-0 font-weight-bold">${formattedTitle}</h3>
+                        <div class="small text-muted mt-1">
+                            <i class="bx bx-folder"></i> Target Subtree: <code>${tpl.noJournalClone ? '#projectRoot' : '#calendarRoot / Journal'}</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card border p-3.5 h-100" style="background-color: var(--sub-background-color, transparent);">
+                            <h6 class="font-weight-bold text-muted small mb-3"><i class="bx bx-slider-alt"></i> Direct Form Attributes</h6>
+                            <div class="d-flex flex-column gap-2.5">
+                                ${tpl.attributes.map(a => `
+                                    <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary">#${a.name}</span>
+                                        ${a.options ? `
+                                            <select class="form-select form-select-sm" style="width: 160px;">
+                                                ${a.options.map(opt => `<option>${opt}</option>`).join('')}
+                                            </select>
+                                        ` : `
+                                            <input type="text" class="form-control form-control-sm" value="${a.defaultValue ?? ''}" placeholder="Value..." style="width: 160px;">
+                                        `}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border p-3.5 h-100" style="background-color: var(--sub-background-color, transparent);">
+                            <h6 class="font-weight-bold text-info small mb-3"><i class="bx bx-git-repo-forked"></i> Multi-Parent Inherited Context</h6>
+                            <div class="d-flex flex-column gap-2.5 small text-muted">
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                                    <span>Parent 1 (Project Hub):</span>
+                                    <span class="badge bg-primary bg-opacity-20 text-primary">~project</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                                    <span>Parent 2 (Client Organization):</span>
+                                    <span class="badge bg-info bg-opacity-20 text-info">~client</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between p-2 rounded border" style="background-color: var(--main-background-color, transparent);">
+                                    <span>Derived Topics (Dual Inherited):</span>
+                                    <span class="badge bg-success bg-opacity-20 text-success">#TechNews</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-top pt-4 mt-4">
+                    <h6 class="font-weight-bold text-muted small mb-2"><i class="bx bx-file-blank"></i> Content Skeleton Render</h6>
+                    <div class="p-4 rounded border font-monospace" style="background-color: var(--sub-background-color, transparent); min-height: 220px;">
+                        ${tpl.defaultContent || '<em class="text-muted">Empty note body skeleton</em>'}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        el.appendChild(previewWrapper);
     }
 
     function showAddRelationshipModal(tpl: TemplateDefinition) {
