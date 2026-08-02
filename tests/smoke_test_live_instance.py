@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live instance smoke test suite for iansherr/notes-system.
+"""Live instance smoke test suite for iansherr/ikmal_tools_trilium.
 
 Executes end-to-end happy-path verification against a live running Trilium instance:
 1. Deployed artifacts and manifest integrity
@@ -22,7 +22,7 @@ class LiveInstanceSmokeTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.api = Etapi(URL, TOKEN)
-        cls.pkg_owner = "iansherr/ikmal_tools"
+        cls.pkg_owner = "iansherr/ikmal_tools_trilium"
 
     def test_01_manifest_and_artifacts_exist(self):
         notes = self.api.search(f'#packageOwner="{self.pkg_owner}"')

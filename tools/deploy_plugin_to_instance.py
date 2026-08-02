@@ -1,4 +1,4 @@
-"""Deploy iansherr/notes-system package artifacts to a live Trilium instance.
+"""Deploy iansherr/ikmal_tools_trilium package artifacts to a live Trilium instance.
 
 Target root: Community Packages (hVY3hYDoODHc) or root container.
 """

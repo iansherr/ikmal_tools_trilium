@@ -9,9 +9,26 @@ in [`FAQ.md`](FAQ.md). Backup and recovery is in
 [`BACKUP_ROLLBACK.md`](BACKUP_ROLLBACK.md). Open items are in
 [`ROADMAP.md`](ROADMAP.md).
 
+## Package boundary
+
+This repository contains only the Ikmal Tools package: its manifest, source engines,
+frontend artifacts, and package-specific tests. The host-side package manager, Plugins
+settings tab, lifecycle locking, and Trilium integration tests live separately in the
+[experimental Trilium integration branch](https://github.com/iansherr/Trilium/tree/integration/plugins).
+That branch does not bundle this repository or replace it. It provides the Trilium host
+needed to install and exercise this package while the host changes are reviewed upstream.
+
+For current end-to-end testing, run the separate `integration/plugins` branch of Trilium,
+then install this package through its Plugins settings using a registry source or the
+direct manifest URL:
+
+`https://raw.githubusercontent.com/iansherr/ikmal_tools_trilium/main/trilium-package.json`
+
+The integration branch is experimental and is not a production Trilium release.
+
 ## What this is
 
-`trilium-package.json` declares one installable package (`iansherr/ikmal_tools`)
+`trilium-package.json` declares one installable package (`iansherr/ikmal_tools_trilium`)
 made of a main workspace dashboard, global launcher, live editor status bar word counter, and standalone micro-tool render artifacts:
 
 | Artifact | Type | Source | Description |
@@ -67,7 +84,7 @@ Trilium's frontend script API has no `setNoteContent`/`updateNote` method, and
 `api.runOnBackend()` is gated behind the `backendScriptingEnabled` instance
 option (commonly off), so it can't be relied on for routine saves. Instead,
 this plugin persists everything as labels on its own manifest note — the note
-tagged `#packageOwner="iansherr/notes-system" #packageArtifact="manifest"`,
+tagged `#packageOwner="iansherr/ikmal_tools_trilium" #packageArtifact="manifest"`,
 found via `api.searchForNotes` and written with a direct authenticated
 `fetch` to `notes/{id}/set-attribute` (same CSRF/session convention the
 sibling `../trilium_plugins` package manager uses). See
@@ -113,7 +130,7 @@ resolving to nothing.
 npm run check    # tsc --noEmit
 npm run build    # compile src/ to dist/, bundle artifacts, recompute SRI hashes
 npm test          # compile then run tests/*.test.mjs (node --test)
-npm run register  # add/update this package's entry in ../trilium_plugins/registry.json
+npm run register  # add/update this package's entry in the local ../trilium_plugins registry
 ```
 
 `tests/run_all.sh` runs the Node suite plus the small offline Python

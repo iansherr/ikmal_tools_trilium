@@ -6,7 +6,7 @@ export default defineConfig({
     starlight({
       title: 'Ikmal Tools for Trilium Docs',
       social: {
-        github: 'https://github.com/iansherr/ikmal_tools',
+        github: 'https://github.com/iansherr/ikmal_tools_trilium',
       },
       sidebar: [
         {

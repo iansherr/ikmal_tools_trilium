@@ -7,7 +7,7 @@ const rootDir = process.cwd();
 const packageManifestPath = path.join(rootDir, 'trilium-package.json');
 const distArtifactsDir = path.join(rootDir, 'dist', 'artifacts');
 
-console.log('📦 Building Ikmal Notes for Trilium Bundle (ikmal_tools)...');
+console.log('📦 Building Ikmal Tools for Trilium package bundle...');
 
 if (!fs.existsSync(distArtifactsDir)) {
     fs.mkdirSync(distArtifactsDir, { recursive: true });

@@ -2,10 +2,33 @@
 
 ## Is this a Trilium plugin?
 
-Yes — a package (`iansherr/ikmal_tools`) made of one render note (the
+Yes — a package (`iansherr/ikmal_tools_trilium`) made of one render note (the
 dashboard), standalone micro-tools, launcher entries, and a stylesheet. No backend script and no
 custom HTTP endpoint — everything runs from the frontend. See `README.md`
 for the artifact list and `trilium-package.json` for the manifest.
+
+The package is separate from Trilium itself. The Trilium-side package manager, Plugins
+settings tab, lifecycle coordination, and host tests are in the separate
+[`integration/plugins` branch](https://github.com/iansherr/Trilium/tree/integration/plugins)
+of the Trilium fork.
+
+## Is the integration branch included in this repository?
+
+No. This repository contains the Ikmal Tools package payload and package tests. The
+integration branch contains the Trilium host infrastructure used to install and run it.
+
+## Which Trilium version should be used for current testing?
+
+Use the experimental [`integration/plugins` branch](https://github.com/iansherr/Trilium/tree/integration/plugins)
+until the host-side changes are accepted upstream. It is for development and testing,
+not production deployment.
+
+## How is the package installed?
+
+Run the integrated Trilium branch, open Settings → Plugins, and install this package from
+a configured registry or the direct manifest URL shown in the README. Installing it pulls
+the declared artifacts into that Trilium instance; it does not copy this repository into
+the Trilium source checkout.
 
 ## What does Quick Capture's "Create" button actually do?
 
@@ -27,7 +50,7 @@ Today widget.
 ## I toggled a setting / saved the Specification — will it still be there after I reload?
 
 Yes. Both persist as labels on the package's manifest note (searched by
-`#packageOwner="iansherr/ikmal_tools" #packageArtifact="manifest"`) and are
+`#packageOwner="iansherr/ikmal_tools_trilium" #packageArtifact="manifest"`) and are
 re-applied automatically the next time the dashboard loads. See `README.md` →
 Persistence for exactly how and why (not `runOnBackend`, not note content).
 

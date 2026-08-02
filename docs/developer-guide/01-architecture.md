@@ -1,6 +1,6 @@
 # Architecture Overview — Ikmal Tools for Trilium
 
-**Ikmal Tools for Trilium** (`iansherr/ikmal_tools`) is engineered with a strict separation between pure TypeScript engine logic and browser UI render artifacts.
+**Ikmal Tools for Trilium** (`iansherr/ikmal_tools_trilium`) is engineered with a strict separation between pure TypeScript engine logic and browser UI render artifacts. It is also separate from the Trilium host: the package manager, Plugins settings tab, and host-side tests live in the experimental [`integration/plugins` branch](https://github.com/iansherr/Trilium/tree/integration/plugins).
 
 ---
 

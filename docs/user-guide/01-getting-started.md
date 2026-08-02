@@ -1,6 +1,10 @@
 # Getting Started with Ikmal Tools for Trilium
 
-Welcome to **Ikmal Tools for Trilium** (`iansherr/ikmal_tools`) — a component-driven workspace dashboard, template studio, automation engine, and micro-tools suite designed specifically for Trilium Notes.
+Welcome to **Ikmal Tools for Trilium** (`iansherr/ikmal_tools_trilium`) — a component-driven workspace dashboard, template studio, automation engine, and micro-tools suite designed specifically for Trilium Notes.
+
+Ikmal Tools is a separate package, not a fork or bundled copy of Trilium. The Trilium-side
+package manager and Plugins settings tab are developed separately in the experimental
+[`integration/plugins` branch](https://github.com/iansherr/Trilium/tree/integration/plugins).
 
 ---
 
@@ -8,10 +12,12 @@ Welcome to **Ikmal Tools for Trilium** (`iansherr/ikmal_tools`) — a component-
 
 ### Method 1: Import via Trilium Package (Recommended)
 
-1. Open Trilium Notes.
-2. Go to **Options / Settings** → **Plugins / Packages**.
-3. Click **Import Package** and select `trilium-package.json` or download the latest release zip (`ikmal-tools-v1.0.0.zip`).
-4. Trilium will automatically instantiate the `#packageOwner="iansherr/ikmal_tools"` container note and all 11 package artifacts.
+1. Run Trilium from the separate experimental [`integration/plugins` branch](https://github.com/iansherr/Trilium/tree/integration/plugins).
+2. Open **Settings → Plugins**.
+3. Add a registry source or the direct manifest URL:
+   `https://raw.githubusercontent.com/iansherr/ikmal_tools_trilium/main/trilium-package.json`.
+4. Install and enable **Ikmal Tools for Trilium**.
+5. Trilium will instantiate the `#packageOwner="iansherr/ikmal_tools_trilium"` container note and its package artifacts.
 
 ---
 

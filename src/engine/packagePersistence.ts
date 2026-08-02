@@ -14,7 +14,7 @@
 
 import { AutomationSettings, DEFAULT_AUTOMATION_SETTINGS } from './settingsEngine.js';
 
-const PACKAGE_ID = 'iansherr/ikmal_tools';
+const PACKAGE_ID = 'iansherr/ikmal_tools_trilium';
 
 function settingLabelName(key: string): string {
     return `packageSetting:${key}`;
