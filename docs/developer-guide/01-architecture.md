@@ -15,7 +15,7 @@ src/
 │   ├── todayEngine.ts        # Dashboard layout management & state persistence
 │   ├── noteCreationEngine.ts # Unified note instantiation planning
 │   ├── noteMaterializer.ts   # ETAPI / frontend script API note creation
-│   ├── fleetBridge.ts        # Targeted FleetSync sync payload formatting
+│   ├── fleetBridge.ts        # Targeted FleetSync sync payload formatting [BETA / IN DEVELOPMENT]
 │   ├── weatherEngine.ts      # Open-Meteo weather API parsing
 │   └── noteInsightsEngine.ts # Word count, heatmaps, anniversaries, stale notes
 │

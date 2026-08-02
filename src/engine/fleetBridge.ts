@@ -1,6 +1,6 @@
 /**
- * Ikmal Tools for Trilium: FleetSync & Ikmal App Bridge Engine
- * Handles targeted bi-directional synchronization of Trilium-managed items
+ * Ikmal Tools for Trilium: FleetSync & Ikmal App Bridge Engine [BETA / IN DEVELOPMENT]
+ * WARNING: Unreleased preview feature. Handles targeted bi-directional synchronization of Trilium-managed items
  * (#extTask, #ikmalSynced) with the Ikmal App / FleetSync API.
  */
 

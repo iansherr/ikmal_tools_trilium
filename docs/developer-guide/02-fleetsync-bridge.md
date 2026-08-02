@@ -1,6 +1,7 @@
-# FleetSync & Ikmal App Bridge Specification
+# FleetSync & Ikmal App Bridge Specification `[BETA / IN DEVELOPMENT]`
 
-The **FleetSync Bridge** (`src/engine/fleetBridge.ts`) handles targeted bi-directional synchronization between Trilium Notes and your standalone **Ikmal App** (`~/Projects/ikmal`) via FleetSync endpoints.
+> [!WARNING]
+> **BETA / IN DEVELOPMENT**: The FleetSync & FleetCrew HTTP integration (`src/engine/fleetBridge.ts`) is an unreleased preview feature under active development. Endpoints (`/api/v1/sync/items`) and sync protocols described here are subject to change before live production deployment.
 
 ---
 
@@ -31,7 +32,7 @@ Trilium **only syncs notes explicitly tagged** with:
 
 ---
 
-## FleetSync API Endpoints
+## FleetSync API Endpoints (Preview)
 
 - **Push Endpoint**: `POST /api/v1/sync/items`
 - **Pull Endpoint**: `GET /api/v1/sync/items?since={timestamp}`
