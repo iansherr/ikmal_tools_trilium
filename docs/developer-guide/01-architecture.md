@@ -26,18 +26,21 @@ src/
 │   └── nativeUi.ts           # Native Trilium look-and-feel UI primitives
 │
 └── artifacts/                # Standalone IIFE bundled entrypoints declared in trilium-package.json
-    ├── notes-system-dashboard.jsx    # Main workspace dashboard
-    ├── notes-system-kanban.jsx       # Task Kanban board
-    ├── notes-system-insights.jsx     # Productivity insights
-    ├── notes-system-quick-capture.jsx# Quick capture toolbar
-    ├── notes-system-weather.jsx      # Weather card
-    ├── notes-system-on-this-day.jsx  # Time Machine
-    ├── notes-system-stale-notes.jsx  # Stale notes reviewer
-    ├── notes-system-canvas.jsx       # Interactive canvas (Beta)
-    ├── notes-system-launcher.js      # Global header bar & hotkey
-    ├── notes-system-word-count.js    # Live editor status bar counter
-    └── notes-system.css              # Theme & UI stylesheet
+    ├── notes-system-dashboard.jsx    # Build input for the workspace dashboard
+    ├── notes-system-kanban.jsx       # Build input for the Task Kanban board
+    ├── notes-system-insights.jsx     # Build input for productivity insights
+    ├── notes-system-quick-capture.jsx# Build input for quick capture toolbar
+    ├── notes-system-weather.jsx      # Build input for weather card
+    ├── notes-system-on-this-day.jsx  # Build input for Time Machine
+    ├── notes-system-stale-notes.jsx  # Build input for stale notes reviewer
+    ├── notes-system-canvas.jsx       # Build input for interactive canvas (Beta)
+    ├── notes-system-launcher.js      # Build input for global header bar & hotkey
+    ├── notes-system-word-count.js    # Build input for editor status bar counter
+    └── notes-system.css              # Build input for theme & UI stylesheet
 ```
+
+The published package payloads are the bundled files under `dist/artifacts/`; those are
+the paths referenced by `trilium-package.json` and verified with SRI.
 
 ---
 

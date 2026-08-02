@@ -1,0 +1,1457 @@
+"use strict";
+(() => {
+  var __defProp = Object.defineProperty;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
+  // src/engine/templateEngine.ts
+  var BUILTIN_TEMPLATES = [
+    {
+      id: "task",
+      marker: "extTask",
+      title: "Task",
+      icon: "check-square",
+      category: "work",
+      rootContainerMarker: "taskRoot",
+      titlePattern: "{title}",
+      defaultContent: "<p>Task description and notes...</p>",
+      projectScoped: false,
+      isBuiltin: true,
+      attributes: [
+        { name: "priority", type: "label", dataType: "select", options: ["high", "medium", "low"], defaultValue: "medium", isPromoted: true, label: "Priority" },
+        { name: "status", type: "label", dataType: "select", options: ["todo", "in_progress", "done", "cancelled"], defaultValue: "todo", isPromoted: true, label: "Status" },
+        { name: "dueDate", type: "label", dataType: "date", isPromoted: true, label: "Due Date" },
+        { name: "doneDate", type: "label", dataType: "date", isPromoted: true, label: "Done Date" },
+        { name: "duration", type: "label", dataType: "string", isPromoted: true, label: "Duration" },
+        { name: "complexity", type: "label", dataType: "select", options: ["simple", "multi"], isPromoted: true, label: "Complexity" }
+      ],
+      relationships: [
+        {
+          id: "rel_task_project",
+          name: "Project Hub",
+          relationName: "project",
+          targetTemplateId: "projectHub",
+          targetTemplateName: "Project Hub",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "canvas",
+      marker: "extCanvas",
+      title: "Diagram & Whiteboard",
+      icon: "palette",
+      category: "creative",
+      rootContainerMarker: "canvasRoot",
+      titlePattern: "{title} (Diagram)",
+      defaultContent: "",
+      noteType: "canvas",
+      projectScoped: false,
+      isBuiltin: true,
+      attributes: [
+        { name: "diagramType", type: "label", dataType: "select", options: ["mindmap", "flowchart", "architecture", "sketch"], defaultValue: "mindmap", isPromoted: true, label: "Diagram Type" },
+        { name: "status", type: "label", dataType: "select", options: ["draft", "final", "archived"], defaultValue: "draft", isPromoted: true, label: "Status" }
+      ],
+      relationships: [
+        {
+          id: "rel_canvas_project",
+          name: "Project Hub",
+          relationName: "project",
+          targetTemplateId: "projectHub",
+          targetTemplateName: "Project Hub",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "projectTask",
+      marker: "extTask",
+      title: "Project Task",
+      icon: "list-check",
+      category: "work",
+      rootContainerMarker: "taskRoot",
+      titlePattern: "{title}",
+      defaultContent: "<p>Project task details and sub-action items...</p>",
+      projectScoped: true,
+      isBuiltin: true,
+      attributes: [
+        { name: "priority", type: "label", dataType: "select", options: ["high", "medium", "low"], defaultValue: "medium", isPromoted: true, label: "Priority" },
+        { name: "status", type: "label", dataType: "select", options: ["todo", "in_progress", "done"], defaultValue: "todo", isPromoted: true, label: "Status" },
+        { name: "dueDate", type: "label", dataType: "date", isPromoted: true, label: "Due Date" }
+      ],
+      relationships: [
+        {
+          id: "rel_projtask_project",
+          name: "Project Hub",
+          relationName: "project",
+          targetTemplateId: "projectHub",
+          targetTemplateName: "Project Hub",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "meeting",
+      marker: "extMeeting",
+      title: "Meeting",
+      icon: "calendar-event",
+      category: "work",
+      rootContainerMarker: "meetingRoot",
+      titlePattern: "Meeting: {title}",
+      defaultContent: "<h2>AGENDA</h2><ul><li></li></ul><h2>NOTES</h2><p></p><h2>ACTION ITEMS</h2><ul><li>[ ] </li></ul>",
+      projectScoped: true,
+      isBuiltin: true,
+      attributes: [
+        { name: "startDate", type: "label", dataType: "date", isPromoted: true, label: "Start Date" },
+        { name: "startTime", type: "label", dataType: "string", isPromoted: true, label: "Start Time" },
+        { name: "attendee", type: "relation", dataType: "relation", targetTemplateId: "person", isPromoted: true, label: "Attendees" },
+        { name: "client", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Client" },
+        { name: "companyOnBehalf", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "On Behalf Of" }
+      ],
+      relationships: [
+        {
+          id: "rel_meeting_project",
+          name: "Project Hub",
+          relationName: "project",
+          targetTemplateId: "projectHub",
+          targetTemplateName: "Project Hub",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "meetingPrep",
+      marker: "extMeeting",
+      title: "Meeting Prep",
+      icon: "calendar-edit",
+      category: "work",
+      rootContainerMarker: "meetingRoot",
+      titlePattern: "Meeting Prep: {title}",
+      defaultContent: "<h2>BACKGROUND</h2><p></p><h2>TALKING POINTS</h2><ul><li></li></ul><h2>QUESTIONS TO ASK</h2><ul><li></li></ul>",
+      projectScoped: true,
+      isBuiltin: true,
+      attributes: [
+        { name: "attendee", type: "relation", dataType: "relation", targetTemplateId: "person", isPromoted: true, label: "Attendees" },
+        { name: "client", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Client" }
+      ],
+      relationships: [
+        {
+          id: "rel_meetingprep_project",
+          name: "Project Hub",
+          relationName: "project",
+          targetTemplateId: "projectHub",
+          targetTemplateName: "Project Hub",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "story",
+      marker: "extStoryDraft",
+      title: "Story Project",
+      icon: "news",
+      category: "drafts",
+      rootContainerMarker: "storyDraftRoot",
+      titlePattern: "{title}",
+      defaultContent: "<h2>HED</h2><ul><li></li><li></li><li></li></ul><h2>DEK</h2><ul><li></li><li></li><li></li></ul><h2>BYLINE</h2><p>By Ian Sherr (+1 415.347.6397)</p><h2>STORYBODY</h2><p></p><p>--ENDIT--</p>",
+      projectScoped: true,
+      isBuiltin: true,
+      attributes: [
+        { name: "status", type: "label", dataType: "select", options: ["drafting", "review", "published"], defaultValue: "drafting", isPromoted: true, label: "Status" },
+        { name: "workflow", type: "label", dataType: "string", defaultValue: "project", isPromoted: true, label: "Workflow" },
+        { name: "kind", type: "label", dataType: "string", defaultValue: "project", isPromoted: true, label: "Kind" },
+        { name: "client", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Client Organization" },
+        { name: "writer", type: "relation", dataType: "relation", targetTemplateId: "person", isPromoted: true, label: "Writer / Reporter" }
+      ],
+      relationships: [
+        {
+          id: "rel_story_project",
+          name: "Project Hub",
+          relationName: "project",
+          targetTemplateId: "projectHub",
+          targetTemplateName: "Project Hub",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "edit",
+      marker: "extStoryDraft",
+      title: "Edit Package",
+      icon: "edit",
+      category: "drafts",
+      rootContainerMarker: "storyDraftRoot",
+      titlePattern: "Edit: {title}",
+      defaultContent: "<h2>LINKS</h2><ul><li></li></ul><h2>OPEN QUESTIONS</h2><ul><li></li></ul><h2>EDITORIAL NOTES</h2><p></p><h2>REQUESTED CHANGES</h2><ul><li></li></ul><h2>HED</h2><ul><li></li><li></li><li></li></ul><h2>BYLINE</h2><p>By Ian Sherr (+1 415.347.6397)</p><h2>STORYBODY</h2><p></p><p>--ENDIT--</p><h2>WRITER RESPONSE</h2><p></p>",
+      projectScoped: true,
+      isBuiltin: true,
+      attributes: [
+        { name: "status", type: "label", dataType: "select", options: ["editing", "approved", "returned"], defaultValue: "editing", isPromoted: true, label: "Status" },
+        { name: "workflow", type: "label", dataType: "string", defaultValue: "edit", isPromoted: true, label: "Workflow" },
+        { name: "round", type: "label", dataType: "string", defaultValue: "Round 1 Edit", isPromoted: true, label: "Round" },
+        { name: "writer", type: "relation", dataType: "relation", targetTemplateId: "person", isPromoted: true, label: "Writer / Reporter" }
+      ],
+      relationships: [
+        {
+          id: "rel_edit_story",
+          name: "Parent Story Project",
+          relationName: "storyDraft",
+          targetTemplateId: "story",
+          targetTemplateName: "Story Project",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "scratch",
+      marker: "extScratch",
+      title: "Scratch Note",
+      icon: "file-blank",
+      category: "drafts",
+      rootContainerMarker: "unassignedRoot",
+      titlePattern: "{title}",
+      defaultContent: "<p>Quick scratchpad notes...</p>",
+      projectScoped: false,
+      isBuiltin: true,
+      attributes: [
+        { name: "project", type: "relation", dataType: "relation", targetTemplateId: "projectHub", isPromoted: true, label: "Optional Project" }
+      ],
+      relationships: [
+        {
+          id: "rel_scratch_project",
+          name: "Project Hub",
+          relationName: "project",
+          targetTemplateId: "projectHub",
+          targetTemplateName: "Project Hub",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "projectHub",
+      marker: "extProjectHub",
+      title: "Project Hub",
+      icon: "book",
+      category: "work",
+      rootContainerMarker: "projectRoot",
+      titlePattern: "{title}",
+      defaultContent: '<h2>OVERVIEW</h2><p></p><h2>GOALS</h2><ul><li></li></ul><div class="project-hub-dashboard-placeholder" data-project-hub-dashboard="true"></div>',
+      isBuiltin: true,
+      attributes: [
+        { name: "status", type: "label", dataType: "select", options: ["active", "archived", "on_hold"], defaultValue: "active", isPromoted: true, label: "Status" },
+        { name: "kind", type: "label", dataType: "select", options: ["project", "edit", "client", "internal"], isPromoted: true, label: "Kind" },
+        { name: "client", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Client Organization" },
+        { name: "companyOnBehalf", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "On Behalf Of" }
+      ],
+      relationships: [
+        {
+          id: "rel_project_client",
+          name: "Client Organization",
+          relationName: "client",
+          targetTemplateId: "organization",
+          targetTemplateName: "Organization",
+          isMulti: false,
+          autoCloneToParent: false,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "reportingNotes",
+      marker: "extReportingNotes",
+      title: "Reporting Notes",
+      icon: "file-find",
+      category: "work",
+      rootContainerMarker: "reportingRoot",
+      titlePattern: "{title} (Reporting & Notes)",
+      defaultContent: '<h2>LINKS</h2><ul><li></li></ul><h2>OPEN QUESTIONS</h2><ul><li></li></ul><h2>IDEA / ANGLE</h2><p></p><h2>REPORTING NOTES</h2><p></p><div class="reporting-note-actions-placeholder" data-reporting-note-actions="true"></div>',
+      projectScoped: true,
+      isBuiltin: true,
+      attributes: [
+        { name: "status", type: "label", dataType: "select", options: ["active", "archived"], defaultValue: "active", isPromoted: true, label: "Status" }
+      ],
+      relationships: [
+        {
+          id: "rel_reporting_project",
+          name: "Project Hub",
+          relationName: "project",
+          targetTemplateId: "projectHub",
+          targetTemplateName: "Project Hub",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "person",
+      marker: "extPerson",
+      title: "Person",
+      icon: "user",
+      category: "people",
+      rootContainerMarker: "peopleRoot",
+      titlePattern: "{title}",
+      defaultContent: "<h2>CONTACT INFO</h2><p></p><h2>NOTES</h2><p></p>",
+      isBuiltin: true,
+      attributes: [
+        { name: "email", type: "label", dataType: "string", isPromoted: true, label: "Email" },
+        { name: "phone", type: "label", dataType: "string", isPromoted: true, label: "Phone" },
+        { name: "organization", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Organization" }
+      ],
+      relationships: [
+        {
+          id: "rel_person_org",
+          name: "Organization",
+          relationName: "organization",
+          targetTemplateId: "organization",
+          targetTemplateName: "Organization",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    },
+    {
+      id: "organization",
+      marker: "extOrganization",
+      title: "Organization",
+      icon: "buildings",
+      category: "people",
+      rootContainerMarker: "orgRoot",
+      titlePattern: "{title}",
+      defaultContent: "<h2>ABOUT</h2><p></p><h2>KEY CONTACTS</h2><ul><li></li></ul>",
+      isBuiltin: true,
+      attributes: [
+        { name: "website", type: "label", dataType: "string", isPromoted: true, label: "Website" }
+      ],
+      relationships: [
+        {
+          id: "rel_org_person",
+          name: "Key Contact Person",
+          relationName: "keyContact",
+          targetTemplateId: "person",
+          targetTemplateName: "Person",
+          isMulti: true,
+          autoCloneToParent: false,
+          inheritTopics: true,
+          direction: "child"
+        }
+      ]
+    },
+    {
+      id: "topic",
+      marker: "extTopic",
+      title: "Topic",
+      icon: "purchase-tag",
+      category: "system",
+      rootContainerMarker: "topicRoot",
+      titlePattern: "{title}",
+      defaultContent: "<h2>DESCRIPTION</h2><p></p>",
+      noJournalClone: true,
+      isBuiltin: true,
+      attributes: [
+        { name: "aliasOf", type: "relation", dataType: "relation", targetTemplateId: "topic", isPromoted: true, label: "Alias Of" }
+      ],
+      relationships: []
+    },
+    {
+      id: "emailDraft",
+      marker: "extEmailDraft",
+      title: "Email Draft",
+      icon: "envelope",
+      category: "drafts",
+      rootContainerMarker: "emailRoot",
+      titlePattern: "Email: {title}",
+      defaultContent: "<h2>RECIPIENTS</h2><p></p><h2>SUBJECT</h2><p></p><h2>BODY</h2><p></p>",
+      projectScoped: true,
+      isBuiltin: true,
+      attributes: [
+        { name: "status", type: "label", dataType: "select", options: ["draft", "sent", "awaiting_reply"], isPromoted: true, label: "Status" },
+        { name: "waitingOn", type: "label", dataType: "string", isPromoted: true, label: "Waiting On" },
+        { name: "followUpDate", type: "label", dataType: "date", isPromoted: true, label: "Follow-up Date" }
+      ],
+      relationships: [
+        {
+          id: "rel_email_project",
+          name: "Project Hub",
+          relationName: "project",
+          targetTemplateId: "projectHub",
+          targetTemplateName: "Project Hub",
+          isMulti: false,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent"
+        }
+      ]
+    }
+  ];
+  var BUILTIN_CATEGORIES = [
+    { id: "work", title: "Work & Project Scoped", description: "Tasks, meetings, project hubs, and reporting notes scoped to project trees", icon: "book", defaultRootMarker: "projectRoot", autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: true, isBuiltin: true },
+    { id: "drafts", title: "Draft & Editorial", description: "Story projects, edit packages, email drafts, and quick scratch notes", icon: "edit", defaultRootMarker: "storyDraftRoot", autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: true, isBuiltin: true },
+    { id: "people", title: "People & Client Entities", description: "Persons, contacts, and client organization directories", icon: "user", defaultRootMarker: "peopleRoot", autoJournalClone: false, inheritParentTopics: true, projectScopedDefault: false, isBuiltin: true },
+    { id: "system", title: "System & Topic Index", description: "Topic tags, index containers, and directory roots", icon: "purchase-tag", defaultRootMarker: "topicRoot", autoJournalClone: false, inheritParentTopics: false, projectScopedDefault: false, isBuiltin: true },
+    { id: "custom", title: "Custom / Flexible", description: "User-defined custom note schemas", icon: "layer", defaultRootMarker: "unassignedRoot", autoJournalClone: true, inheritParentTopics: true, projectScopedDefault: false, isBuiltin: true }
+  ];
+  var TemplateEngine = class {
+    constructor(initialTemplates = BUILTIN_TEMPLATES, initialCategories = BUILTIN_CATEGORIES) {
+      __publicField(this, "templates", /* @__PURE__ */ new Map());
+      __publicField(this, "categories", /* @__PURE__ */ new Map());
+      for (const tpl of initialTemplates) {
+        this.templates.set(tpl.id, JSON.parse(JSON.stringify(tpl)));
+      }
+      for (const cat of initialCategories) {
+        this.categories.set(cat.id, JSON.parse(JSON.stringify(cat)));
+      }
+    }
+    getAllCategories() {
+      return Array.from(this.categories.values());
+    }
+    getCategory(id) {
+      return this.categories.get(id);
+    }
+    registerCategory(cat) {
+      this.categories.set(cat.id, JSON.parse(JSON.stringify(cat)));
+    }
+    deleteCategory(id) {
+      const cat = this.categories.get(id);
+      if (!cat) return false;
+      if (cat.isBuiltin) {
+        throw new Error(`Cannot delete built-in category '${id}'`);
+      }
+      return this.categories.delete(id);
+    }
+    getAllTemplates() {
+      return Array.from(this.templates.values());
+    }
+    getTemplate(id) {
+      return this.templates.get(id);
+    }
+    getTemplateByMarker(marker) {
+      for (const tpl of this.templates.values()) {
+        if (tpl.marker === marker) return tpl;
+      }
+      return void 0;
+    }
+    registerTemplate(template) {
+      this.templates.set(template.id, JSON.parse(JSON.stringify(template)));
+    }
+    updateTemplate(id, updates) {
+      const existing = this.templates.get(id);
+      if (!existing) {
+        throw new Error(`Template with id '${id}' not found`);
+      }
+      const updated = { ...existing, ...updates, id };
+      this.templates.set(id, updated);
+      return updated;
+    }
+    deleteTemplate(id) {
+      const tpl = this.templates.get(id);
+      if (!tpl) return false;
+      if (tpl.isBuiltin) {
+        throw new Error(`Cannot delete built-in template '${id}'`);
+      }
+      return this.templates.delete(id);
+    }
+    formatTitle(templateId, rawTitle, dateObj = /* @__PURE__ */ new Date()) {
+      const template = this.getTemplate(templateId);
+      const pattern = template ? template.titlePattern : "{title}";
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObj.getDate()).padStart(2, "0");
+      const dateStr = `${year}-${month}-${day}`;
+      let formatted = pattern.replace("{title}", rawTitle || "Untitled").replace("YYYY-MM-DD", dateStr).replace("{date}", dateStr);
+      return formatted.trim();
+    }
+    addPromotedAttribute(templateId, attribute) {
+      const template = this.getTemplate(templateId);
+      if (!template) throw new Error(`Template '${templateId}' not found`);
+      const index = template.attributes.findIndex((a) => a.name === attribute.name);
+      if (index >= 0) {
+        template.attributes[index] = attribute;
+      } else {
+        template.attributes.push(attribute);
+      }
+      this.registerTemplate(template);
+      return template;
+    }
+    addRelationship(templateId, relationship) {
+      const template = this.getTemplate(templateId);
+      if (!template) throw new Error(`Template '${templateId}' not found`);
+      const index = template.relationships.findIndex((r) => r.id === relationship.id || r.relationName === relationship.relationName);
+      if (index >= 0) {
+        template.relationships[index] = relationship;
+      } else {
+        template.relationships.push(relationship);
+      }
+      this.registerTemplate(template);
+      return template;
+    }
+  };
+
+  // src/engine/relationshipEngine.ts
+  var RelationshipEngine = class {
+    constructor(templateEngine) {
+      __publicField(this, "templateEngine", templateEngine);
+    }
+    /**
+     * Given a source template and relation values, computes where the note should be cloned,
+     * what labels/relations should be attached, and what topics should be inherited.
+     */
+    resolveCreationRelations(templateId, relationValues) {
+      const template = this.templateEngine.getTemplate(templateId);
+      const autoCloneContainers = [];
+      const inheritedTopicSources = [];
+      const relationLabels = [];
+      if (!template) {
+        return { autoCloneContainers, inheritedTopicSources, relationLabels };
+      }
+      for (const relDef of template.relationships) {
+        const val = relationValues[relDef.relationName];
+        if (!val) continue;
+        const targetNoteIds = Array.isArray(val) ? val : [val];
+        for (const targetId of targetNoteIds) {
+          if (!targetId) continue;
+          relationLabels.push({ name: relDef.relationName, value: targetId });
+          if (relDef.autoCloneToParent) {
+            autoCloneContainers.push(targetId);
+          }
+          if (relDef.inheritTopics) {
+            inheritedTopicSources.push(targetId);
+          }
+        }
+      }
+      return { autoCloneContainers, inheritedTopicSources, relationLabels };
+    }
+    /**
+     * Calculates derived topics for a note based on its explicit topics and
+     * the topics assigned to its relational parent notes (e.g. Project, Client, Org).
+     */
+    computeDerivedTopics(explicitTopicIds, parentTopicMap) {
+      const explicitSet = new Set(explicitTopicIds);
+      const derivedSet = /* @__PURE__ */ new Set();
+      for (const parentId of Object.keys(parentTopicMap)) {
+        const parentTopics = parentTopicMap[parentId] || [];
+        for (const topicId of parentTopics) {
+          if (!explicitSet.has(topicId)) {
+            derivedSet.add(topicId);
+          }
+        }
+      }
+      const derivedTopics = Array.from(derivedSet);
+      const allTopics = Array.from(/* @__PURE__ */ new Set([...explicitTopicIds, ...derivedTopics]));
+      return {
+        noteId: "",
+        explicitTopics: explicitTopicIds,
+        derivedTopics,
+        allTopics
+      };
+    }
+  };
+
+  // src/engine/ifThenRuleEngine.ts
+  var BUILTIN_IF_THEN_RULES = [
+    // 1. Global System Rules
+    {
+      id: "rule_project_autoclone",
+      name: "Global -> Auto-Clone to Parent Container",
+      description: "When a note is created with a ~project relation, automatically clone it under the target Project Hub container note.",
+      enabled: true,
+      isBuiltin: true,
+      trigger: {
+        type: "onNoteCreated"
+      },
+      conditions: [
+        { field: "project", operator: "isSet", value: true }
+      ],
+      actions: [
+        { type: "cloneToContainer", params: { relationName: "project" } }
+      ]
+    },
+    {
+      id: "rule_derived_topic_sync",
+      name: "Global -> Sync Derived Topics",
+      description: "When a note is created or linked to a project/client, automatically recalculate and set derived topics.",
+      enabled: true,
+      isBuiltin: true,
+      trigger: {
+        type: "onNoteCreated"
+      },
+      conditions: [],
+      actions: [
+        { type: "syncDerivedTopics", params: {} }
+      ]
+    },
+    // 2. Category-Wide Rules (Work, Drafts, People)
+    {
+      id: "rule_work_category_done_date",
+      name: "Work Category -> Record Completion Date",
+      description: "Applies to ALL notes in the Work category. When status is marked done, automatically sets #doneDate.",
+      enabled: true,
+      isBuiltin: true,
+      trigger: {
+        type: "onAttributeChanged",
+        targetCategory: "work",
+        attributeName: "status"
+      },
+      conditions: [
+        { field: "status", operator: "equals", value: "done" }
+      ],
+      actions: [
+        { type: "setLabel", params: { labelName: "doneDate", labelValue: "{TODAY}" } }
+      ]
+    },
+    {
+      id: "rule_drafts_category_editorial_round",
+      name: "Drafts Category -> Auto-Sync Review Round",
+      description: "Applies to ALL notes in the Drafts category (story, edit, emailDraft, scratch). Syncs editorial review round.",
+      enabled: true,
+      isBuiltin: true,
+      trigger: {
+        type: "onNoteCreated",
+        targetCategory: "drafts"
+      },
+      conditions: [],
+      actions: [
+        { type: "setLabel", params: { labelName: "round", labelValue: "Round 1 Review" } }
+      ]
+    },
+    {
+      id: "rule_people_category_followup",
+      name: "People Category -> Auto-Tag Contact Follow-up",
+      description: "Applies to ALL notes in People category (person, organization). Auto-tags contact entries when followUpDate is set.",
+      enabled: true,
+      isBuiltin: true,
+      trigger: {
+        type: "onAttributeChanged",
+        targetCategory: "people",
+        attributeName: "followUpDate"
+      },
+      conditions: [],
+      actions: [
+        { type: "setLabel", params: { labelName: "followUpNeeded", labelValue: "true" } }
+      ]
+    },
+    // 3. Template-Specific Rules
+    {
+      id: "rule_task_done_date",
+      name: "Task Template -> High Priority Highlight",
+      description: "When a Task priority is set to high, highlight it with color.",
+      enabled: true,
+      isBuiltin: true,
+      trigger: {
+        type: "onAttributeChanged",
+        targetTemplateId: "task",
+        attributeName: "priority"
+      },
+      conditions: [
+        { field: "priority", operator: "equals", value: "high" }
+      ],
+      actions: [
+        { type: "setLabel", params: { labelName: "color", labelValue: "#e74c3c" } }
+      ]
+    }
+  ];
+  var IfThenRuleEngine = class {
+    constructor(initialRules = BUILTIN_IF_THEN_RULES) {
+      __publicField(this, "rules", /* @__PURE__ */ new Map());
+      for (const rule of initialRules) {
+        this.rules.set(rule.id, rule);
+      }
+    }
+    registerRule(rule) {
+      this.rules.set(rule.id, rule);
+    }
+    getRule(ruleId) {
+      return this.rules.get(ruleId);
+    }
+    getAllRules() {
+      return Array.from(this.rules.values());
+    }
+    toggleRule(ruleId, enabled) {
+      const rule = this.rules.get(ruleId);
+      if (rule) {
+        rule.enabled = enabled;
+      }
+    }
+    deleteRule(ruleId) {
+      return this.rules.delete(ruleId);
+    }
+    /**
+     * Every enabled rule whose trigger and conditions match, each with its actions
+     * resolved. Callers need to know which rule fired — to report it and to avoid
+     * re-running it — so this returns rule results rather than a flat action list.
+     */
+    evaluateEvent(eventType, context, changedAttribute) {
+      const results = [];
+      for (const rule of this.rules.values()) {
+        if (!rule.enabled) continue;
+        if (rule.trigger.type !== eventType) continue;
+        if (rule.trigger.targetTemplateId && rule.trigger.targetTemplateId !== context.templateId) {
+          continue;
+        }
+        if (rule.trigger.targetCategory && context.category && rule.trigger.targetCategory !== context.category) {
+          continue;
+        }
+        if (eventType === "onAttributeChanged" && rule.trigger.attributeName && rule.trigger.attributeName !== changedAttribute) {
+          continue;
+        }
+        if (this.checkConditions(rule.conditions, context)) {
+          results.push({
+            ruleId: rule.id,
+            ruleName: rule.name,
+            matched: true,
+            executedActions: rule.actions.map((action) => this.processActionTemplates(action, context))
+          });
+        }
+      }
+      return results;
+    }
+    /** Substitutes the placeholders an action's params may carry. */
+    processActionTemplates(action, context) {
+      const copy = JSON.parse(JSON.stringify(action));
+      const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      for (const key of Object.keys(copy.params)) {
+        const value = copy.params[key];
+        if (typeof value === "string") {
+          copy.params[key] = value.replace("{TODAY}", today).replace("{NOTE_TITLE}", context.title).replace("{NOTE_ID}", context.noteId);
+        }
+      }
+      return copy;
+    }
+    checkConditions(conditions, context) {
+      for (const cond of conditions) {
+        const val = context.attributes[cond.field] ?? context.relations[cond.field];
+        switch (cond.operator) {
+          case "equals":
+            if (val !== cond.value) return false;
+            break;
+          case "notEquals":
+            if (val === cond.value) return false;
+            break;
+          case "contains":
+            if (typeof val === "string" && !val.includes(String(cond.value))) return false;
+            if (Array.isArray(val) && !val.includes(cond.value)) return false;
+            break;
+          case "isSet":
+            if (cond.value && (val === void 0 || val === null || val === "")) return false;
+            if (!cond.value && val !== void 0 && val !== null && val !== "") return false;
+            break;
+        }
+      }
+      return true;
+    }
+  };
+
+  // src/engine/settingsEngine.ts
+  var DEFAULT_AUTOMATION_SETTINGS = {
+    autoRunIfThenRulesOnCreation: true,
+    enableDerivedTopics: true,
+    autoJournalClone: true,
+    defaultQuickCaptureTemplate: "task",
+    staleThresholdDays: 14,
+    writingGoalWords: 500
+  };
+  var SettingsEngine = class {
+    constructor(initial) {
+      __publicField(this, "settings");
+      this.settings = { ...DEFAULT_AUTOMATION_SETTINGS, ...initial };
+    }
+    get(key) {
+      return this.settings[key];
+    }
+    getAll() {
+      return { ...this.settings };
+    }
+    set(key, value) {
+      this.settings[key] = value;
+    }
+  };
+
+  // src/engine/noteCreationEngine.ts
+  var NoteCreationEngine = class {
+    constructor(templateEngine, relationshipEngine, ifThenRuleEngine, settingsEngine = new SettingsEngine()) {
+      __publicField(this, "templateEngine", templateEngine);
+      __publicField(this, "relationshipEngine", relationshipEngine);
+      __publicField(this, "ifThenRuleEngine", ifThenRuleEngine);
+      __publicField(this, "settingsEngine", settingsEngine);
+    }
+    planNoteCreation(request) {
+      const isStoryOrEdit = request.type === "story" || request.type === "edit";
+      const templateId = isStoryOrEdit ? "story" : request.type;
+      const mode = request.mode || (request.type === "edit" ? "edit" : "project");
+      const template = this.templateEngine.getTemplate(templateId);
+      if (!template) {
+        throw new Error(`Unknown note template type: '${request.type}'`);
+      }
+      const date = request.date || /* @__PURE__ */ new Date();
+      const formattedTitle = this.templateEngine.formatTitle(template.id, request.title, date);
+      const labelsToCreate = [];
+      const relationsToCreate = [];
+      const childNotesToCreate = [];
+      const attrValues = request.attributes || {};
+      for (const attrDef of template.attributes) {
+        const userVal = attrValues[attrDef.name] ?? attrDef.defaultValue;
+        if (userVal !== void 0 && userVal !== null && userVal !== "") {
+          if (attrDef.type === "label") {
+            labelsToCreate.push({ name: attrDef.name, value: String(userVal) });
+          } else if (attrDef.type === "relation") {
+            const targets = Array.isArray(userVal) ? userVal : [userVal];
+            for (const t of targets) {
+              relationsToCreate.push({ name: attrDef.name, value: String(t) });
+            }
+          }
+        }
+      }
+      labelsToCreate.push({ name: template.marker, value: "" });
+      if (isStoryOrEdit) {
+        labelsToCreate.push({ name: "workflow", value: mode });
+        labelsToCreate.push({ name: "status", value: mode === "edit" ? "editing" : "drafting" });
+        labelsToCreate.push({ name: "kind", value: mode });
+        if (mode === "project") {
+          childNotesToCreate.push({
+            title: `${request.title} (Reporting & Notes)`,
+            templateId: "reportingNotes",
+            labels: [
+              { name: "extReportingNotes", value: "" },
+              { name: "status", value: "active" }
+            ]
+          });
+        }
+      }
+      const relValues = request.relations || {};
+      const resolved = this.relationshipEngine.resolveCreationRelations(template.id, relValues);
+      const autoCloneContainers = resolved.autoCloneContainers;
+      const inheritedTopicSources = this.settingsEngine.get("enableDerivedTopics") ? resolved.inheritedTopicSources : [];
+      for (const relLabel of resolved.relationLabels) {
+        relationsToCreate.push(relLabel);
+      }
+      const noteContext = {
+        noteId: "PREVIEW_ID",
+        title: formattedTitle,
+        templateId: template.id,
+        attributes: { ...attrValues, ...Object.fromEntries(labelsToCreate.map((l) => [l.name, l.value])) },
+        relations: relValues
+      };
+      const executedIfThenRules = [];
+      let content = template.defaultContent;
+      if (this.settingsEngine.get("autoRunIfThenRulesOnCreation")) {
+        const ruleResults = this.ifThenRuleEngine.evaluateEvent("onNoteCreated", noteContext);
+        for (const res of ruleResults) {
+          if (res.matched) {
+            executedIfThenRules.push({ ruleId: res.ruleId, ruleName: res.ruleName });
+            for (const action of res.executedActions) {
+              if (action.type === "setLabel" && action.params.labelName) {
+                labelsToCreate.push({
+                  name: action.params.labelName,
+                  value: action.params.labelValue || ""
+                });
+              } else if (action.type === "removeLabel" && action.params.labelName) {
+                const idx = labelsToCreate.findIndex((l) => l.name === action.params.labelName);
+                if (idx !== -1) labelsToCreate.splice(idx, 1);
+              } else if (action.type === "setRelation" && action.params.relationName && action.params.targetNoteId) {
+                relationsToCreate.push({
+                  name: action.params.relationName,
+                  value: action.params.targetNoteId
+                });
+              } else if (action.type === "archiveNote") {
+                labelsToCreate.push({ name: "archived", value: "" });
+                if (action.params.containerMarker && !autoCloneContainers.includes(action.params.containerMarker)) {
+                  autoCloneContainers.push(action.params.containerMarker);
+                }
+              } else if (action.type === "prependContent" && action.params.content) {
+                content = `${action.params.content}
+${content}`;
+              }
+            }
+          }
+        }
+      }
+      const category = this.templateEngine.getCategory(template.category);
+      const journalClone = this.settingsEngine.get("autoJournalClone") && !template.noJournalClone && category?.autoJournalClone !== false && autoCloneContainers.length === 0;
+      return {
+        templateId: template.id,
+        mode: isStoryOrEdit ? mode : void 0,
+        formattedTitle,
+        rootContainerMarker: template.rootContainerMarker,
+        targetContainerId: request.targetContainerId,
+        content,
+        labelsToCreate,
+        relationsToCreate,
+        autoCloneContainers,
+        inheritedTopicSources,
+        executedIfThenRules,
+        childNotesToCreate: childNotesToCreate.length > 0 ? childNotesToCreate : void 0,
+        journalClone,
+        noteType: template.noteType
+      };
+    }
+  };
+
+  // src/engine/noteMaterializer.ts
+  function triliumApi() {
+    const a = globalThis.api;
+    return a && typeof a.createNote === "function" ? a : null;
+  }
+  async function fetchNoteTopics(api, noteId) {
+    try {
+      if (typeof api.getNote !== "function") return [];
+      const note = await api.getNote(noteId);
+      if (!note) return [];
+      const topics = [];
+      if (typeof note.getRelations === "function") {
+        const rels = note.getRelations("topic") || [];
+        for (const rel of rels) {
+          const targetId = rel.targetNoteId || rel.value;
+          if (targetId) topics.push(targetId);
+        }
+      }
+      if (Array.isArray(note.attributes)) {
+        for (const attr of note.attributes) {
+          if (attr.name === "topic") {
+            const targetId = attr.targetNoteId || attr.value;
+            if (targetId && !topics.includes(targetId)) {
+              topics.push(targetId);
+            }
+          }
+        }
+      }
+      return topics;
+    } catch {
+      return [];
+    }
+  }
+  function applyDerivedTopics(plan, parentTopicMap, relEngine = new RelationshipEngine(new TemplateEngine())) {
+    if (!plan.inheritedTopicSources || plan.inheritedTopicSources.length === 0) return;
+    const explicitTopicIds = plan.relationsToCreate.filter((r) => r.name === "topic").map((r) => r.value);
+    const derivedRes = relEngine.computeDerivedTopics(explicitTopicIds, parentTopicMap);
+    for (const derivedTopicId of derivedRes.derivedTopics) {
+      if (!plan.relationsToCreate.some((r) => r.name === "topic" && r.value === derivedTopicId)) {
+        plan.relationsToCreate.push({ name: "topic", value: derivedTopicId });
+      }
+    }
+  }
+  async function cloneNoteToParentNote(childNoteId, parentNoteId) {
+    const glob = globalThis.glob;
+    if (!glob) throw new Error("Not running inside Trilium.");
+    const headers = {
+      "x-csrf-token": glob.csrfToken,
+      "trilium-component-id": glob.componentId,
+      "content-type": "application/json"
+    };
+    const path = `${glob.baseApiUrl}notes/${childNoteId}/clone-to-note/${parentNoteId}`;
+    const send = () => globalThis.fetch(path, {
+      method: "PUT",
+      credentials: "same-origin",
+      headers,
+      body: JSON.stringify({})
+    });
+    let response = await send();
+    if (response.status === 403) {
+      const bootstrapUrl = `./bootstrap${globalThis.location?.search ?? ""}`;
+      const bootstrap = await globalThis.fetch(bootstrapUrl, { credentials: "same-origin", cache: "no-store" });
+      if (bootstrap.ok) {
+        const refreshed = await bootstrap.json();
+        glob.csrfToken = refreshed.csrfToken;
+        headers["x-csrf-token"] = refreshed.csrfToken;
+        response = await send();
+      }
+    }
+    if (!response.ok) {
+      throw new Error(`Failed to file the note under ${parentNoteId} (HTTP ${response.status})`);
+    }
+  }
+  function buildAttributeRows(plan) {
+    return [
+      ...plan.labelsToCreate.map((l) => ({ type: "label", name: l.name, value: l.value })),
+      ...plan.relationsToCreate.map((r) => ({ type: "relation", name: r.name, value: r.value }))
+    ];
+  }
+  async function resolveParentNoteId(api, plan) {
+    if (plan.targetContainerId) return plan.targetContainerId;
+    const container = await api.searchForNote(`#${plan.rootContainerMarker}`);
+    if (!container) {
+      throw new Error(`Could not find a container note tagged #${plan.rootContainerMarker}.`);
+    }
+    return container.noteId;
+  }
+  async function materializeNoteCreation(plan, options) {
+    const api = triliumApi();
+    if (!api) throw new Error("Not running inside Trilium.");
+    if (plan.inheritedTopicSources && plan.inheritedTopicSources.length > 0) {
+      const parentTopicMap = {};
+      for (const sourceId of plan.inheritedTopicSources) {
+        parentTopicMap[sourceId] = options?.topicFetcher ? await options.topicFetcher(sourceId) : await fetchNoteTopics(api, sourceId);
+      }
+      const relEngine = options?.relationshipEngine ?? new RelationshipEngine(new TemplateEngine());
+      applyDerivedTopics(plan, parentTopicMap, relEngine);
+    }
+    const parentNoteId = await resolveParentNoteId(api, plan);
+    const { note } = await api.createNote(parentNoteId, {
+      title: plan.formattedTitle,
+      content: plan.content,
+      type: plan.noteType || "text",
+      activate: false,
+      attributes: buildAttributeRows(plan)
+    });
+    if (!note) throw new Error("Trilium did not return the created note.");
+    const clonedUnder = [];
+    for (const containerId of plan.autoCloneContainers) {
+      await cloneNoteToParentNote(note.noteId, containerId);
+      clonedUnder.push(containerId);
+    }
+    if (plan.journalClone) {
+      const journalNote = await api.getTodayNote();
+      if (journalNote) {
+        await cloneNoteToParentNote(note.noteId, journalNote.noteId);
+        clonedUnder.push(journalNote.noteId);
+      }
+    }
+    const childNoteIds = [];
+    for (const child of plan.childNotesToCreate ?? []) {
+      const { note: childNote } = await api.createNote(note.noteId, {
+        title: child.title,
+        activate: false,
+        attributes: child.labels.map((l) => ({ type: "label", name: l.name, value: l.value }))
+      });
+      if (childNote) childNoteIds.push(childNote.noteId);
+    }
+    return { noteId: note.noteId, title: note.title, clonedUnder, childNoteIds };
+  }
+
+  // src/components/nativeUi.ts
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function fuzzyScore(query, text) {
+    if (!query) return 0;
+    const q = query.toLowerCase();
+    const t = text.toLowerCase();
+    const idx = t.indexOf(q);
+    if (idx !== -1) return idx;
+    let cursor = 0;
+    let gaps = 0;
+    for (const ch of q) {
+      const found = t.indexOf(ch, cursor);
+      if (found === -1) return null;
+      gaps += found - cursor;
+      cursor = found + 1;
+    }
+    return 1e3 + gaps;
+  }
+  function searchableSelect({
+    id,
+    options,
+    value,
+    isMulti,
+    placeholder,
+    onChange
+  }) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "ns-combobox";
+    let selectedValues = isMulti ? Array.isArray(value) ? [...value] : value ? [value] : [] : [];
+    let selectedValue = isMulti ? "" : typeof value === "string" ? value : Array.isArray(value) && value.length > 0 ? value[0] : "";
+    const tagsContainer = document.createElement("div");
+    tagsContainer.className = "ns-combobox-tags";
+    if (!isMulti) tagsContainer.style.display = "none";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = id;
+    input.className = "form-control form-control-sm";
+    input.autocomplete = "off";
+    input.setAttribute("role", "combobox");
+    input.setAttribute("aria-expanded", "false");
+    input.setAttribute("aria-autocomplete", "list");
+    if (placeholder) input.placeholder = placeholder;
+    const panel = document.createElement("div");
+    panel.className = "ns-combobox-panel";
+    panel.setAttribute("role", "listbox");
+    panel.hidden = true;
+    wrapper.append(tagsContainer, input, panel);
+    let visible = [];
+    let highlighted = -1;
+    const labelFor = (v) => options.find((o) => o.value === v)?.label ?? v;
+    function renderTags() {
+      if (!isMulti) return;
+      tagsContainer.innerHTML = "";
+      for (const val of selectedValues) {
+        const tag = document.createElement("span");
+        tag.className = "ns-combobox-tag";
+        tag.innerHTML = `<span>${escapeHtml(labelFor(val))}</span><i class="bx bx-x ns-remove-tag" data-val="${escapeHtml(val)}"></i>`;
+        tag.querySelector(".ns-remove-tag")?.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          removeValue(val);
+        });
+        tagsContainer.appendChild(tag);
+      }
+    }
+    function removeValue(val) {
+      selectedValues = selectedValues.filter((v) => v !== val);
+      renderTags();
+      onChange?.([...selectedValues]);
+    }
+    function highlight(index) {
+      highlighted = index;
+      Array.from(panel.children).forEach((el, i) => el.classList.toggle("active", i === index));
+    }
+    function closePanel() {
+      panel.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      highlighted = -1;
+    }
+    function selectOption(option) {
+      if (isMulti) {
+        if (!selectedValues.includes(option.value)) {
+          selectedValues.push(option.value);
+          renderTags();
+          onChange?.([...selectedValues]);
+        }
+        input.value = "";
+        closePanel();
+      } else {
+        selectedValue = option.value;
+        input.value = option.label;
+        closePanel();
+        onChange?.(option.value);
+      }
+    }
+    function renderPanel(query) {
+      visible = options.map((o) => ({ o, score: fuzzyScore(query, o.label) })).filter((x) => x.score !== null).sort((a, b) => a.score - b.score).map((x) => x.o);
+      panel.innerHTML = "";
+      if (!visible.length) {
+        const empty = document.createElement("div");
+        empty.className = "ns-combobox-empty";
+        empty.textContent = "No matches.";
+        panel.appendChild(empty);
+      } else {
+        for (const option of visible) {
+          const item = document.createElement("div");
+          const isSelected = isMulti ? selectedValues.includes(option.value) : selectedValue === option.value;
+          item.className = `ns-combobox-option${isSelected ? " is-selected" : ""}`;
+          item.setAttribute("role", "option");
+          item.innerHTML = `<span>${escapeHtml(option.label)}${isSelected ? ' <i class="bx bx-check text-success"></i>' : ""}</span>${option.description ? `<span class="ns-meta">${escapeHtml(option.description)}</span>` : ""}`;
+          item.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            selectOption(option);
+          });
+          panel.appendChild(item);
+        }
+      }
+      panel.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+      highlighted = -1;
+    }
+    input.addEventListener("focus", () => {
+      input.select();
+      renderPanel("");
+    });
+    input.addEventListener("input", () => renderPanel(input.value));
+    input.addEventListener("blur", () => {
+      if (isMulti) {
+        input.value = "";
+      } else {
+        input.value = labelFor(selectedValue);
+      }
+      closePanel();
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (isMulti) {
+          input.value = "";
+        } else {
+          input.value = labelFor(selectedValue);
+        }
+        closePanel();
+        input.blur();
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (panel.hidden) {
+          renderPanel(input.value);
+          return;
+        }
+        const delta = e.key === "ArrowDown" ? 1 : -1;
+        highlight(Math.max(0, Math.min(visible.length - 1, highlighted + delta)));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const option = highlighted >= 0 ? visible[highlighted] : visible[0];
+        if (option) selectOption(option);
+      }
+    });
+    if (isMulti) {
+      renderTags();
+      input.value = "";
+    } else {
+      input.value = labelFor(selectedValue);
+    }
+    return {
+      el: wrapper,
+      getValue: () => isMulti ? [...selectedValues] : selectedValue,
+      setValue: (v) => {
+        if (isMulti) {
+          selectedValues = Array.isArray(v) ? [...v] : v ? [v] : [];
+          renderTags();
+          input.value = "";
+        } else {
+          selectedValue = typeof v === "string" ? v : v[0] ?? "";
+          input.value = labelFor(selectedValue);
+        }
+      }
+    };
+  }
+
+  // src/components/QuickCaptureModal.ts
+  function triliumApi2() {
+    const a = globalThis.api;
+    return a && typeof a.searchForNotes === "function" ? a : null;
+  }
+  async function showQuickCaptureModal(templateId, templateEngine, noteCreationEngine, onCreated) {
+    const isStoryOrEdit = templateId === "story" || templateId === "edit";
+    const activeTplId = isStoryOrEdit ? "story" : templateId;
+    const template = templateEngine.getTemplate(activeTplId);
+    if (!template) return;
+    const isEditMode = templateId === "edit";
+    const descriptions = {
+      task: "Creates an actionable task item with priority, due date, and status labels.",
+      meeting: "Creates a meeting notes document linked to participants, clients, or organizations.",
+      story: "Starts a full Story Project from scratch. Creates a Project Hub (#kind=project), a Story Draft (#status=drafting), and a dedicated Reporting & Notes child note. Auto-cloned to today's Journal.",
+      edit: "Starts a Quick Edit Package. Creates an Edit Project Hub (#kind=edit) and a Story Draft (#status=editing, #workflow=edit) for fast copy editing/proofreading, skipping extra reporting notes. Auto-cloned to today's Journal.",
+      dailyNote: "Creates today's daily journal note.",
+      projectHub: "Creates a new Project Hub root folder to organize tasks, stories, and meetings."
+    };
+    const description = descriptions[templateId] || `Creates a new ${template.title} note.`;
+    const modalTitle = isEditMode ? "New Edit Package" : templateId === "story" ? "New Story Project" : `New ${template.title}`;
+    const api = triliumApi2();
+    const relationCandidates = /* @__PURE__ */ new Map();
+    for (const rel of template.relationships) {
+      if (!api) {
+        relationCandidates.set(rel.relationName, []);
+        continue;
+      }
+      const targetTpl = templateEngine.getTemplate(rel.targetTemplateId);
+      const notes = targetTpl ? await api.searchForNotes(`#${targetTpl.marker}`) : [];
+      relationCandidates.set(rel.relationName, notes);
+    }
+    const backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop fade show";
+    backdrop.style.zIndex = "1050";
+    const modal = document.createElement("div");
+    modal.className = "modal fade show d-block";
+    modal.tabIndex = -1;
+    modal.style.zIndex = "1055";
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border shadow-lg" style="background-color: var(--sub-background-color, transparent); color: var(--main-text-color, inherit); border-color: var(--border-color, rgba(128,128,128,0.3)) !important;">
+                <div class="modal-header border-bottom p-3">
+                    <h5 class="modal-title h6 font-weight-bold d-flex align-items-center gap-2">
+                        <i class="bx bx-${isEditMode ? "edit" : template.icon} text-primary"></i>
+                        <span>${modalTitle}</span>
+                    </h5>
+                    <button type="button" class="btn-close close-btn" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 d-flex flex-column gap-3">
+                    <div class="p-3 rounded border" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.2)) !important;">
+                        <div class="small font-weight-bold text-info d-flex align-items-center gap-1.5 mb-1">
+                            <i class="bx bx-info-circle"></i> Original System Contract: ${modalTitle}
+                        </div>
+                        <p class="small text-muted m-0">${description}</p>
+                    </div>
+
+                    <div>
+                        <label class="form-label small font-weight-bold">${modalTitle} Title</label>
+                        <input type="text" class="form-control title-input" placeholder="e.g. ${isEditMode ? "Round 1 Edit Package" : "Investigative Report Title"}" value="">
+                    </div>
+
+                    ${template.attributes.length > 0 ? `
+                        <div class="border-top pt-3">
+                            <label class="form-label small font-weight-bold d-flex align-items-center gap-1 mb-2">
+                                <i class="bx bx-slider-alt text-success"></i> Promoted Form Attributes
+                            </label>
+                            <div class="row g-2 attr-form">
+                                ${template.attributes.map((a) => `
+                                    <div class="col-md-6">
+                                        <label class="form-label tiny text-muted font-weight-bold">#${a.name}</label>
+                                        ${a.options ? `
+                                            <select class="form-select form-select-sm attr-input" data-attr="${a.name}">
+                                                ${a.options.map((opt) => `<option value="${opt}">${opt}</option>`).join("")}
+                                            </select>
+                                        ` : `
+                                            <input type="text" class="form-control form-control-sm attr-input" data-attr="${a.name}" value="${a.defaultValue ?? ""}" placeholder="Value...">
+                                        `}
+                                    </div>
+                                `).join("")}
+                            </div>
+                        </div>
+                    ` : ""}
+
+                    ${template.relationships.length > 0 ? `
+                        <div class="border-top pt-3 rel-form">
+                            <label class="form-label small font-weight-bold d-flex align-items-center gap-1 mb-2">
+                                <i class="bx bx-link text-warning"></i> Parent links
+                            </label>
+                        </div>
+                    ` : ""}
+
+                    <!-- Error state -->
+                    <div class="create-error alert alert-danger d-none m-0"></div>
+                </div>
+                <div class="modal-footer border-top p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-outline-secondary close-btn">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-primary create-btn d-flex align-items-center gap-1">
+                        <i class="bx bx-plus"></i> Create ${modalTitle}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    const closeButtons = modal.querySelectorAll(".close-btn");
+    closeButtons.forEach((btn) => btn.addEventListener("click", closeModal));
+    function closeModal() {
+      if (modal.parentNode) modal.parentNode.removeChild(modal);
+      if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+    }
+    const relPickers = /* @__PURE__ */ new Map();
+    const relForm = modal.querySelector(".rel-form");
+    for (const rel of template.relationships) {
+      const candidates = relationCandidates.get(rel.relationName) ?? [];
+      const field = document.createElement("div");
+      field.className = "ns-field mb-2";
+      const labelText = rel.isMulti ? `~${escapeHtml(rel.relationName)} (multi) &rarr; ${escapeHtml(rel.targetTemplateName)}` : `~${escapeHtml(rel.relationName)} &rarr; ${escapeHtml(rel.targetTemplateName)}`;
+      field.innerHTML = `<label class="form-label tiny text-muted font-weight-bold">${labelText}</label>`;
+      const picker = searchableSelect({
+        id: `rel-${rel.relationName}`,
+        value: rel.isMulti ? [] : "",
+        isMulti: rel.isMulti,
+        placeholder: candidates.length ? `Search ${rel.targetTemplateName}\u2026` : `No existing ${rel.targetTemplateName} notes found`,
+        options: candidates.map((n) => ({ value: n.noteId, label: n.title }))
+      });
+      field.appendChild(picker.el);
+      relForm?.appendChild(field);
+      relPickers.set(rel.relationName, picker);
+    }
+    const titleInput = modal.querySelector(".title-input");
+    const createBtn = modal.querySelector(".create-btn");
+    const errorBox = modal.querySelector(".create-error");
+    createBtn.addEventListener("click", async () => {
+      const rawTitle = titleInput.value.trim() || `Untitled ${modalTitle}`;
+      const attrInputs = modal.querySelectorAll(".attr-input");
+      const attributes = {};
+      attrInputs.forEach((input) => {
+        const attrName = input.dataset.attr;
+        if (attrName) attributes[attrName] = input.value;
+      });
+      const relations = {};
+      for (const [relationName, picker] of relPickers) {
+        const value = picker.getValue();
+        if (value && (Array.isArray(value) ? value.length > 0 : true)) {
+          relations[relationName] = value;
+        }
+      }
+      const plan = noteCreationEngine.planNoteCreation({
+        type: templateId,
+        title: rawTitle,
+        attributes,
+        relations,
+        mode: isEditMode ? "edit" : "project"
+      });
+      errorBox.classList.add("d-none");
+      createBtn.disabled = true;
+      createBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creating\u2026';
+      try {
+        const result = api ? await materializeNoteCreation(plan) : void 0;
+        if (result) api?.showMessage?.(`Created "${result.title}".`);
+        closeModal();
+        onCreated?.({ plan, result });
+      } catch (err) {
+        errorBox.textContent = `Could not create the note: ${err.message}`;
+        errorBox.classList.remove("d-none");
+        createBtn.disabled = false;
+        createBtn.innerHTML = `<i class="bx bx-plus"></i> Create ${escapeHtml(modalTitle)}`;
+      }
+    });
+    document.body.appendChild(backdrop);
+    document.body.appendChild(modal);
+  }
+
+  // src/artifacts/notes-system-launcher.js
+  (function initLauncherBar() {
+    if (typeof document === "undefined") return;
+    const templateEngine = new TemplateEngine();
+    const relationshipEngine = new RelationshipEngine(templateEngine);
+    const ifThenRuleEngine = new IfThenRuleEngine();
+    const settingsEngine = new SettingsEngine();
+    const noteCreationEngine = new NoteCreationEngine(templateEngine, relationshipEngine, ifThenRuleEngine, settingsEngine);
+    function triggerQuickCapture(templateId) {
+      const targetTpl = templateId || settingsEngine.get("defaultQuickCaptureTemplate") || "task";
+      showQuickCaptureModal(targetTpl, templateEngine, noteCreationEngine);
+    }
+    if (!window.__ns_keyboard_shortcut_registered) {
+      window.__ns_keyboard_shortcut_registered = true;
+      document.addEventListener("keydown", (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === "K" || e.key === "k")) {
+          e.preventDefault();
+          e.stopPropagation();
+          triggerQuickCapture();
+        }
+      }, true);
+      console.log("[Notes System Plugin] Global keyboard shortcut (Cmd/Ctrl+Shift+K) registered.");
+    }
+    function mountLauncherButton() {
+      const existingContainer = document.getElementById("ns-launcher-group");
+      if (existingContainer) existingContainer.remove();
+      const headerContainer = document.querySelector("#launcher-container") || document.querySelector(".launcher-container") || document.querySelector(".header-widgets") || document.querySelector(".header-widget-container") || document.querySelector(".header");
+      if (!headerContainer) return false;
+      const groupEl = document.createElement("div");
+      groupEl.id = "ns-launcher-group";
+      groupEl.className = "btn-group btn-group-sm ns-launcher-group me-1";
+      const mainBtn = document.createElement("button");
+      mainBtn.type = "button";
+      mainBtn.className = "btn btn-secondary btn-sm ns-launcher-btn d-inline-flex align-items-center gap-1";
+      mainBtn.title = "Quick Capture Note (Cmd/Ctrl+Shift+K)";
+      mainBtn.innerHTML = '<i class="bx bx-plus-circle text-primary"></i> <span class="d-none d-md-inline font-weight-bold">Quick Capture</span>';
+      mainBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        triggerQuickCapture();
+      });
+      groupEl.appendChild(mainBtn);
+      headerContainer.prepend(groupEl);
+      console.log("[Notes System Plugin] Global Quick Capture launcher button mounted in header bar.");
+      return true;
+    }
+    if (!mountLauncherButton()) {
+      const observer = new MutationObserver(() => {
+        if (mountLauncherButton()) {
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      setTimeout(() => observer.disconnect(), 1e4);
+    }
+  })();
+})();

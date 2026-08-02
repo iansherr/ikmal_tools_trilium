@@ -5,5 +5,10 @@
 __pycache__/
 *.pyc
 
-# Generated export artifacts
-dist/
+# Generated compiler output
+dist/*
+
+# Published package payloads are intentionally committed.
+!dist/artifacts/
+!dist/artifacts/*.js
+!dist/artifacts/*.css

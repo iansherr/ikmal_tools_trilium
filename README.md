@@ -26,6 +26,9 @@ direct manifest URL:
 
 The integration branch is experimental and is not a production Trilium release.
 
+The `src/artifacts` files are build inputs. The committed `dist/artifacts` files are the
+bundled payloads referenced by the package manifest and downloaded by Trilium.
+
 ## What this is
 
 `trilium-package.json` declares one installable package (`iansherr/ikmal_tools_trilium`)
@@ -33,16 +36,16 @@ made of a main workspace dashboard, global launcher, live editor status bar word
 
 | Artifact | Type | Source | Description |
 |---|---|---|---|
-| `notes-system-dashboard` | render note | `src/artifacts/notes-system-dashboard.jsx` | Main 3-tab workspace UI (Today, Template Studio, Package Settings) |
-| `notes-system-kanban` | render note | `src/artifacts/notes-system-kanban.jsx` | Ikmal Standalone Task Kanban Board |
-| `notes-system-insights` | render note | `src/artifacts/notes-system-insights.jsx` | Ikmal Standalone Writing & Productivity Insights |
-| `notes-system-quick-capture` | render note | `src/artifacts/notes-system-quick-capture.jsx` | Ikmal Standalone Quick Capture Toolbar |
-| `notes-system-weather` | render note | `src/artifacts/notes-system-weather.jsx` | Ikmal Standalone Weather & Climate Card |
-| `notes-system-on-this-day` | render note | `src/artifacts/notes-system-on-this-day.jsx` | Ikmal Standalone Time Machine (On This Day) |
-| `notes-system-stale-notes` | render note | `src/artifacts/notes-system-stale-notes.jsx` | Ikmal Standalone Stale Notes Reviewer |
-| `notes-system-launcher` | launcher entry | `src/artifacts/notes-system-launcher.js` | Global Header Launcher Bar & `Cmd/Ctrl+Shift+K` Hotkey |
-| `notes-system-word-count` | launcher entry | `src/artifacts/notes-system-word-count.js` | Live Editor Status Bar Word & Char Counter |
-| `notes-system-css` | stylesheet | `src/artifacts/notes-system.css` | Theme & UI Stylesheet |
+| `notes-system-dashboard` | render note | `dist/artifacts/notes-system-dashboard.js` | Main 3-tab workspace UI (Today, Template Studio, Package Settings) |
+| `notes-system-kanban` | render note | `dist/artifacts/notes-system-kanban.js` | Ikmal Standalone Task Kanban Board |
+| `notes-system-insights` | render note | `dist/artifacts/notes-system-insights.js` | Ikmal Standalone Writing & Productivity Insights |
+| `notes-system-quick-capture` | render note | `dist/artifacts/notes-system-quick-capture.js` | Ikmal Standalone Quick Capture Toolbar |
+| `notes-system-weather` | render note | `dist/artifacts/notes-system-weather.js` | Ikmal Standalone Weather & Climate Card |
+| `notes-system-on-this-day` | render note | `dist/artifacts/notes-system-on-this-day.js` | Ikmal Standalone Time Machine (On This Day) |
+| `notes-system-stale-notes` | render note | `dist/artifacts/notes-system-stale-notes.js` | Ikmal Standalone Stale Notes Reviewer |
+| `notes-system-launcher` | launcher entry | `dist/artifacts/notes-system-launcher.js` | Global Header Launcher Bar & `Cmd/Ctrl+Shift+K` Hotkey |
+| `notes-system-word-count` | launcher entry | `dist/artifacts/notes-system-word-count.js` | Live Editor Status Bar Word & Char Counter |
+| `notes-system-css` | stylesheet | `dist/artifacts/notes-system.css` | Theme & UI Stylesheet |
 
 The workspace dashboard render note mounts three tabs (Today, Template Studio, Settings) into a container div and owns state in memory for the session. Nothing here talks to Trilium's database schema directly, and there is no backend script or custom HTTP endpoint — notes are created and read entirely from the frontend, through the standard script API (`api.searchForNotes`, `api.createNote`, etc.) and a small set of authenticated `fetch` calls.
 
