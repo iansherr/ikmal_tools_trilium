@@ -43,11 +43,13 @@ made of a main workspace dashboard, global launcher, live editor status bar word
 | `notes-system-weather` | render note | `dist/artifacts/notes-system-weather.js` | Ikmal Standalone Weather & Climate Card |
 | `notes-system-on-this-day` | render note | `dist/artifacts/notes-system-on-this-day.js` | Ikmal Standalone Time Machine (On This Day) |
 | `notes-system-stale-notes` | render note | `dist/artifacts/notes-system-stale-notes.js` | Ikmal Standalone Stale Notes Reviewer |
-| `notes-system-launcher` | launcher entry | `dist/artifacts/notes-system-launcher.js` | Global Header Launcher Bar & `Cmd/Ctrl+Shift+K` Hotkey |
-| `notes-system-word-count` | launcher entry | `dist/artifacts/notes-system-word-count.js` | Live Editor Status Bar Word & Char Counter |
+| `notes-system-launcher` | frontend startup script | `dist/artifacts/notes-system-launcher.js` | Global Header Launcher Bar & `Cmd/Ctrl+Shift+K` Hotkey |
+| `notes-system-word-count` | frontend startup script | `dist/artifacts/notes-system-word-count.js` | Live Editor Status Bar Word & Char Counter |
 | `notes-system-css` | stylesheet | `dist/artifacts/notes-system.css` | Theme & UI Stylesheet |
 
 The workspace dashboard render note mounts three tabs (Today, Template Studio, Settings) into a container div and owns state in memory for the session. Nothing here talks to Trilium's database schema directly, and there is no backend script or custom HTTP endpoint — notes are created and read entirely from the frontend, through the standard script API (`api.searchForNotes`, `api.createNote`, etc.) and a small set of authenticated `fetch` calls.
+
+The launcher and word-count artifacts are startup scripts that add their UI through the browser DOM. They are intentionally not Trilium custom-widget launchers; declaring them as launchers would make Trilium try to render their side-effect scripts as widget objects.
 
 ## Architecture
 
