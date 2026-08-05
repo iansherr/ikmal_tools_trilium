@@ -4,23 +4,35 @@
   function escapeHtml(value) {
     return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-  function section(parent, { title, description, actions } = {}) {
+  function section(parent, { title, description, actions, collapsible } = {}) {
     const sectionEl = document.createElement("div");
     sectionEl.className = "ns-section";
-    if (title || actions?.length) {
-      const header = document.createElement("div");
-      header.className = "ns-section-header";
-      header.innerHTML = `<h4 class="ns-section-title">${escapeHtml(title ?? "")}</h4>`;
-      if (actions?.length) {
-        const actionsEl = document.createElement("div");
-        actionsEl.className = "ns-actions";
-        actions.forEach((a) => actionsEl.appendChild(a));
-        header.appendChild(actionsEl);
-      }
-      sectionEl.appendChild(header);
-    }
     const card = document.createElement("div");
     card.className = "ns-section-card";
+    if (title || actions?.length || collapsible) {
+      const header = document.createElement("div");
+      header.className = "ns-section-header d-flex justify-content-between align-items-center";
+      header.innerHTML = `<h4 class="ns-section-title m-0">${escapeHtml(title ?? "")}</h4>`;
+      const headerRight = document.createElement("div");
+      headerRight.className = "ns-actions d-flex align-items-center gap-2";
+      if (actions?.length) {
+        actions.forEach((a) => headerRight.appendChild(a));
+      }
+      if (collapsible) {
+        const toggleBtn = iconAction({
+          icon: "bx-chevron-up",
+          title: "Collapse section",
+          onClick: () => {
+            const isHidden = card.hidden;
+            card.hidden = !isHidden;
+            toggleBtn.querySelector("span")?.setAttribute("class", `bx ${card.hidden ? "bx-chevron-down" : "bx-chevron-up"}`);
+          }
+        });
+        headerRight.appendChild(toggleBtn);
+      }
+      header.appendChild(headerRight);
+      sectionEl.appendChild(header);
+    }
     if (description) {
       const p = document.createElement("p");
       p.className = "ns-section-description";
@@ -56,6 +68,64 @@
     el.className = "ns-empty";
     el.textContent = text;
     return el;
+  }
+  function iconAction({ icon, title, onClick }) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "icon-action";
+    btn.title = title;
+    btn.setAttribute("aria-label", title);
+    btn.innerHTML = `<span class="bx ${escapeHtml(icon)}"></span>`;
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+  function showToast(opts, typeArg, durationArg) {
+    if (typeof document === "undefined") return;
+    const message = typeof opts === "string" ? opts : opts.message;
+    const type = typeof opts === "string" ? typeArg || "success" : opts.type || "success";
+    const durationMs = typeof opts === "string" ? durationArg ?? 3500 : opts.durationMs ?? 3500;
+    const undoAction = typeof opts === "string" ? void 0 : opts.undoAction;
+    let container = document.querySelector(".ns-toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.className = "ns-toast-container";
+      container.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 1060; display: flex; flex-direction: column; gap: 8px; max-width: 360px; pointer-events: none;";
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement("div");
+    const bgClass = type === "success" ? "bg-success" : type === "warning" ? "bg-warning text-dark" : type === "danger" ? "bg-danger" : "bg-primary";
+    const icon = type === "success" ? "bx-check-circle" : type === "warning" ? "bx-error" : type === "danger" ? "bx-x-circle" : "bx-info-circle";
+    toast.className = `toast show align-items-center text-white ${bgClass} border-0 shadow-lg`;
+    toast.style.cssText = "pointer-events: auto; transition: all 0.3s ease; opacity: 1; transform: translateY(0);";
+    toast.innerHTML = `
+        <div class="d-flex p-2.5">
+            <div class="toast-body d-flex align-items-center gap-2 small">
+                <i class="bx ${icon} fs-6"></i>
+                <span>${escapeHtml(message)}</span>
+                ${undoAction ? `<button type="button" class="btn btn-micro btn-light text-dark ms-2 undo-btn">Undo</button>` : ""}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto close-toast-btn" aria-label="Close"></button>
+        </div>
+    `;
+    if (undoAction) {
+      toast.querySelector(".undo-btn")?.addEventListener("click", () => {
+        undoAction();
+        removeToast();
+      });
+    }
+    const removeToast = () => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(10px)";
+      setTimeout(() => toast.remove(), 300);
+    };
+    toast.querySelector(".close-toast-btn")?.addEventListener("click", removeToast);
+    container.appendChild(toast);
+    if (durationMs > 0) {
+      setTimeout(removeToast, durationMs);
+    }
+  }
+  if (typeof window !== "undefined") {
+    window.__ikmalToast = showToast;
   }
 
   // src/engine/noteInsightsEngine.ts

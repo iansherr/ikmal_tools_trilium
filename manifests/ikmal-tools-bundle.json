@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "bundle",
+  "id": "iansherr/ikmal_tools",
+  "version": "0.1.0",
+  "name": "Ikmal Tools",
+  "description": "A selectable bundle of independently managed Ikmal Trilium apps.",
+  "repository": "https://github.com/iansherr/ikmal_tools_trilium",
+  "staged": true,
+  "stagedReason": "Publish after component ownership transfer and bundle lifecycle UI are validated.",
+  "components": [
+    {
+      "id": "iansherr/ikmal_tools_trilium",
+      "role": "core",
+      "required": true
+    },
+    {
+      "id": "iansherr/ikmal_editor_trilium",
+      "role": "editor",
+      "required": false,
+      "defaultEnabled": true
+    }
+  ]
+}

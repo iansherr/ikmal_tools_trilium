@@ -32,6 +32,141 @@
     --ns-title-offset: 13px;
 }
 
+/* Ikmal Editor standalone styles begin. Keep this marked block extractable so
+   the editor can ship independently without copying the package tree. */
+
+/* The note window, rather than the document's content height, owns the editor
+   indicator. It stays out of the saved CKEditor content and does not repeat on
+   read-only text pages. */
+.ikmal-editor-note-window {
+    position: relative !important;
+}
+
+.ikmal-editor-footer {
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    align-items: center;
+    background: color-mix(in srgb, var(--accented-background-color, var(--main-background-color)) 94%, transparent);
+    border-top: 1px solid var(--main-border-color);
+    box-sizing: border-box;
+    color: var(--muted-text-color);
+    display: none;
+    flex-wrap: nowrap;
+    font-size: 0.72rem;
+    gap: 0.35rem;
+    line-height: 1.35;
+    margin: 0;
+    min-height: 1.65rem;
+    padding: 0.24rem 0.5rem;
+    justify-content: space-between;
+    width: 100%;
+    pointer-events: none;
+    box-shadow: 0 -1px 4px rgb(0 0 0 / 10%);
+}
+
+.ikmal-editor-note-window.ikmal-editor-active .ikmal-editor-footer,
+.ikmal-editor-note-window.ikmal-selection-active .ikmal-editor-footer {
+    display: flex;
+}
+
+.ikmal-editor-note-window.ikmal-selection-active .ikmal-editor-footer {
+    display: none;
+}
+
+.ikmal-editor-footer-summary {
+    align-items: center;
+    display: inline-flex;
+    flex: 1 1 auto;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.ikmal-editor-footer-summary > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ikmal-editor-footer i {
+    color: var(--text-accent, var(--main-text-color));
+    flex: 0 0 auto;
+}
+
+.ikmal-editor-status {
+    align-items: center;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.95rem;
+    line-height: 1;
+    margin-inline-start: auto;
+    padding: 0.1rem;
+}
+
+.ikmal-editor-status-ok {
+    color: var(--success-color, #2f7d4a);
+}
+
+.ikmal-editor-status-issues {
+    color: var(--warning-color, #9a6500);
+}
+
+::highlight(ikmal-duplicate-words) {
+    background: color-mix(in srgb, var(--warning-color, #9a6500) 24%, transparent);
+    text-decoration: underline wavy var(--warning-color, #9a6500);
+    text-decoration-thickness: 1px;
+}
+
+/* Ikmal's selection details are a bottom-of-window sidecar. Trilium's native
+   context menu remains at the pointer and is not replaced or intercepted. */
+.ikmal-selection-menu {
+    position: absolute;
+    z-index: 10000;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    box-sizing: border-box;
+    width: min(360px, calc(100% - 1rem));
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--main-border-color);
+    border-radius: 7px;
+    background: var(--main-background-color);
+    color: var(--main-text-color);
+    box-shadow: 0 5px 18px rgb(0 0 0 / 20%);
+    font-size: 0.8rem;
+    line-height: 1.35;
+}
+
+.ikmal-selection-menu-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.ikmal-selection-menu-stats {
+    color: var(--muted-text-color);
+    margin-bottom: 0.6rem;
+}
+
+.ikmal-selection-menu-label {
+    border-top: 1px solid var(--main-border-color);
+    padding-top: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+.ikmal-selection-menu-issues {
+    margin: 0.25rem 0 0.55rem;
+    padding-left: 1.1rem;
+}
+
+.ikmal-selection-menu-ok {
+    color: var(--muted-text-color);
+}
+
+/* Ikmal Editor standalone styles end. */
+
 .notes-system-shell {
     /* Rows and the two-pane split respond to the width of the note pane, not the
        window, so the page works in a narrow split as well as full width. */
@@ -41,6 +176,13 @@
     color: var(--main-text-color);
     background: var(--main-background-color);
     padding: 15px 25px;
+}
+
+/* The standalone Today note has no outer settings shell. Make the homepage
+   itself the responsive boundary so its grid can collapse inside a narrow split. */
+.today-homepage-wrapper {
+    container-type: inline-size;
+    min-width: 0;
 }
 
 /* ---------------------------------------------------------------- page header */
@@ -146,10 +288,34 @@
     padding: var(--ns-card-padding);
 }
 
+.ns-journal-section {
+    margin-top: 12px;
+}
+
+.ns-journal-card {
+    padding-block: 20px;
+}
+
 .ns-section-description {
     margin: 0 0 16px;
     font-size: 13px;
     color: var(--ns-muted);
+}
+
+.ns-journal-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.ns-journal-date {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.ns-journal-open {
+    margin-top: 2px;
 }
 
 /* ------------------------------------------------------------------------ row */
@@ -597,10 +763,11 @@ body[dir="rtl"] .ns-switch .ns-switch-button.on::after {
 
 .ns-grid > .ns-section {
     max-width: none;
+    min-width: 0;
 }
 
 .ns-grid-auto {
-    grid-template-columns: repeat(auto-fit, minmax(var(--ns-grid-min, 280px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(var(--ns-grid-min, 280px), 100%), 1fr));
 }
 
 .ns-cols-1 { grid-template-columns: minmax(0, 1fr); }
@@ -989,6 +1156,16 @@ body[dir="rtl"] .ns-switch .ns-switch-button.on::after {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ns-quick-capture-action {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    font-size: 0.85rem;
 }
 
 .ns-actions-end {
@@ -999,6 +1176,20 @@ body[dir="rtl"] .ns-switch .ns-switch-button.on::after {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+@container (max-width: 560px) {
+    .ns-quick-capture-action {
+        flex-basis: calc(50% - 4px);
+        justify-content: flex-start !important;
+        text-align: left;
+    }
+}
+
+@container (max-width: 340px) {
+    .ns-quick-capture-action {
+        flex-basis: 100%;
+    }
 }
 
 /* --------------------------------------------------------------------- tabs */
@@ -1056,6 +1247,7 @@ body[dir="rtl"] .ns-switch .ns-switch-button.on::after {
     border-radius: 8px;
     background: var(--ns-card-bg);
     box-shadow: var(--ns-card-shadow);
+    backdrop-filter: blur(8px);
 }
 
 .kanban-col {
@@ -1064,21 +1256,137 @@ body[dir="rtl"] .ns-switch .ns-switch-button.on::after {
     border: 1px solid var(--ns-card-border);
     border-radius: 8px;
     background: var(--ns-card-bg);
+    backdrop-filter: blur(6px);
 }
 
-.kanban-card {
+.kanban-card, .ns-kanban-card {
     padding: 8px 10px;
     border: 1px solid var(--ns-border);
     border-radius: 6px;
     background: var(--main-background-color);
-    cursor: grab;
-    transition: border-color 0.15s ease;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-.kanban-card:hover {
+.kanban-card:hover, .ns-kanban-card:hover {
     border-color: var(--accent-color, var(--main-text-color));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.kanban-card:active {
-    cursor: grabbing;
+.kanban-card:active, .ns-kanban-card:active {
+    transform: translateY(0);
+}
+
+.btn-micro {
+    padding: 0.12rem 0.4rem;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    border-radius: 4px;
+}
+
+.ns-section-card:hover {
+    border-color: color-mix(in srgb, var(--ns-card-border) 80%, var(--main-text-color));
+}
+
+/* Centered page containers with consistent margins & padding across all plugins */
+.notes-system-shell,
+.notes-system-root,
+.today-homepage-container,
+.settings-studio-container,
+.template-studio-container,
+.ikmal-project-dashboard,
+.ikmal-canvas-root,
+.ikmal-kanban-root,
+.ikmal-insights-root,
+.ikmal-weather-root,
+.ikmal-stale-notes-root,
+.ikmal-on-this-day-root {
+    max-width: 1080px !important;
+    margin: 0 auto !important;
+    padding: 1.25rem 1.5rem !important;
+    box-sizing: border-box !important;
+}
+
+/* Glassmorphism vs High-Contrast Solid theme modes */
+[data-ikmal-card-style="glass"] .ns-card,
+[data-ikmal-card-style="glass"] .ns-section-card,
+[data-ikmal-card-style="glass"] .kanban-col {
+    backdrop-filter: blur(12px) saturate(180%);
+    background: color-mix(in srgb, var(--ns-card-bg) 75%, transparent);
+}
+
+[data-ikmal-card-style="solid"] .ns-card,
+[data-ikmal-card-style="solid"] .ns-section-card,
+[data-ikmal-card-style="solid"] .kanban-col {
+    backdrop-filter: none;
+    background: var(--ns-card-bg);
+    border: 1.5px solid var(--main-border-color);
+}
+
+/* Glassmorphism Action Bars & Editorial Controls */
+.ikmal-reporting-actions-bar,
+.extension-round-actions {
+    backdrop-filter: blur(10px) saturate(160%);
+    background: color-mix(in srgb, var(--main-background-color) 85%, transparent) !important;
+    border: 1px solid var(--main-border-color) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ikmal-reporting-actions-bar:hover,
+.extension-round-actions:hover {
+    border-color: color-mix(in srgb, var(--main-border-color) 70%, var(--theme-style-accent-color, #3b82f6)) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* Kanban Drag & Drop and Animation States */
+.kanban-drag-over {
+    border-color: var(--theme-style-accent-color, #3b82f6) !important;
+    background: color-mix(in srgb, var(--ns-card-bg) 90%, var(--theme-style-accent-color, #3b82f6)) !important;
+    box-shadow: inset 0 0 0 2px var(--theme-style-accent-color, #3b82f6);
+}
+
+.ns-card-dragging {
+    opacity: 0.4;
+    transform: scale(0.97);
+}
+
+.ns-card-done {
+    opacity: 0.7;
+}
+
+.ns-card-done-anim {
+    animation: nsTaskStrike 0.3s ease forwards;
+}
+
+@keyframes nsTaskStrike {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.03); opacity: 0.9; }
+    100% { transform: scale(0.98); opacity: 0.6; text-decoration: line-through; }
+}
+
+/* Accessible Focus Ring */
+:focus-visible {
+    outline: 2px solid var(--theme-style-accent-color, #3b82f6) !important;
+    outline-offset: 2px !important;
+}
+
+/* Narrow Pane & Note-Split Container Queries */
+@container (max-width: 600px) {
+    .notes-system-shell,
+    .today-homepage-container,
+    .settings-studio-container,
+    .template-studio-container {
+        padding: 0.75rem 0.85rem !important;
+    }
+
+    .ns-kanban {
+        flex-direction: column !important;
+    }
+
+    .kanban-col {
+        width: 100% !important;
+    }
 }

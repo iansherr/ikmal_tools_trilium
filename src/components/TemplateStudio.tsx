@@ -66,6 +66,8 @@ export function renderTemplateStudio(
     let activeEditorTab: 'editor' | 'preview' = 'editor';
     let railMode: 'templates' | 'categories' = 'templates';
     let selectedCategoryId: string = templateEngine.getAllCategories()[0]?.id || 'work';
+    let railSearchQuery: string = '';
+    let showSplitPreview: boolean = false;
 
     function refresh() {
         container.innerHTML = '';
@@ -123,7 +125,20 @@ export function renderTemplateStudio(
         if (inCategories && activeCat) {
             renderCategoryEditor(main, activeCat);
         } else if (activeTpl && activeEditorTab === 'editor') {
-            renderSchemaEditor(main, activeTpl);
+            if (showSplitPreview) {
+                const splitContainer = document.createElement('div');
+                splitContainer.className = 'd-flex gap-3 w-100 flex-column flex-lg-row';
+                const schemaPane = document.createElement('div');
+                schemaPane.className = 'flex-grow-1 w-100 w-lg-50';
+                renderSchemaEditor(schemaPane, activeTpl);
+                const previewPane = document.createElement('div');
+                previewPane.className = 'w-100 w-lg-50 border-start ps-0 ps-lg-3 pt-3 pt-lg-0';
+                renderPreview(previewPane, activeTpl);
+                splitContainer.append(schemaPane, previewPane);
+                main.appendChild(splitContainer);
+            } else {
+                renderSchemaEditor(main, activeTpl);
+            }
         } else if (activeTpl) {
             renderPreview(main, activeTpl);
         }
@@ -136,7 +151,7 @@ export function renderTemplateStudio(
     /** Segmented Schema/Preview control for the currently selected template. */
     function modeSwitcher(): HTMLElement {
         const group = document.createElement('div');
-        group.className = 'btn-group btn-group-sm';
+        group.className = 'btn-group btn-group-sm d-flex align-items-center gap-1';
         group.setAttribute('role', 'group');
 
         for (const mode of [
@@ -156,6 +171,19 @@ export function renderTemplateStudio(
             btn.setAttribute('aria-pressed', String(activeEditorTab === mode.id));
             group.appendChild(btn);
         }
+
+        const splitBtn = button({
+            text: showSplitPreview ? 'Split Preview: ON' : 'Split Preview: OFF',
+            icon: 'bx-columns',
+            size: 'small',
+            kind: showSplitPreview ? 'primary' : 'secondary',
+            onClick: () => {
+                showSplitPreview = !showSplitPreview;
+                if (showSplitPreview) activeEditorTab = 'editor';
+                refresh();
+            },
+        });
+        group.appendChild(splitBtn);
 
         return group;
     }
@@ -461,19 +489,51 @@ export function renderTemplateStudio(
             table.className = 'ns-table';
             table.innerHTML = `
                 <thead>
-                    <tr><th>Name</th><th>Kind</th><th>Type</th><th>Default / options</th></tr>
+                    <tr><th>Name</th><th>Kind</th><th>Type</th><th>Default / options</th><th style="width: 80px;">Actions</th></tr>
                 </thead>
                 <tbody>
-                    ${tpl.attributes.map((a) => `
+                    ${tpl.attributes.map((a, idx) => `
                         <tr>
                             <td><span class="ns-code">${a.type === 'relation' ? '~' : '#'}${escapeHtml(a.name)}</span></td>
                             <td>${escapeHtml(a.type)}</td>
                             <td>${escapeHtml(a.dataType)}</td>
                             <td class="ns-meta">${escapeHtml(a.options ? a.options.join(', ') : a.defaultValue ?? '—')}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-1">
+                                    <button type="button" class="icon-action move-attr-up" data-idx="${idx}" ${idx === 0 ? 'disabled' : ''} title="Move Up"><i class="bx bx-chevron-up"></i></button>
+                                    <button type="button" class="icon-action move-attr-down" data-idx="${idx}" ${idx === tpl.attributes.length - 1 ? 'disabled' : ''} title="Move Down"><i class="bx bx-chevron-down"></i></button>
+                                </div>
+                            </td>
                         </tr>
                     `).join('')}
                 </tbody>
             `;
+            table.querySelectorAll('.move-attr-up').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    const idx = Number((e.currentTarget as HTMLElement).dataset.idx);
+                    if (idx > 0) {
+                        const temp = tpl.attributes[idx];
+                        tpl.attributes[idx] = tpl.attributes[idx - 1];
+                        tpl.attributes[idx - 1] = temp;
+                        templateEngine.updateTemplate(tpl.id, { attributes: [...tpl.attributes] });
+                        onSave();
+                        refresh();
+                    }
+                });
+            });
+            table.querySelectorAll('.move-attr-down').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    const idx = Number((e.currentTarget as HTMLElement).dataset.idx);
+                    if (idx < tpl.attributes.length - 1) {
+                        const temp = tpl.attributes[idx];
+                        tpl.attributes[idx] = tpl.attributes[idx + 1];
+                        tpl.attributes[idx + 1] = temp;
+                        templateEngine.updateTemplate(tpl.id, { attributes: [...tpl.attributes] });
+                        onSave();
+                        refresh();
+                    }
+                });
+            });
             attrCard.appendChild(table);
         } else {
             attrCard.appendChild(emptyState('No promoted attributes.'));
@@ -557,6 +617,66 @@ export function renderTemplateStudio(
         }
     }
 
+    function openPresetRuleModal(tpl: TemplateDefinition) {
+        openModal({
+            title: 'Add Automation Rule Preset',
+            icon: 'bx-magic-wand',
+            confirmText: 'Apply Preset',
+            body: `
+                <div class="ns-field mb-3">
+                    <label for="preset-select" class="form-label small font-weight-bold">Select Rule Preset for ${escapeHtml(tpl.title)}</label>
+                    <select id="preset-select" class="form-select form-select-sm">
+                        <option value="archive_done">📦 Auto-archive note when status becomes 'complete' or 'done'</option>
+                        <option value="tag_client">🏷️ Auto-assign client relation tag on creation</option>
+                        <option value="prepend_checklist">📝 Prepend editorial & quality checklist to body</option>
+                    </select>
+                </div>
+            `,
+        }, (content) => {
+            const presetVal = content.querySelector<HTMLSelectElement>('#preset-select')?.value;
+            if (!presetVal) return false;
+
+            if (presetVal === 'archive_done') {
+                ifThenRuleEngine.registerRule({
+                    id: `preset_archive_${tpl.id}_${Date.now()}`,
+                    name: `Auto-archive ${tpl.title} on complete`,
+                    description: `Automatically archives ${tpl.title} when status is complete or done.`,
+                    enabled: true,
+                    isBuiltin: false,
+                    trigger: { type: 'onAttributeChanged', targetTemplateId: tpl.id, attributeName: 'status' },
+                    conditions: [{ field: 'status', operator: 'equals', value: 'complete' }],
+                    actions: [{ type: 'archiveNote', params: {} }],
+                });
+            } else if (presetVal === 'tag_client') {
+                ifThenRuleEngine.registerRule({
+                    id: `preset_client_${tpl.id}_${Date.now()}`,
+                    name: `Auto-assign client to ${tpl.title}`,
+                    description: `Assigns client relation attribute to new ${tpl.title}.`,
+                    enabled: true,
+                    isBuiltin: false,
+                    trigger: { type: 'onNoteCreated', targetTemplateId: tpl.id },
+                    conditions: [],
+                    actions: [{ type: 'setRelation', params: { relationName: 'client', targetNoteId: 'orgRoot' } }],
+                });
+            } else if (presetVal === 'prepend_checklist') {
+                ifThenRuleEngine.registerRule({
+                    id: `preset_checklist_${tpl.id}_${Date.now()}`,
+                    name: `Prepend checklist to ${tpl.title}`,
+                    description: `Prepends editorial checklist to new ${tpl.title}.`,
+                    enabled: true,
+                    isBuiltin: false,
+                    trigger: { type: 'onNoteCreated', targetTemplateId: tpl.id },
+                    conditions: [],
+                    actions: [{ type: 'prependContent', params: { content: '<h2>EDITORIAL CHECKLIST</h2><ul><li>[ ] Review angle</li><li>[ ] Fact check quotes</li></ul>' } }],
+                });
+            }
+
+            onSave();
+            refresh();
+            return true;
+        });
+    }
+
     /** Template-scope rules, which also include the parent links declared on the template. */
     function renderTemplateRuleSection(
         parent: HTMLElement,
@@ -568,6 +688,7 @@ export function renderTemplateStudio(
             title: `Template rules (${total})`,
             description: 'Parent links and rules that apply only to this template.',
             actions: [
+                iconAction({ icon: 'bx-magic-wand', title: 'Add rule preset', onClick: () => openPresetRuleModal(tpl) }),
                 iconAction({ icon: 'bx-link', title: 'Add parent link', onClick: () => openRelationshipModal(tpl) }),
                 iconAction({ icon: 'bx-plus', title: 'Add rule', onClick: () => openRuleEditorModal({ targetTemplateId: tpl.id }) }),
             ],
@@ -652,13 +773,31 @@ export function renderTemplateStudio(
             actions.push(iconAction({ icon: 'bx-trash', title: 'Delete rule', onClick: onDelete }));
         }
 
-        return listItem({
+        const triggerName = rule.trigger?.type || 'onNoteCreated';
+        const condSummary = rule.conditions?.length ? rule.conditions.map(c => `${c.field} ${c.operator} ${c.value}`).join(' & ') : 'Always';
+        const actSummary = formatActionSummary(rule);
+
+        const flowDesc = `
+            <div class="d-flex align-items-center gap-1.5 flex-wrap mt-1 tiny text-muted">
+                <span class="badge bg-secondary font-weight-normal"><i class="bx bx-zap text-warning"></i> ${escapeHtml(triggerName)}</span>
+                <span>&rarr;</span>
+                <span class="badge bg-dark font-weight-normal"><i class="bx bx-filter-alt text-info"></i> IF: ${escapeHtml(condSummary)}</span>
+                <span>&rarr;</span>
+                <span class="badge bg-primary font-weight-normal"><i class="bx bx-play-circle text-white"></i> THEN: ${escapeHtml(actSummary)}</span>
+            </div>
+        `;
+
+        const el = listItem({
             icon: 'bx-bolt-circle',
             title: rule.name,
-            description: formatActionSummary(rule),
+            description: '',
             disabled: !rule.enabled,
             actions,
         });
+
+        const descContainer = el.querySelector('.ns-list-item-desc');
+        if (descContainer) descContainer.innerHTML = flowDesc;
+        return el;
     }
 
     // ----------------------------------------------------------------- preview

@@ -1,6 +1,6 @@
 # Today Homepage & Workspace Dashboard
 
-The **Today Homepage** is your daily command center in Trilium Notes. It combines a resizable Journal split-view with a dynamic grid of live productivity widgets.
+The **Today Homepage** is your daily command center in Trilium Notes. The visible Today page in the file tree provides a focused daily workspace; the Ikmal workspace dashboard retains layout editing, Template Studio, and package settings. Both use the same responsive widget system.
 
 ---
 
@@ -33,3 +33,14 @@ The **Today Homepage** is your daily command center in Trilium Notes. It combine
 ## Customizing Layout Split
 
 Drag the vertical divider between the Journal and Widget grid to resize on the fly. Your preferred split percentage is saved to the package manifest note and persists across restarts.
+
+## Narrow panes
+
+The dashboard responds to the width of the note pane, not just the size of the application window. This makes it suitable for a preferred narrow split such as 22%:
+
+- The widget grid collapses before its cards reach their minimum readable width.
+- Open Tasks becomes a single-column board rather than overflowing into a partial second column.
+- Task cards wrap within the pane and do not create horizontal scrolling.
+- Quick-capture buttons keep their labels on one line while remaining full-width touch targets.
+
+If a pane is resized after the page has been open for a while, reload the note once so the render artifact and stylesheet are refreshed together.

@@ -6,14 +6,19 @@ Ikmal Tools for Trilium is a component-driven plugin suite featuring the **Today
 
 A two-pane layout: the Journal note on one side (resizable — drag the
 divider, or set a percentage in the layout editor), a grid of widgets on the
-other.
+other. The journal button reuses one daily-note split instead of opening a new
+split on every click, and the saved percentage is applied after Trilium lays
+out the panes. The focused file-tree Today page does not show the workspace
+Open Tasks board; that board remains available on the workspace dashboard.
 
 ### Widgets
 
-On by default, each backed by a live `api.searchForNotes` query:
+On by default in the workspace dashboard, each backed by a live
+`api.searchForNotes` query:
 
-- **Open Tasks**, **Overdue Work**, **Due Soon** — tasks by status/date.
-- **Active Projects** — project hubs currently in progress.
+- **Open Tasks**, **Overdue Work**, **Due Soon** — tasks by status/date. Open
+  Tasks is intentionally omitted from the focused file-tree Today page.
+- **Active Projects** — live project hubs currently in progress, including legacy hubs that use `extTemplate="projectHub"`; each row can open its project note.
 - **High Priority** — anything tagged high priority.
 - **Follow-ups & Replies** — meetings/emails awaiting a reply or follow-up.
 - **Stories & Drafts** — draft/edit-package notes in progress.
@@ -43,15 +48,18 @@ longitude, and a label first.
 
 ### Quick capture
 
-The buttons under "Quick capture" open a modal for the first four templates
-that aren't excluded from journal filing: a title, the template's promoted
+The buttons under "Quick capture" expose the original Ikmal creation set:
+Project, Scratch, Meeting, Task, Story, Edit, Email, Person, Organization,
+and Topic. Each opens a modal with a title, the template's promoted
 attributes, and — if the template has a parent-link relationship, like a
 Task's `~project` — a searchable picker over real existing notes of the
 target type. Pick one and the note is auto-cloned there once created; leave
 it blank and the note is still created, just without that relation. Create
 calls `api.createNote` and files the note under any auto-clone targets and
 today's journal note (see `README.md` → Creating notes); a failure shows
-inline in the modal rather than closing it.
+inline in the modal rather than closing it. The global launchbar exposes the
+same creation actions as native, configurable Trilium launchers, so they can
+be reordered or moved to Available Launchers from Configure Launchbar.
 
 Outside Trilium (the static preview page, tests) there's no `api` to create
 against, so Create instead shows what the plan *would* produce.
@@ -62,6 +70,29 @@ A live `api.searchForNotes('#extTask')` query, columned by each task's
 `status` label. Outside Trilium it falls back to fixed sample tasks
 (`SAMPLE_TASKS` in `TodayHomepage.tsx`) so the layout still shows something
 meaningful.
+
+Daily notes contain the Notes area only. Ikmal removes its generated Open Tasks
+include and Day start heading during startup while preserving any text already
+entered in the day note.
+
+## Ikmal Editor footer
+
+While editing, Ikmal shows a compact indicator pinned to the bottom of the
+note window with live word count, character count, and estimated reading time.
+Its quiet right-aligned status icon shows a check when local checks are clear,
+or an issue icon when they are not; hover it for the details.
+It appears while an editor is active, follows all editor panes including panes
+created after startup, and does not add extra height to Trilium's global status
+bar. Select text and right-click it to see
+the selected word/character totals and paragraph-level local checks for repeated
+spaces, trailing whitespace, repeated punctuation, and unusually long
+sentences. These checks are built into Ikmal Editor and do not require another
+plugin or a network service.
+
+Adjacent duplicate words are highlighted locally as a visual writing aid; the
+highlight is a non-destructive editor decoration and is not saved into the note.
+
+LanguageTool is a separate, optional package; Ikmal Editor does not depend on it.
 
 ## Template Studio
 

@@ -674,4 +674,62 @@ test('NoteCreationEngine handles archiveNote, removeLabel, and prependContent ru
     assert.match(plan.content, /<h3>Header Checklist<\/h3>/);
 });
 
+test('NoteCreationEngine plans New Story Project with Active Project Hub and child notes', () => {
+    const tplEngine = new TemplateEngine();
+    const relEngine = new RelationshipEngine(tplEngine);
+    const ifThenRuleEngine = new IfThenRuleEngine();
+    const engine = new NoteCreationEngine(tplEngine, relEngine, ifThenRuleEngine);
+
+    const plan = engine.planNoteCreation({ type: 'story', title: 'Quantum Computing Breakthrough', mode: 'project' });
+
+    assert.equal(plan.templateId, 'projectHub');
+    assert.equal(plan.rootContainerMarker, 'activeProjectRoot');
+    assert.equal(plan.formattedTitle, 'Quantum Computing Breakthrough');
+    assert.ok(plan.labelsToCreate.some((l) => l.name === 'kind' && l.value === 'project'));
+    assert.ok(plan.labelsToCreate.some((l) => l.name === 'status' && l.value === 'active'));
+    assert.ok(plan.childNotesToCreate && plan.childNotesToCreate.length === 2);
+    assert.equal(plan.childNotesToCreate[0].title, 'Quantum Computing Breakthrough — Draft 1');
+    assert.match(plan.childNotesToCreate[0].content, /<h2>DEK<\/h2>/);
+    assert.equal(plan.childNotesToCreate[1].title, 'Quantum Computing Breakthrough — Reporting Notes');
+    assert.match(plan.childNotesToCreate[1].content, /<h2>REPORTING NOTES<\/h2>/);
+});
+
+test('NoteCreationEngine plans New Edit Package with Active Edit Hub and Round 1 draft', () => {
+    const tplEngine = new TemplateEngine();
+    const relEngine = new RelationshipEngine(tplEngine);
+    const ifThenRuleEngine = new IfThenRuleEngine();
+    const engine = new NoteCreationEngine(tplEngine, relEngine, ifThenRuleEngine);
+
+    const plan = engine.planNoteCreation({ type: 'edit', title: 'Policy Paper Proofread', mode: 'edit' });
+
+    assert.equal(plan.templateId, 'projectHub');
+    assert.equal(plan.rootContainerMarker, 'activeProjectRoot');
+    assert.ok(plan.labelsToCreate.some((l) => l.name === 'kind' && l.value === 'edit'));
+    assert.ok(plan.childNotesToCreate && plan.childNotesToCreate.length === 1);
+    assert.equal(plan.childNotesToCreate[0].title, 'Policy Paper Proofread — Round 1');
+    assert.match(plan.childNotesToCreate[0].content, /<h2>REQUESTED CHANGES<\/h2>/);
+    assert.match(plan.childNotesToCreate[0].content, /<h2>WRITER RESPONSE<\/h2>/);
+});
+
+test('NoteCreationEngine plans Scratch Note capture', () => {
+    const tplEngine = new TemplateEngine();
+    const relEngine = new RelationshipEngine(tplEngine);
+    const ifThenRuleEngine = new IfThenRuleEngine();
+    const engine = new NoteCreationEngine(tplEngine, relEngine, ifThenRuleEngine);
+
+    const plan = engine.planNoteCreation({ type: 'scratch', title: 'Quick Idea' });
+
+    assert.equal(plan.templateId, 'scratch');
+    assert.equal(plan.rootContainerMarker, 'unassignedRoot');
+    assert.equal(plan.formattedTitle, 'Quick Idea');
+});
+
+test('reconcileProjectHubStatuses handles uninitialized API gracefully', async () => {
+    const { reconcileProjectHubStatuses } = await import('../dist/engine/noteMaterializer.js');
+    const result = await reconcileProjectHubStatuses();
+    assert.equal(result, 0);
+});
+
+
+
 

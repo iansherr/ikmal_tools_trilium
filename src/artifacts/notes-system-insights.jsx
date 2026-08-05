@@ -85,6 +85,21 @@ export function initNotesSystemInsights(containerEl) {
             </div>
         </div>
     `;
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'btn btn-sm btn-outline-primary mt-2 d-inline-flex align-items-center gap-1';
+    copyBtn.innerHTML = '<i class="bx bx-copy"></i> Copy Accomplishments for Standup';
+    copyBtn.addEventListener('click', async () => {
+        const text = `**Daily Accomplishments (${new Date().toISOString().slice(0, 10)})**\n- Writing Progress: ${progress.current}/${progress.goal} words (${progress.percent}%)\n- Moon Phase: ${phase.symbol} ${phase.label}\n- Daily Reflection: "${quote.text}" — ${quote.author}`;
+        if (navigator.clipboard) {
+            try {
+                await navigator.clipboard.writeText(text);
+                if (window.__ikmalToast) window.__ikmalToast('Copied daily accomplishments to clipboard!', 'success');
+            } catch (e) {}
+        }
+    });
+    moonCard.appendChild(copyBtn);
+
     col2.appendChild(moonCard);
     grid.appendChild(col2);
 

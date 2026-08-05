@@ -320,8 +320,10 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         defaultContent: '<h2>CONTACT INFO</h2><p></p><h2>NOTES</h2><p></p>',
         isBuiltin: true,
         attributes: [
+            { name: 'jobTitle', type: 'label', dataType: 'string', isPromoted: true, label: 'Job Focus' },
             { name: 'email', type: 'label', dataType: 'string', isPromoted: true, label: 'Email' },
             { name: 'phone', type: 'label', dataType: 'string', isPromoted: true, label: 'Phone' },
+            { name: 'employer', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'Employer', inverseRelationName: 'staff' },
             { name: 'organization', type: 'relation', dataType: 'relation', targetTemplateId: 'organization', isPromoted: true, label: 'Organization' },
         ],
         relationships: [
@@ -336,6 +338,18 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
                 inheritTopics: true,
                 direction: 'parent',
             },
+            {
+                id: 'rel_person_employer',
+                name: 'Employer',
+                relationName: 'employer',
+                targetTemplateId: 'organization',
+                targetTemplateName: 'Organization',
+                isMulti: true,
+                autoCloneToParent: true,
+                inheritTopics: true,
+                direction: 'parent',
+                inverseRelationName: 'staff',
+            },
         ],
     },
     {
@@ -349,7 +363,10 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
         defaultContent: '<h2>ABOUT</h2><p></p><h2>KEY CONTACTS</h2><ul><li></li></ul>',
         isBuiltin: true,
         attributes: [
+            { name: 'location', type: 'label', dataType: 'string', isPromoted: true, label: 'Location' },
+            { name: 'ticker', type: 'label', dataType: 'string', isPromoted: true, label: 'Ticker' },
             { name: 'website', type: 'label', dataType: 'string', isPromoted: true, label: 'Website' },
+            { name: 'staff', type: 'relation', dataType: 'relation', targetTemplateId: 'person', isPromoted: true, label: 'People / Staff', inverseRelationName: 'employer' },
         ],
         relationships: [
             {
@@ -362,6 +379,18 @@ export const BUILTIN_TEMPLATES: TemplateDefinition[] = [
                 autoCloneToParent: false,
                 inheritTopics: true,
                 direction: 'child',
+            },
+            {
+                id: 'rel_org_staff',
+                name: 'People / Staff',
+                relationName: 'staff',
+                targetTemplateId: 'person',
+                targetTemplateName: 'Person',
+                isMulti: true,
+                autoCloneToParent: false,
+                inheritTopics: true,
+                direction: 'child',
+                inverseRelationName: 'employer',
             },
         ],
     },

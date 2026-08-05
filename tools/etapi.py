@@ -163,6 +163,10 @@ class Etapi:
             detail = error.read().decode(errors="replace")
             raise EtapiError(f"PUT content {note_id} -> {error.code}: {detail}") from error
 
+    def set_mime(self, note_id: str, mime: str) -> None:
+        """Change a note's MIME without changing its title, type, or content."""
+        self._request("PATCH", f"/etapi/notes/{note_id}", {"mime": mime})
+
     def get_attachments(self, note_id: str) -> list[dict]:
         return self._request("GET", f"/etapi/notes/{note_id}/attachments")
 

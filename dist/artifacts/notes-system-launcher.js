@@ -320,8 +320,10 @@
       defaultContent: "<h2>CONTACT INFO</h2><p></p><h2>NOTES</h2><p></p>",
       isBuiltin: true,
       attributes: [
+        { name: "jobTitle", type: "label", dataType: "string", isPromoted: true, label: "Job Focus" },
         { name: "email", type: "label", dataType: "string", isPromoted: true, label: "Email" },
         { name: "phone", type: "label", dataType: "string", isPromoted: true, label: "Phone" },
+        { name: "employer", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Employer", inverseRelationName: "staff" },
         { name: "organization", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Organization" }
       ],
       relationships: [
@@ -335,6 +337,18 @@
           autoCloneToParent: true,
           inheritTopics: true,
           direction: "parent"
+        },
+        {
+          id: "rel_person_employer",
+          name: "Employer",
+          relationName: "employer",
+          targetTemplateId: "organization",
+          targetTemplateName: "Organization",
+          isMulti: true,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent",
+          inverseRelationName: "staff"
         }
       ]
     },
@@ -349,7 +363,10 @@
       defaultContent: "<h2>ABOUT</h2><p></p><h2>KEY CONTACTS</h2><ul><li></li></ul>",
       isBuiltin: true,
       attributes: [
-        { name: "website", type: "label", dataType: "string", isPromoted: true, label: "Website" }
+        { name: "location", type: "label", dataType: "string", isPromoted: true, label: "Location" },
+        { name: "ticker", type: "label", dataType: "string", isPromoted: true, label: "Ticker" },
+        { name: "website", type: "label", dataType: "string", isPromoted: true, label: "Website" },
+        { name: "staff", type: "relation", dataType: "relation", targetTemplateId: "person", isPromoted: true, label: "People / Staff", inverseRelationName: "employer" }
       ],
       relationships: [
         {
@@ -362,6 +379,18 @@
           autoCloneToParent: false,
           inheritTopics: true,
           direction: "child"
+        },
+        {
+          id: "rel_org_staff",
+          name: "People / Staff",
+          relationName: "staff",
+          targetTemplateId: "person",
+          targetTemplateName: "Person",
+          isMulti: true,
+          autoCloneToParent: false,
+          inheritTopics: true,
+          direction: "child",
+          inverseRelationName: "employer"
         }
       ]
     },
@@ -795,6 +824,9 @@
   };
 
   // src/engine/noteCreationEngine.ts
+  var EDIT_ROUND_CONTENT = "<h2>LINKS</h2><ul><li></li></ul><h2>OPEN QUESTIONS</h2><ul><li></li></ul><h2>EDITORIAL NOTES</h2><p></p><h2>REQUESTED CHANGES</h2><ul><li></li></ul><h2>HED</h2><ul><li></li><li></li><li></li></ul><h2>BYLINE</h2><p>By Ian Sherr (+1 415.347.6397)</p><h2>STORYBODY</h2><p></p><p>--ENDIT--</p><h2>WRITER RESPONSE</h2><p></p>";
+  var STORY_DRAFT_CONTENT = "<h2>HED</h2><ul><li></li><li></li><li></li></ul><h2>DEK</h2><ul><li></li><li></li><li></li></ul><h2>BYLINE</h2><p>By Ian Sherr (+1 415.347.6397)</p><h2>STORYBODY</h2><p></p><p>--ENDIT--</p>";
+  var REPORTING_NOTES_CONTENT = "<h2>LINKS</h2><ul><li></li></ul><h2>OPEN QUESTIONS</h2><ul><li></li></ul><h2>IDEA / ANGLE</h2><p></p><h2>REPORTING NOTES</h2><p></p><div class='reporting-note-actions-placeholder' data-reporting-note-actions='true'></div>";
   var NoteCreationEngine = class {
     constructor(templateEngine, relationshipEngine, ifThenRuleEngine, settingsEngine = new SettingsEngine()) {
       __publicField(this, "templateEngine", templateEngine);
@@ -804,12 +836,21 @@
     }
     planNoteCreation(request) {
       const isStoryOrEdit = request.type === "story" || request.type === "edit";
-      const templateId = isStoryOrEdit ? "story" : request.type;
-      const mode = request.mode || (request.type === "edit" ? "edit" : "project");
+      const relValues = request.relations || {};
+      const hasExistingProject = Boolean(relValues.project || request.targetContainerId);
+      let templateId = request.type;
+      let rootContainerMarker = "";
+      if (isStoryOrEdit && !hasExistingProject) {
+        templateId = "projectHub";
+        rootContainerMarker = "activeProjectRoot";
+      } else if (isStoryOrEdit) {
+        templateId = "story";
+      }
       const template = this.templateEngine.getTemplate(templateId);
       if (!template) {
         throw new Error(`Unknown note template type: '${request.type}'`);
       }
+      const mode = request.mode || (request.type === "edit" ? "edit" : "project");
       const date = request.date || /* @__PURE__ */ new Date();
       const formattedTitle = this.templateEngine.formatTitle(template.id, request.title, date);
       const labelsToCreate = [];
@@ -830,22 +871,41 @@
         }
       }
       labelsToCreate.push({ name: template.marker, value: "" });
-      if (isStoryOrEdit) {
-        labelsToCreate.push({ name: "workflow", value: mode });
-        labelsToCreate.push({ name: "status", value: mode === "edit" ? "editing" : "drafting" });
+      if (isStoryOrEdit && !hasExistingProject) {
         labelsToCreate.push({ name: "kind", value: mode });
+        labelsToCreate.push({ name: "status", value: "active" });
+        labelsToCreate.push({ name: "extHubIcon", value: mode });
+        labelsToCreate.push({ name: "iconClass", value: mode === "edit" ? "bx bx-edit-alt" : "bx bx-book" });
+        const draftTitle = `${request.title} \u2014 ${mode === "edit" ? "Round" : "Draft"} 1`;
+        childNotesToCreate.push({
+          title: draftTitle,
+          templateId: "story",
+          content: mode === "edit" ? EDIT_ROUND_CONTENT : STORY_DRAFT_CONTENT,
+          labels: [
+            { name: "extStoryDraft", value: "" },
+            { name: "round", value: "1" },
+            { name: "status", value: mode === "edit" ? "editing" : "drafting" },
+            { name: "workflow", value: mode },
+            { name: "kind", value: mode }
+          ]
+        });
         if (mode === "project") {
           childNotesToCreate.push({
-            title: `${request.title} (Reporting & Notes)`,
+            title: `${request.title} \u2014 Reporting Notes`,
             templateId: "reportingNotes",
+            content: REPORTING_NOTES_CONTENT,
             labels: [
               { name: "extReportingNotes", value: "" },
+              { name: "extReportingTitleManaged", value: "" },
               { name: "status", value: "active" }
             ]
           });
         }
+      } else if (isStoryOrEdit) {
+        labelsToCreate.push({ name: "workflow", value: mode });
+        labelsToCreate.push({ name: "status", value: mode === "edit" ? "editing" : "drafting" });
+        labelsToCreate.push({ name: "kind", value: mode });
       }
-      const relValues = request.relations || {};
       const resolved = this.relationshipEngine.resolveCreationRelations(template.id, relValues);
       const autoCloneContainers = resolved.autoCloneContainers;
       const inheritedTopicSources = this.settingsEngine.get("enableDerivedTopics") ? resolved.inheritedTopicSources : [];
@@ -861,6 +921,9 @@
       };
       const executedIfThenRules = [];
       let content = template.defaultContent;
+      if (template.id === "story" && (mode === "edit" || attrValues.workflow === "edit" || attrValues.kind === "edit")) {
+        content = EDIT_ROUND_CONTENT;
+      }
       if (this.settingsEngine.get("autoRunIfThenRulesOnCreation")) {
         const ruleResults = this.ifThenRuleEngine.evaluateEvent("onNoteCreated", noteContext);
         for (const res of ruleResults) {
@@ -894,12 +957,12 @@ ${content}`;
         }
       }
       const category = this.templateEngine.getCategory(template.category);
-      const journalClone = this.settingsEngine.get("autoJournalClone") && !template.noJournalClone && category?.autoJournalClone !== false && autoCloneContainers.length === 0;
+      const journalClone = this.settingsEngine.get("autoJournalClone") && !template.noJournalClone && template.id !== "projectHub" && category?.autoJournalClone !== false && autoCloneContainers.length === 0;
       return {
         templateId: template.id,
         mode: isStoryOrEdit ? mode : void 0,
         formattedTitle,
-        rootContainerMarker: template.rootContainerMarker,
+        rootContainerMarker: rootContainerMarker || template.rootContainerMarker,
         targetContainerId: request.targetContainerId,
         content,
         labelsToCreate,
@@ -919,10 +982,10 @@ ${content}`;
     const a = globalThis.api;
     return a && typeof a.createNote === "function" ? a : null;
   }
-  async function fetchNoteTopics(api, noteId) {
+  async function fetchNoteTopics(api2, noteId) {
     try {
-      if (typeof api.getNote !== "function") return [];
-      const note = await api.getNote(noteId);
+      if (typeof api2.getNote !== "function") return [];
+      const note = await api2.getNote(noteId);
       if (!note) return [];
       const topics = [];
       if (typeof note.getRelations === "function") {
@@ -987,47 +1050,228 @@ ${content}`;
       throw new Error(`Failed to file the note under ${parentNoteId} (HTTP ${response.status})`);
     }
   }
+  async function setNoteAttribute(noteId, type, name, value) {
+    const glob = globalThis.glob;
+    if (!glob) throw new Error("Not running inside Trilium.");
+    const headers = {
+      "x-csrf-token": glob.csrfToken,
+      "trilium-component-id": glob.componentId,
+      "content-type": "application/json"
+    };
+    const path = `${glob.baseApiUrl}notes/${noteId}/set-attribute`;
+    const body = JSON.stringify({ type, name, value, isInheritable: false });
+    const send = () => globalThis.fetch(path, {
+      method: "PUT",
+      credentials: "same-origin",
+      headers,
+      body
+    });
+    let response = await send();
+    if (response.status === 403) {
+      const bootstrapUrl = `./bootstrap${globalThis.location?.search ?? ""}`;
+      const bootstrap = await globalThis.fetch(bootstrapUrl, {
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+      if (bootstrap.ok) {
+        const refreshed = await bootstrap.json();
+        glob.csrfToken = refreshed.csrfToken;
+        headers["x-csrf-token"] = refreshed.csrfToken;
+        response = await send();
+      }
+    }
+    if (!response.ok) throw new Error(`Failed to set ${name} (HTTP ${response.status})`);
+  }
+  async function searchManagedPackageNotes(api2) {
+    if (typeof api2.searchForNotesIncludingHidden === "function") {
+      return await api2.searchForNotesIncludingHidden("#packageArtifact");
+    }
+    const glob = globalThis.glob;
+    if (!glob || typeof api2.getNotes !== "function") return [];
+    const response = await globalThis.fetch(
+      `${glob.baseApiUrl}quick-search/${encodeURIComponent("#packageArtifact")}`,
+      { credentials: "same-origin" }
+    );
+    if (!response.ok) return [];
+    const result = await response.json();
+    return await api2.getNotes(result.searchResultNoteIds || [], true);
+  }
+  async function attachProjectDashboard(noteId) {
+    const api2 = triliumApi();
+    if (!api2) return;
+    const dashboardNotes = await searchManagedPackageNotes(api2);
+    const dashboardCode = dashboardNotes.find((note) => {
+      const artifact = note.getOwnedLabelValue?.("packageArtifact");
+      return note.type === "code" && !note.isArchived && note.getOwnedLabelValue?.("packageOwner") === "iansherr/ikmal_tools_trilium" && ["notes-system-project-dashboard", "notes-system-project-dashboard-script"].includes(artifact || "");
+    });
+    if (!dashboardCode) return;
+    const { note: dashboard } = await api2.createNote(noteId, {
+      title: "Project Dashboard",
+      type: "render",
+      activate: false
+    });
+    if (!dashboard) throw new Error("Trilium did not return the project dashboard.");
+    await setNoteAttribute(dashboard.noteId, "label", "extProjectDashboard", "projectHub");
+    await setNoteAttribute(dashboard.noteId, "relation", "renderNote", dashboardCode.noteId);
+  }
   function buildAttributeRows(plan) {
     return [
       ...plan.labelsToCreate.map((l) => ({ type: "label", name: l.name, value: l.value })),
       ...plan.relationsToCreate.map((r) => ({ type: "relation", name: r.name, value: r.value }))
     ];
   }
-  async function resolveParentNoteId(api, plan) {
+  async function resolveParentNoteId(api2, plan) {
     if (plan.targetContainerId) return plan.targetContainerId;
-    const container = await api.searchForNote(`#${plan.rootContainerMarker}`);
+    let marker = plan.rootContainerMarker || (plan.templateId === "projectHub" ? "activeProjectRoot" : "projectRoot");
+    if (plan.templateId === "projectHub" && marker === "projectRoot") {
+      marker = "activeProjectRoot";
+    }
+    const isProjectScopedType = ["task", "projectTask", "story", "reportingNotes", "email", "meeting", "meetingPrep", "scratch"].includes(plan.templateId);
+    const hasProjectHubRel = plan.relationsToCreate.some((r) => r.name === "project");
+    if (isProjectScopedType && !hasProjectHubRel && plan.templateId !== "projectHub") {
+      const unassigned = await api2.searchForNote("#unassignedRoot");
+      if (unassigned) {
+        return unassigned.noteId;
+      }
+    }
+    let container = await api2.searchForNote(`#${marker}`);
+    if (!container && marker === "activeProjectRoot") {
+      const projectRoot = await api2.searchForNote("#projectRoot");
+      const parentId = projectRoot ? projectRoot.noteId : "root";
+      const { note: created } = await api2.createNote(parentId, {
+        title: "Active",
+        type: "book",
+        activate: false,
+        attributes: [
+          { type: "label", name: "activeProjectRoot", value: "" },
+          { type: "label", name: "iconClass", value: "bx bx-folder-open" },
+          { type: "label", name: "projectArea", value: "active", isInheritable: true }
+        ]
+      });
+      container = created;
+    } else if (!container && marker === "archiveProjectRoot") {
+      const projectRoot = await api2.searchForNote("#projectRoot");
+      const parentId = projectRoot ? projectRoot.noteId : "root";
+      const { note: created } = await api2.createNote(parentId, {
+        title: "Archive",
+        type: "book",
+        activate: false,
+        attributes: [
+          { type: "label", name: "archiveProjectRoot", value: "" },
+          { type: "label", name: "iconClass", value: "bx bx-archive" },
+          { type: "label", name: "projectArea", value: "archive", isInheritable: true },
+          { type: "label", name: "projectArchive", value: "", isInheritable: true }
+        ]
+      });
+      container = created;
+    } else if (!container && marker === "unassignedRoot") {
+      const projectRoot = await api2.searchForNote("#projectRoot");
+      const parentId = projectRoot ? projectRoot.noteId : "root";
+      const { note: created } = await api2.createNote(parentId, {
+        title: "Unassigned",
+        type: "book",
+        activate: false,
+        attributes: [
+          { type: "label", name: "unassignedRoot", value: "" },
+          { type: "label", name: "iconClass", value: "bx bx-inbox" }
+        ]
+      });
+      container = created;
+    }
     if (!container) {
-      throw new Error(`Could not find a container note tagged #${plan.rootContainerMarker}.`);
+      container = await api2.searchForNote("#projectRoot") || await api2.searchForNote("#root");
+    }
+    if (!container) {
+      throw new Error(`Could not find or create a container note tagged #${marker}.`);
     }
     return container.noteId;
   }
-  async function materializeNoteCreation(plan, options) {
-    const api = triliumApi();
-    if (!api) throw new Error("Not running inside Trilium.");
+  async function materializeNoteCreation2(plan, options) {
+    const api2 = triliumApi();
+    if (!api2) throw new Error("Not running inside Trilium.");
     if (plan.inheritedTopicSources && plan.inheritedTopicSources.length > 0) {
       const parentTopicMap = {};
       for (const sourceId of plan.inheritedTopicSources) {
-        parentTopicMap[sourceId] = options?.topicFetcher ? await options.topicFetcher(sourceId) : await fetchNoteTopics(api, sourceId);
+        parentTopicMap[sourceId] = options?.topicFetcher ? await options.topicFetcher(sourceId) : await fetchNoteTopics(api2, sourceId);
       }
       const relEngine = options?.relationshipEngine ?? new RelationshipEngine(new TemplateEngine());
       applyDerivedTopics(plan, parentTopicMap, relEngine);
     }
-    const parentNoteId = await resolveParentNoteId(api, plan);
-    const { note } = await api.createNote(parentNoteId, {
+    const parentNoteId = await resolveParentNoteId(api2, plan);
+    let projectHubId = plan.relationsToCreate.find((r) => r.name === "project")?.value;
+    if (!projectHubId && plan.templateId === "story" && parentNoteId) {
+      try {
+        const potentialHub = typeof api2.getNote === "function" ? await api2.getNote(parentNoteId) : null;
+        if (potentialHub && (potentialHub.getOwnedLabelValue?.("extProjectHub") !== void 0 || potentialHub.getOwnedLabelValue?.("extTemplate") === "projectHub")) {
+          projectHubId = parentNoteId;
+        }
+      } catch {
+      }
+    }
+    if (projectHubId && (plan.templateId === "story" || plan.templateId === "edit")) {
+      try {
+        const hub = typeof api2.getNote === "function" ? await api2.getNote(projectHubId) : null;
+        if (hub) {
+          const hubStatus = hub.getOwnedLabelValue?.("status");
+          if (hubStatus === "complete" || hubStatus === "archived") {
+            await reopenProjectNote(hub.noteId);
+          }
+          const children = typeof hub.getChildNotes === "function" ? await hub.getChildNotes() : [];
+          const rounds = children.filter((c) => c.getOwnedLabelValue?.("extStoryDraft") !== void 0 || c.getOwnedLabelValue?.("extTemplate") === "story").map((c) => Number(c.getOwnedLabelValue?.("round"))).filter((r) => Number.isFinite(r));
+          const nextRoundNum = rounds.length ? Math.max(...rounds) + 1 : 1;
+          if (!plan.labelsToCreate.some((l) => l.name === "round")) {
+            plan.labelsToCreate.push({ name: "round", value: String(nextRoundNum) });
+          }
+          const hubKind = hub.getOwnedLabelValue?.("kind") || plan.mode || "project";
+          const roundLabel = hubKind === "edit" ? "Round" : "Draft";
+          if (!/(?:\bround\s*\d+\b|\bdraft\s*\d+\b|\bv\s*\d+\b)/i.test(plan.formattedTitle)) {
+            plan.formattedTitle = `${plan.formattedTitle} \u2014 ${roundLabel} ${nextRoundNum}`;
+          }
+          await setNoteAttribute(hub.noteId, "label", "currentRound", String(nextRoundNum));
+          const clientRel = hub.getRelations?.("client")?.[0];
+          const clientId = clientRel?.value || clientRel?.targetNoteId;
+          if (clientId && !plan.relationsToCreate.some((r) => r.name === "client")) {
+            plan.relationsToCreate.push({ name: "client", value: clientId });
+          }
+        }
+      } catch (err) {
+        console.warn(`[Ikmal Tools] Story round reconciliation deferred: ${err}`);
+      }
+    }
+    let noteContent = plan.content;
+    if (noteContent && noteContent.includes("__OPEN_TASKS_VIEW__")) {
+      try {
+        const openTasksNote = await api2.searchForNote("#extView=openTasks");
+        if (openTasksNote) {
+          noteContent = noteContent.replace(/__OPEN_TASKS_VIEW__/g, openTasksNote.noteId);
+        }
+      } catch (err) {
+        console.warn(`[Ikmal Tools] Open tasks saved search lookup deferred: ${err}`);
+      }
+    }
+    const { note } = await api2.createNote(parentNoteId, {
       title: plan.formattedTitle,
-      content: plan.content,
+      content: noteContent,
       type: plan.noteType || "text",
       activate: false,
       attributes: buildAttributeRows(plan)
     });
     if (!note) throw new Error("Trilium did not return the created note.");
+    if (plan.templateId === "projectHub") {
+      try {
+        await attachProjectDashboard(note.noteId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`[Ikmal Tools] Project dashboard attachment deferred: ${message}`);
+      }
+    }
     const clonedUnder = [];
     for (const containerId of plan.autoCloneContainers) {
       await cloneNoteToParentNote(note.noteId, containerId);
       clonedUnder.push(containerId);
     }
     if (plan.journalClone) {
-      const journalNote = await api.getTodayNote();
+      const journalNote = await api2.getTodayNote();
       if (journalNote) {
         await cloneNoteToParentNote(note.noteId, journalNote.noteId);
         clonedUnder.push(journalNote.noteId);
@@ -1035,19 +1279,193 @@ ${content}`;
     }
     const childNoteIds = [];
     for (const child of plan.childNotesToCreate ?? []) {
-      const { note: childNote } = await api.createNote(note.noteId, {
+      const childAttributes = child.labels.map((l) => ({ type: "label", name: l.name, value: l.value }));
+      if (plan.templateId === "projectHub") {
+        childAttributes.push({ type: "relation", name: "project", value: note.noteId });
+      }
+      const { note: childNote } = await api2.createNote(note.noteId, {
         title: child.title,
+        content: child.content || "",
         activate: false,
-        attributes: child.labels.map((l) => ({ type: "label", name: l.name, value: l.value }))
+        attributes: childAttributes
       });
-      if (childNote) childNoteIds.push(childNote.noteId);
+      if (childNote) {
+        childNoteIds.push(childNote.noteId);
+        const journalNote = await api2.getTodayNote();
+        if (journalNote) {
+          try {
+            await cloneNoteToParentNote(childNote.noteId, journalNote.noteId);
+          } catch {
+          }
+        }
+      }
+    }
+    if (["task", "projectTask", "story", "edit"].includes(plan.templateId)) {
+      try {
+        await reconcileProjectHubStatuses();
+      } catch {
+      }
     }
     return { noteId: note.noteId, title: note.title, clonedUnder, childNoteIds };
+  }
+  async function removeNoteFromParentNote(childNoteId, parentNoteId) {
+    const glob = globalThis.glob;
+    if (!glob) return;
+    const headers = {
+      "x-csrf-token": glob.csrfToken,
+      "trilium-component-id": glob.componentId,
+      "content-type": "application/json"
+    };
+    const path = `${glob.baseApiUrl}notes/${childNoteId}/remove-from-parent/${parentNoteId}`;
+    const send = () => globalThis.fetch(path, {
+      method: "DELETE",
+      credentials: "same-origin",
+      headers
+    });
+    let response = await send();
+    if (response.status === 403) {
+      const bootstrapUrl = `./bootstrap${globalThis.location?.search ?? ""}`;
+      const bootstrap = await globalThis.fetch(bootstrapUrl, { credentials: "same-origin", cache: "no-store" });
+      if (bootstrap.ok) {
+        const refreshed = await bootstrap.json();
+        glob.csrfToken = refreshed.csrfToken;
+        headers["x-csrf-token"] = refreshed.csrfToken;
+        response = await send();
+      }
+    }
+  }
+  async function archiveProjectNote(hubNoteId) {
+    const api2 = triliumApi();
+    if (!api2) return;
+    const archiveRoot = await api2.searchForNote("#archiveProjectRoot");
+    const activeRoot = await api2.searchForNote("#activeProjectRoot");
+    const projectRoot = await api2.searchForNote("#projectRoot");
+    if (archiveRoot) {
+      await cloneNoteToParentNote(hubNoteId, archiveRoot.noteId);
+    }
+    if (activeRoot) {
+      try {
+        await removeNoteFromParentNote(hubNoteId, activeRoot.noteId);
+      } catch {
+      }
+    }
+    if (projectRoot) {
+      try {
+        await removeNoteFromParentNote(hubNoteId, projectRoot.noteId);
+      } catch {
+      }
+    }
+    await setNoteAttribute(hubNoteId, "label", "status", "complete");
+  }
+  async function reopenProjectNote(hubNoteId) {
+    const api2 = triliumApi();
+    if (!api2) return;
+    const activeRoot = await api2.searchForNote("#activeProjectRoot");
+    const archiveRoot = await api2.searchForNote("#archiveProjectRoot");
+    const projectRoot = await api2.searchForNote("#projectRoot");
+    if (activeRoot) {
+      await cloneNoteToParentNote(hubNoteId, activeRoot.noteId);
+    }
+    if (archiveRoot) {
+      try {
+        await removeNoteFromParentNote(hubNoteId, archiveRoot.noteId);
+      } catch {
+      }
+    }
+    if (projectRoot) {
+      try {
+        await removeNoteFromParentNote(hubNoteId, projectRoot.noteId);
+      } catch {
+      }
+    }
+    await setNoteAttribute(hubNoteId, "label", "status", "active");
+  }
+  async function reconcileProjectHubStatuses() {
+    const api2 = triliumApi();
+    if (!api2 || typeof api2.searchForNotes !== "function") return 0;
+    const hubs = await api2.searchForNotes("#extTemplate=projectHub") || [];
+    const legacyHubs = await api2.searchForNotes("#extProjectHub") || [];
+    const allHubs = [...hubs];
+    for (const h of legacyHubs) {
+      if (!allHubs.some((existing) => existing.noteId === h.noteId)) {
+        allHubs.push(h);
+      }
+    }
+    let updated = 0;
+    for (const hub of allHubs) {
+      const status = hub.getOwnedLabelValue?.("status");
+      const drafts = [];
+      if (typeof hub.getChildNotes === "function") {
+        const children = await hub.getChildNotes();
+        for (const c of children) {
+          if (c.getOwnedLabelValue?.("extStoryDraft") !== void 0 || c.getOwnedLabelValue?.("extTemplate") === "story" || c.getOwnedLabelValue?.("extTemplate") === "edit") {
+            drafts.push(c);
+          }
+        }
+      }
+      const relDrafts = await api2.searchForNotes(`~project='${hub.noteId}' AND (#extStoryDraft OR #extTemplate=story OR #extTemplate=edit)`);
+      for (const rd of relDrafts || []) {
+        if (!drafts.some((d) => d.noteId === rd.noteId)) {
+          drafts.push(rd);
+        }
+      }
+      if (!drafts.length) continue;
+      drafts.sort((a, b) => Number(b.getOwnedLabelValue?.("round") || 0) - Number(a.getOwnedLabelValue?.("round") || 0));
+      const latestDraft = drafts[0];
+      const latestStatus = (latestDraft.getOwnedLabelValue?.("status") || "").toLowerCase();
+      const isLatestDone = latestStatus === "done" || latestStatus === "approved" || latestStatus === "published" || Boolean(latestDraft.getOwnedLabelValue?.("doneDate"));
+      if (isLatestDone && status !== "complete") {
+        await archiveProjectNote(hub.noteId);
+        updated++;
+      } else if (!isLatestDone && (status === "complete" || status === "archived")) {
+        await reopenProjectNote(hub.noteId);
+        updated++;
+      }
+    }
+    return updated;
   }
 
   // src/components/nativeUi.ts
   function escapeHtml(value) {
     return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function openModal({ title, icon, body, confirmText, confirmKind = "primary", cancelText = "Cancel" }, onConfirm) {
+    const backdrop = document.createElement("div");
+    backdrop.className = "ns-modal-backdrop";
+    const modal = document.createElement("div");
+    modal.className = "ns-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.innerHTML = `
+        <div class="ns-modal-header">
+            <h5 class="ns-modal-title">${icon ? `<span class="bx ${escapeHtml(icon)}"></span> ` : ""}${escapeHtml(title)}</h5>
+            <button type="button" class="btn-close ns-close" aria-label="Close"></button>
+        </div>
+        <div class="ns-modal-body">${body}</div>
+        <div class="ns-modal-footer">
+            <button type="button" class="btn btn-sm btn-secondary ns-close">${escapeHtml(cancelText)}</button>
+            <button type="button" class="btn btn-sm btn-${confirmKind} ns-confirm">${escapeHtml(confirmText)}</button>
+        </div>
+    `;
+    const close = () => {
+      document.removeEventListener("keydown", onKeyDown);
+      backdrop.remove();
+    };
+    function onKeyDown(e) {
+      if (e.key === "Escape") close();
+    }
+    modal.querySelectorAll(".ns-close").forEach((btn) => btn.addEventListener("click", close));
+    backdrop.addEventListener("click", (e) => {
+      if (e.target === backdrop) close();
+    });
+    document.addEventListener("keydown", onKeyDown);
+    modal.querySelector(".ns-confirm").addEventListener("click", () => {
+      if (onConfirm(modal) !== false) close();
+    });
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+    modal.querySelector("input, select, textarea")?.focus();
+    return modal;
   }
   function fuzzyScore(query, text) {
     if (!query) return 0;
@@ -1156,7 +1574,8 @@ ${content}`;
           const isSelected = isMulti ? selectedValues.includes(option.value) : selectedValue === option.value;
           item.className = `ns-combobox-option${isSelected ? " is-selected" : ""}`;
           item.setAttribute("role", "option");
-          item.innerHTML = `<span>${escapeHtml(option.label)}${isSelected ? ' <i class="bx bx-check text-success"></i>' : ""}</span>${option.description ? `<span class="ns-meta">${escapeHtml(option.description)}</span>` : ""}`;
+          const iconHtml = option.icon ? `<i class="bx ${escapeHtml(option.icon)} text-primary me-1"></i>` : "";
+          item.innerHTML = `<span>${iconHtml}${escapeHtml(option.label)}${isSelected ? ' <i class="bx bx-check text-success ms-1"></i>' : ""}</span>${option.description ? `<span class="ns-meta">${escapeHtml(option.description)}</span>` : ""}`;
           item.addEventListener("mousedown", (e) => {
             e.preventDefault();
             selectOption(option);
@@ -1222,16 +1641,96 @@ ${content}`;
           selectedValue = typeof v === "string" ? v : v[0] ?? "";
           input.value = labelFor(selectedValue);
         }
+      },
+      setOptions: (newOptions) => {
+        options = [...newOptions];
+        if (!isMulti) input.value = labelFor(selectedValue);
       }
     };
   }
+  function showToast(opts, typeArg, durationArg) {
+    if (typeof document === "undefined") return;
+    const message = typeof opts === "string" ? opts : opts.message;
+    const type = typeof opts === "string" ? typeArg || "success" : opts.type || "success";
+    const durationMs = typeof opts === "string" ? durationArg ?? 3500 : opts.durationMs ?? 3500;
+    const undoAction = typeof opts === "string" ? void 0 : opts.undoAction;
+    let container = document.querySelector(".ns-toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.className = "ns-toast-container";
+      container.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 1060; display: flex; flex-direction: column; gap: 8px; max-width: 360px; pointer-events: none;";
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement("div");
+    const bgClass = type === "success" ? "bg-success" : type === "warning" ? "bg-warning text-dark" : type === "danger" ? "bg-danger" : "bg-primary";
+    const icon = type === "success" ? "bx-check-circle" : type === "warning" ? "bx-error" : type === "danger" ? "bx-x-circle" : "bx-info-circle";
+    toast.className = `toast show align-items-center text-white ${bgClass} border-0 shadow-lg`;
+    toast.style.cssText = "pointer-events: auto; transition: all 0.3s ease; opacity: 1; transform: translateY(0);";
+    toast.innerHTML = `
+        <div class="d-flex p-2.5">
+            <div class="toast-body d-flex align-items-center gap-2 small">
+                <i class="bx ${icon} fs-6"></i>
+                <span>${escapeHtml(message)}</span>
+                ${undoAction ? `<button type="button" class="btn btn-micro btn-light text-dark ms-2 undo-btn">Undo</button>` : ""}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto close-toast-btn" aria-label="Close"></button>
+        </div>
+    `;
+    if (undoAction) {
+      toast.querySelector(".undo-btn")?.addEventListener("click", () => {
+        undoAction();
+        removeToast();
+      });
+    }
+    const removeToast = () => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(10px)";
+      setTimeout(() => toast.remove(), 300);
+    };
+    toast.querySelector(".close-toast-btn")?.addEventListener("click", removeToast);
+    container.appendChild(toast);
+    if (durationMs > 0) {
+      setTimeout(removeToast, durationMs);
+    }
+  }
+  if (typeof window !== "undefined") {
+    window.__ikmalToast = showToast;
+  }
 
   // src/components/QuickCaptureModal.ts
+  function formatOptionLabel(attrName, opt) {
+    const map = {
+      todo: "\u{1F4DD} To Do",
+      in_progress: "\u23F3 In Progress",
+      done: "\u2705 Done",
+      cancelled: "\u{1F6AB} Cancelled",
+      drafting: "\u270F\uFE0F Drafting",
+      editing: "\u2702\uFE0F Editing",
+      review: "\u{1F440} In Review",
+      published: "\u{1F680} Published",
+      approved: "\u2705 Approved",
+      returned: "\u{1F504} Returned",
+      active: "\u{1F7E2} Active",
+      archived: "\u{1F4E6} Archived",
+      on_hold: "\u23F8\uFE0F On Hold",
+      awaiting: "\u23F3 Awaiting Reply",
+      high: "\u{1F534} High Priority",
+      medium: "\u{1F7E1} Medium Priority",
+      low: "\u{1F7E2} Low Priority",
+      simple: "\u26A1 Simple Task",
+      multi: "\u{1F9E9} Multi-step Task",
+      project: "\u{1F4D8} Story Project",
+      edit: "\u270F\uFE0F Edit Package",
+      client: "\u{1F3E2} Client Hub",
+      internal: "\u2699\uFE0F Internal Hub"
+    };
+    return map[opt] || opt.charAt(0).toUpperCase() + opt.slice(1).replace(/_/g, " ");
+  }
   function triliumApi2() {
     const a = globalThis.api;
     return a && typeof a.searchForNotes === "function" ? a : null;
   }
-  async function showQuickCaptureModal(templateId, templateEngine, noteCreationEngine, onCreated) {
+  async function showQuickCaptureModal(templateId, templateEngine, noteCreationEngine, onCreated, initialRelations) {
     const isStoryOrEdit = templateId === "story" || templateId === "edit";
     const activeTplId = isStoryOrEdit ? "story" : templateId;
     const template = templateEngine.getTemplate(activeTplId);
@@ -1243,19 +1742,31 @@ ${content}`;
       story: "Starts a full Story Project from scratch. Creates a Project Hub (#kind=project), a Story Draft (#status=drafting), and a dedicated Reporting & Notes child note. Auto-cloned to today's Journal.",
       edit: "Starts a Quick Edit Package. Creates an Edit Project Hub (#kind=edit) and a Story Draft (#status=editing, #workflow=edit) for fast copy editing/proofreading, skipping extra reporting notes. Auto-cloned to today's Journal.",
       dailyNote: "Creates today's daily journal note.",
-      projectHub: "Creates a new Project Hub root folder to organize tasks, stories, and meetings."
+      projectHub: "Creates a new Project Hub root folder to organize tasks, stories, and meetings.",
+      scratch: "Creates a quick scratchpad note. Choose an Active Project Hub to organize it under a project, or keep it in Unassigned for later."
     };
     const description = descriptions[templateId] || `Creates a new ${template.title} note.`;
     const modalTitle = isEditMode ? "New Edit Package" : templateId === "story" ? "New Story Project" : `New ${template.title}`;
-    const api = triliumApi2();
+    const api2 = triliumApi2();
     const relationCandidates = /* @__PURE__ */ new Map();
     for (const rel of template.relationships) {
-      if (!api) {
+      if (!api2) {
         relationCandidates.set(rel.relationName, []);
         continue;
       }
       const targetTpl = templateEngine.getTemplate(rel.targetTemplateId);
-      const notes = targetTpl ? await api.searchForNotes(`#${targetTpl.marker}`) : [];
+      let notes = [];
+      if (targetTpl) {
+        notes = await api2.searchForNotes(`#${targetTpl.marker}`);
+        if (targetTpl.id === "projectHub") {
+          const legacyHubs = await api2.searchForNotes("#extTemplate=projectHub");
+          for (const h of legacyHubs) {
+            if (!notes.some((existing) => existing.noteId === h.noteId)) {
+              notes.push(h);
+            }
+          }
+        }
+      }
       relationCandidates.set(rel.relationName, notes);
     }
     const backdrop = document.createElement("div");
@@ -1276,9 +1787,28 @@ ${content}`;
                     <button type="button" class="btn-close close-btn" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center gap-1.5 flex-wrap pb-2 border-bottom template-switcher-bar">
+                        <span class="tiny text-muted font-weight-bold me-1"><i class="bx bx-category"></i> Switch Template:</span>
+                        ${[
+      { id: "task", label: "Task", icon: "check-square" },
+      { id: "story", label: "Story Project", icon: "news" },
+      { id: "edit", label: "Edit Package", icon: "edit" },
+      { id: "meeting", label: "Meeting", icon: "calendar-event" },
+      { id: "person", label: "Person", icon: "user" },
+      { id: "organization", label: "Organization", icon: "buildings" },
+      { id: "projectHub", label: "Project Hub", icon: "book" },
+      { id: "scratch", label: "Scratch", icon: "file-blank" },
+      { id: "topic", label: "Topic", icon: "purchase-tag" }
+    ].map((t) => `
+                            <button type="button" class="btn btn-micro ${t.id === templateId ? "btn-primary" : "btn-outline-secondary"} tpl-switch-btn" data-tpl="${t.id}" style="border-radius: 12px;">
+                                <i class="bx bx-${t.icon}"></i> ${t.label}
+                            </button>
+                        `).join("")}
+                    </div>
+
                     <div class="p-3 rounded border" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.2)) !important;">
                         <div class="small font-weight-bold text-info d-flex align-items-center gap-1.5 mb-1">
-                            <i class="bx bx-info-circle"></i> Original System Contract: ${modalTitle}
+                            <i class="bx bx-info-circle"></i> Quick Capture: ${modalTitle}
                         </div>
                         <p class="small text-muted m-0">${description}</p>
                     </div>
@@ -1294,18 +1824,21 @@ ${content}`;
                                 <i class="bx bx-slider-alt text-success"></i> Promoted Form Attributes
                             </label>
                             <div class="row g-2 attr-form">
-                                ${template.attributes.map((a) => `
+                                ${template.attributes.map((a) => {
+      const opts = a.options || (a.name === "priority" ? ["medium", "high", "low"] : a.name === "complexity" ? ["simple", "multi"] : a.name === "kind" ? ["project", "edit", "client", "internal"] : a.name === "status" ? templateId === "story" ? ["drafting", "review", "published"] : templateId === "edit" ? ["editing", "approved", "returned"] : templateId === "projectHub" ? ["active", "on_hold", "complete", "archived"] : ["todo", "in_progress", "done", "cancelled"] : void 0);
+      return `
                                     <div class="col-md-6">
                                         <label class="form-label tiny text-muted font-weight-bold">#${a.name}</label>
-                                        ${a.options ? `
+                                        ${opts ? `
                                             <select class="form-select form-select-sm attr-input" data-attr="${a.name}">
-                                                ${a.options.map((opt) => `<option value="${opt}">${opt}</option>`).join("")}
+                                                ${opts.map((opt) => `<option value="${opt}" ${opt === a.defaultValue ? "selected" : ""}>${escapeHtml(formatOptionLabel(a.name, opt))}</option>`).join("")}
                                             </select>
                                         ` : `
                                             <input type="text" class="form-control form-control-sm attr-input" data-attr="${a.name}" value="${a.defaultValue ?? ""}" placeholder="Value...">
                                         `}
                                     </div>
-                                `).join("")}
+                                    `;
+    }).join("")}
                             </div>
                         </div>
                     ` : ""}
@@ -1321,20 +1854,54 @@ ${content}`;
                     <!-- Error state -->
                     <div class="create-error alert alert-danger d-none m-0"></div>
                 </div>
-                <div class="modal-footer border-top p-3 d-flex justify-content-between">
-                    <button type="button" class="btn btn-sm btn-outline-secondary close-btn">Cancel</button>
-                    <button type="button" class="btn btn-sm btn-primary create-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-plus"></i> Create ${modalTitle}
-                    </button>
+                <div class="modal-footer border-top p-3 d-flex justify-content-between align-items-center">
+                    <span class="destination-badge text-muted tiny font-weight-bold d-flex align-items-center gap-1" style="opacity: 0.85;">
+                        <i class="bx bx-map-pin text-primary"></i> <span class="dest-label">Landing: ${escapeHtml(template.title)} Container</span>
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary close-btn">Cancel</button>
+                        <button type="button" class="btn btn-sm btn-primary create-btn d-flex align-items-center gap-1" title="Cmd/Ctrl+Enter to create">
+                            <i class="bx bx-plus"></i> Create ${modalTitle}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     `;
     const closeButtons = modal.querySelectorAll(".close-btn");
     closeButtons.forEach((btn) => btn.addEventListener("click", closeModal));
+    const tplSwitchButtons = modal.querySelectorAll(".tpl-switch-btn");
+    tplSwitchButtons.forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const targetTpl = e.currentTarget.dataset.tpl;
+        if (targetTpl && targetTpl !== templateId) {
+          closeModal();
+          showQuickCaptureModal(targetTpl, templateEngine, noteCreationEngine, onCreated, initialRelations);
+        }
+      });
+    });
     function closeModal() {
       if (modal.parentNode) modal.parentNode.removeChild(modal);
       if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+    }
+    const destLabel = modal.querySelector(".dest-label");
+    function updateDestinationBadge() {
+      if (!destLabel) return;
+      const projectPicker = relPickers.get("project");
+      const selectedProjectVal = projectPicker ? projectPicker.getValue() : null;
+      if (isStoryOrEdit && !selectedProjectVal) {
+        destLabel.textContent = "Destination: Projects / Active";
+      } else if (selectedProjectVal) {
+        const projCandidates = relationCandidates.get("project") || [];
+        const match = projCandidates.find((c) => c.noteId === selectedProjectVal);
+        destLabel.textContent = `Destination: Under ${match?.title || "Selected Project"}`;
+      } else if (templateId === "task") {
+        destLabel.textContent = "Destination: Tasks / Unassigned (+ Journal Clone)";
+      } else if (templateId === "scratch") {
+        destLabel.textContent = "Destination: Projects / Unassigned";
+      } else {
+        destLabel.textContent = `Destination: ${template?.title || modalTitle} Folder`;
+      }
     }
     const relPickers = /* @__PURE__ */ new Map();
     const relForm = modal.querySelector(".rel-form");
@@ -1343,21 +1910,81 @@ ${content}`;
       const field = document.createElement("div");
       field.className = "ns-field mb-2";
       const labelText = rel.isMulti ? `~${escapeHtml(rel.relationName)} (multi) &rarr; ${escapeHtml(rel.targetTemplateName)}` : `~${escapeHtml(rel.relationName)} &rarr; ${escapeHtml(rel.targetTemplateName)}`;
-      field.innerHTML = `<label class="form-label tiny text-muted font-weight-bold">${labelText}</label>`;
+      const headerRow = document.createElement("div");
+      headerRow.className = "d-flex justify-content-between align-items-center mb-1";
+      headerRow.innerHTML = `<label class="form-label tiny text-muted font-weight-bold m-0">${labelText}</label>`;
+      const targetTplId = rel.targetTemplateId;
+      if (["organization", "person", "client", "companyOnBehalf", "employer"].includes(rel.relationName) || ["organization", "person"].includes(targetTplId)) {
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "btn btn-link btn-sm p-0 tiny text-decoration-none text-primary";
+        addBtn.innerHTML = `<i class="bx bx-plus-circle"></i> New ${escapeHtml(rel.targetTemplateName)}`;
+        addBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          const newTitle = globalThis.prompt ? globalThis.prompt(`Enter title for new ${rel.targetTemplateName}:`) : null;
+          if (!newTitle || !newTitle.trim()) return;
+          const entType = targetTplId === "person" ? "person" : "organization";
+          const plan = noteCreationEngine.planNoteCreation({
+            type: entType,
+            title: newTitle.trim()
+          });
+          try {
+            const res = api2 ? await materializeNoteCreation2(plan) : void 0;
+            const createdId = res ? res.noteId : `preview_${Date.now()}`;
+            candidates.push({ noteId: createdId, title: newTitle.trim() });
+            picker.setOptions?.(candidates.map((n) => ({ value: n.noteId, label: n.title })));
+            picker.setValue(rel.isMulti ? [...Array.isArray(picker.getValue()) ? picker.getValue() : [], createdId] : createdId);
+            updateDestinationBadge();
+          } catch (err) {
+            if (globalThis.alert) globalThis.alert(`Could not create ${rel.targetTemplateName}: ${err.message}`);
+          }
+        });
+        headerRow.appendChild(addBtn);
+      }
+      field.appendChild(headerRow);
+      if (rel.relationName === "project" && candidates.length > 0) {
+        const chipsRow = document.createElement("div");
+        chipsRow.className = "d-flex align-items-center gap-1 mb-1.5 flex-wrap project-quick-chips";
+        chipsRow.innerHTML = `<span class="tiny text-muted me-1">Quick pick:</span>`;
+        candidates.slice(0, 4).forEach((c) => {
+          const chipBtn = document.createElement("button");
+          chipBtn.type = "button";
+          chipBtn.className = "btn btn-micro btn-outline-secondary";
+          chipBtn.style.borderRadius = "10px";
+          chipBtn.innerHTML = `<i class="bx bx-book"></i> ${escapeHtml(c.title)}`;
+          chipBtn.addEventListener("click", () => {
+            picker.setValue(c.noteId);
+            updateDestinationBadge();
+          });
+          chipsRow.appendChild(chipBtn);
+        });
+        field.appendChild(chipsRow);
+      }
+      const initialVal = initialRelations && initialRelations[rel.relationName] ? initialRelations[rel.relationName] : rel.isMulti ? [] : "";
+      const targetTpl = templateEngine.getTemplate(rel.targetTemplateId);
+      const iconClass = targetTpl?.icon ? `bx-${targetTpl.icon}` : "bx-file";
       const picker = searchableSelect({
         id: `rel-${rel.relationName}`,
-        value: rel.isMulti ? [] : "",
+        value: initialVal,
         isMulti: rel.isMulti,
         placeholder: candidates.length ? `Search ${rel.targetTemplateName}\u2026` : `No existing ${rel.targetTemplateName} notes found`,
-        options: candidates.map((n) => ({ value: n.noteId, label: n.title }))
+        options: candidates.map((n) => ({ value: n.noteId, label: n.title, icon: iconClass }))
       });
       field.appendChild(picker.el);
       relForm?.appendChild(field);
       relPickers.set(rel.relationName, picker);
     }
+    updateDestinationBadge();
     const titleInput = modal.querySelector(".title-input");
     const createBtn = modal.querySelector(".create-btn");
     const errorBox = modal.querySelector(".create-error");
+    setTimeout(() => titleInput?.focus(), 50);
+    modal.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        createBtn.click();
+      }
+    });
     createBtn.addEventListener("click", async () => {
       const rawTitle = titleInput.value.trim() || `Untitled ${modalTitle}`;
       const attrInputs = modal.querySelectorAll(".attr-input");
@@ -1384,8 +2011,8 @@ ${content}`;
       createBtn.disabled = true;
       createBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creating\u2026';
       try {
-        const result = api ? await materializeNoteCreation(plan) : void 0;
-        if (result) api?.showMessage?.(`Created "${result.title}".`);
+        const result = api2 ? await materializeNoteCreation2(plan) : void 0;
+        if (result) api2?.showMessage?.(`Created "${result.title}".`);
         closeModal();
         onCreated?.({ plan, result });
       } catch (err) {
@@ -1402,14 +2029,32 @@ ${content}`;
   // src/artifacts/notes-system-launcher.js
   (function initLauncherBar() {
     if (typeof document === "undefined") return;
+    const LAUNCHER_ACTIONS = [
+      { id: "newProjectHub", type: "projectHub", label: "New Project Hub", icon: "book", shortcut: "" },
+      { id: "newScratch", type: "scratch", label: "New Scratch", icon: "file-blank", shortcut: "" },
+      { id: "newMeeting", type: "meeting", label: "New Meeting", icon: "calendar-event", shortcut: "alt+m" },
+      { id: "newTask", type: "task", label: "New Task", icon: "check-square", shortcut: "alt+t" },
+      { id: "newStory", type: "story", label: "New Story", icon: "news", shortcut: "alt+s" },
+      { id: "newEdit", type: "edit", label: "New Edit", icon: "edit-alt", shortcut: "" },
+      { id: "newEmail", type: "email", label: "New Email", icon: "envelope", shortcut: "" },
+      { id: "newPerson", type: "person", label: "New Person", icon: "user", shortcut: "" },
+      { id: "newOrganization", type: "organization", label: "New Organization", icon: "buildings", shortcut: "" },
+      { id: "newTopic", type: "topic", label: "New Topic", icon: "purchase-tag", shortcut: "" }
+    ];
     const templateEngine = new TemplateEngine();
     const relationshipEngine = new RelationshipEngine(templateEngine);
     const ifThenRuleEngine = new IfThenRuleEngine();
     const settingsEngine = new SettingsEngine();
     const noteCreationEngine = new NoteCreationEngine(templateEngine, relationshipEngine, ifThenRuleEngine, settingsEngine);
-    function triggerQuickCapture(templateId) {
+    function triggerQuickCapture(templateId, initialRelations) {
       const targetTpl = templateId || settingsEngine.get("defaultQuickCaptureTemplate") || "task";
-      showQuickCaptureModal(targetTpl, templateEngine, noteCreationEngine);
+      showQuickCaptureModal(targetTpl, templateEngine, noteCreationEngine, void 0, initialRelations);
+    }
+    window.__ikmalQuickCapture = triggerQuickCapture;
+    if (typeof api !== "undefined" && api.currentNote?.hasLabel?.("extLauncherType")) {
+      const type = api.currentNote.getOwnedLabelValue("extLauncherType");
+      if (type) triggerQuickCapture(type);
+      return;
     }
     if (!window.__ns_keyboard_shortcut_registered) {
       window.__ns_keyboard_shortcut_registered = true;
@@ -1418,40 +2063,376 @@ ${content}`;
           e.preventDefault();
           e.stopPropagation();
           triggerQuickCapture();
+        } else if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+          const k = e.key.toLowerCase();
+          if (k === "m") {
+            e.preventDefault();
+            e.stopPropagation();
+            triggerQuickCapture("meeting");
+          } else if (k === "t") {
+            e.preventDefault();
+            e.stopPropagation();
+            triggerQuickCapture("task");
+          } else if (k === "s") {
+            e.preventDefault();
+            e.stopPropagation();
+            triggerQuickCapture("story");
+          }
+        } else if (e.key === "?" && !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName) && !document.activeElement?.isContentEditable) {
+          e.preventDefault();
+          const hotkeyModal = openModal({
+            title: "Keyboard Shortcuts & Quick Actions",
+            icon: "bx-keyboard",
+            body: `
+                        <div class="mb-2">
+                            <input type="text" id="hotkey-search-input" class="form-control form-control-sm" placeholder="Search shortcuts\u2026">
+                        </div>
+                        <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                            <table class="table table-sm text-start m-0" id="hotkeys-table">
+                                <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+                                <tbody>
+                                    <tr data-action="quick capture palette command"><td><code>Cmd / Ctrl + Shift + K</code></td><td>Open Quick Capture Command Palette</td></tr>
+                                    <tr data-action="quick capture task"><td><code>Alt + T</code></td><td>Quick Capture Task</td></tr>
+                                    <tr data-action="quick capture story project"><td><code>Alt + S</code></td><td>Quick Capture Story Project</td></tr>
+                                    <tr data-action="quick capture meeting"><td><code>Alt + M</code></td><td>Quick Capture Meeting</td></tr>
+                                    <tr data-action="show hotkey cheatsheet help"><td><code>?</code></td><td>Show Hotkey Cheatsheet</td></tr>
+                                    <tr data-action="close active dialog modal cancel"><td><code>Esc</code></td><td>Close Active Dialog / Modal</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `,
+            confirmText: "Got It"
+          }, () => true);
+          setTimeout(() => {
+            const searchInput = hotkeyModal.querySelector < HTMLInputElement > "#hotkey-search-input";
+            const rows = hotkeyModal.querySelectorAll < HTMLTableRowElement > "#hotkeys-table tbody tr";
+            searchInput?.focus();
+            searchInput?.addEventListener("input", () => {
+              const q = searchInput.value.toLowerCase().trim();
+              rows.forEach((row) => {
+                const text = (row.dataset.action || "") + " " + row.textContent?.toLowerCase();
+                row.style.display = text.includes(q) ? "" : "none";
+              });
+            });
+          }, 50);
         }
       }, true);
-      console.log("[Notes System Plugin] Global keyboard shortcut (Cmd/Ctrl+Shift+K) registered.");
+      window.__ikmalShortcuts = {
+        trigger: triggerQuickCapture,
+        list: LAUNCHER_ACTIONS
+      };
+      console.log("[Notes System Plugin] Global keyboard shortcuts registered (Cmd/Ctrl+Shift+K, Alt+M/T/S, ?).");
     }
-    function mountLauncherButton() {
-      const existingContainer = document.getElementById("ns-launcher-group");
-      if (existingContainer) existingContainer.remove();
-      const headerContainer = document.querySelector("#launcher-container") || document.querySelector(".launcher-container") || document.querySelector(".header-widgets") || document.querySelector(".header-widget-container") || document.querySelector(".header");
-      if (!headerContainer) return false;
-      const groupEl = document.createElement("div");
-      groupEl.id = "ns-launcher-group";
-      groupEl.className = "btn-group btn-group-sm ns-launcher-group me-1";
-      const mainBtn = document.createElement("button");
-      mainBtn.type = "button";
-      mainBtn.className = "btn btn-secondary btn-sm ns-launcher-btn d-inline-flex align-items-center gap-1";
-      mainBtn.title = "Quick Capture Note (Cmd/Ctrl+Shift+K)";
-      mainBtn.innerHTML = '<i class="bx bx-plus-circle text-primary"></i> <span class="d-none d-md-inline font-weight-bold">Quick Capture</span>';
-      mainBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        triggerQuickCapture();
+    function initReportingNoteActionBars() {
+      const placeholders = document.querySelectorAll('.reporting-note-actions-placeholder[data-reporting-note-actions="true"]');
+      placeholders.forEach((placeholder) => {
+        if (placeholder.dataset.initialized === "true") return;
+        placeholder.dataset.initialized = "true";
+        placeholder.className = "ikmal-reporting-actions-bar";
+        placeholder.style.cssText = "display:flex;gap:0.5rem;margin:1rem 0;padding:0.75rem;background:var(--main-background-color);border:1px solid var(--main-border-color);border-radius:6px;";
+        const actions = [
+          { label: "Add Round / Edit", icon: "bx-edit-alt", type: "edit" },
+          { label: "Log Meeting", icon: "bx-calendar-event", type: "meeting" },
+          { label: "Add Task", icon: "bx-check-square", type: "task" }
+        ];
+        actions.forEach((act) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "btn btn-sm btn-secondary";
+          btn.style.cssText = "display:inline-flex;align-items:center;gap:0.35rem;cursor:pointer;";
+          btn.innerHTML = `<i class="bx ${act.icon}"></i> ${act.label}`;
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            let initialRelations;
+            if (typeof api !== "undefined" && api.currentNote) {
+              const projRel = api.currentNote.getRelations?.("project")?.[0];
+              if (projRel?.value) {
+                initialRelations = { project: projRel.value };
+              }
+            }
+            triggerQuickCapture(act.type, initialRelations);
+          });
+          placeholder.appendChild(btn);
+        });
       });
-      groupEl.appendChild(mainBtn);
-      headerContainer.prepend(groupEl);
-      console.log("[Notes System Plugin] Global Quick Capture launcher button mounted in header bar.");
-      return true;
     }
-    if (!mountLauncherButton()) {
-      const observer = new MutationObserver(() => {
-        if (mountLauncherButton()) {
-          observer.disconnect();
+    function initStoryDraftEditorUI() {
+      if (typeof api === "undefined" || !api.currentNote) return;
+      const current = api.currentNote;
+      const isDraft = current.hasLabel?.("extStoryDraft") || current.hasLabel?.("extTemplate", "storyDraft");
+      if (!isDraft) return;
+      const jqueryContainer = api.$container;
+      const container = jqueryContainer && (jqueryContainer[0] || jqueryContainer);
+      if (!container || typeof container.querySelector !== "function") return;
+      if (container.querySelector(".extension-round-actions")) return;
+      api.runOnBackend((noteId) => {
+        const round = api.getNote(noteId);
+        const hubRel = round.getRelations("project")[0];
+        const hub = hubRel ? api.getNote(hubRel.value) : null;
+        if (!hub) return null;
+        const rounds = hub.getTargetRelations().filter((r) => r.type === "relation" && r.name === "project").map((r) => api.getNote(r.noteId)).filter((candidate) => candidate.hasLabel("extStoryDraft") || candidate.hasLabel("extTemplate", "storyDraft")).map((candidate) => Number(candidate.getLabelValue("round"))).filter((num) => Number.isFinite(num));
+        const nextRound = rounds.length ? Math.max(...rounds) + 1 : 1;
+        const hubKind = hub.getLabelValue("kind") || "project";
+        const suffix = hubKind === "edit" ? `Round ${nextRound}` : `Draft ${nextRound}`;
+        const baseTitle = hub.title.replace(/\s+[—-]\s+(?:Round|Draft)\s+\d+\s*$/i, "").trim();
+        const hubArea = hub.getParentNotes().some((parent) => parent.hasLabel("projectArchive")) ? "archive" : "active";
+        const projectRoot = api.getNoteWithLabel("projectRoot");
+        const dashboard = hub.getChildNotes().find((child) => child.hasLabel("extHubDashboard", "projectHub") || child.hasLabel("extProjectDashboard", "projectHub"));
+        return {
+          hubId: hub.noteId,
+          hubTitle: hub.title,
+          projectRootId: projectRoot ? projectRoot.noteId : null,
+          hubDashboardId: dashboard ? dashboard.noteId : null,
+          hubKind,
+          hubArea,
+          defaultTitle: `${baseTitle} \u2014 ${suffix}`,
+          roundTitle: round.title
+        };
+      }, [current.noteId]).then((context) => {
+        if (!context) return;
+        const nav = document.createElement("nav");
+        nav.className = "extension-project-breadcrumbs small text-muted mb-2 d-flex align-items-center gap-1.5";
+        nav.innerHTML = `
+                <i class="bx bx-folder"></i>
+                <a href="#" class="text-reset text-decoration-none nav-proj-root">Projects</a> /
+                <a href="#" class="text-reset text-decoration-none font-weight-bold nav-hub-link">${context.hubTitle}</a> /
+                <span class="text-body">${context.roundTitle}</span>
+            `;
+        nav.querySelector(".nav-proj-root")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          if (context.projectRootId && api.activateNote) api.activateNote(context.projectRootId);
+        });
+        nav.querySelector(".nav-hub-link")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          if (api.activateNote) api.activateNote(context.hubId);
+        });
+        const bar = document.createElement("div");
+        bar.className = "extension-round-actions alert alert-secondary p-2.5 mb-3 d-flex align-items-center flex-wrap gap-2";
+        bar.innerHTML = `<strong class="me-2 tiny text-uppercase text-muted"><i class="bx bx-layer"></i> Round Actions:</strong>`;
+        const btn = (title, icon, className, tooltip, handler) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = `btn btn-sm ${className} d-inline-flex align-items-center gap-1`;
+          b.title = tooltip || title;
+          b.setAttribute("aria-label", tooltip || title);
+          b.innerHTML = `<i class="bx ${icon}"></i> ${title}`;
+          b.addEventListener("click", handler);
+          bar.appendChild(b);
+        };
+        btn("New Round", "bx-plus-circle", "btn-primary", "Create next iteration draft or edit round under this Project Hub", () => {
+          openModal({
+            title: "Create New Round / Draft",
+            icon: "bx-plus-circle",
+            body: `
+                        <div class="mb-3">
+                            <label class="form-label small font-weight-bold">Round Title</label>
+                            <input type="text" class="form-control form-control-sm new-round-title-input" value="${context.defaultTitle.replace(/"/g, "&quot;")}">
+                        </div>
+                    `,
+            confirmText: "Create Round"
+          }, (modalEl) => {
+            const input = modalEl.querySelector(".new-round-title-input");
+            const title = input ? input.value.trim() : "";
+            if (!title) return false;
+            const plan = noteCreationEngine.planNoteCreation({
+              type: "story",
+              title,
+              relations: { project: context.hubId },
+              mode: context.hubKind === "edit" ? "edit" : "project"
+            });
+            materializeNoteCreation(plan).then((res) => {
+              if (res?.noteId && api.activateNote) api.activateNote(res.noteId);
+            });
+            return true;
+          });
+        });
+        btn("Mark Awaiting Reply", "bx-time-five", "btn-outline-secondary", "Set waitingOn and followUpDate attributes on current note", () => {
+          const dateStr = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10);
+          openModal({
+            title: "Mark Awaiting Reply",
+            icon: "bx-time-five",
+            body: `
+                        <div class="mb-3">
+                            <label class="form-label small font-weight-bold">Waiting On (Person / Organization)</label>
+                            <input type="text" class="form-control form-control-sm waiting-on-input" placeholder="e.g. Jane Doe / Acme Corp">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small font-weight-bold">Follow-Up Date</label>
+                            <input type="date" class="form-control form-control-sm follow-up-date-input" value="${dateStr}">
+                        </div>
+                    `,
+            confirmText: "Set Awaiting Details"
+          }, (modalEl) => {
+            const wOnInput = modalEl.querySelector(".waiting-on-input");
+            const fDateInput = modalEl.querySelector(".follow-up-date-input");
+            const wOn = wOnInput ? wOnInput.value.trim() : "";
+            const fDate = fDateInput ? fDateInput.value.trim() : "";
+            if (!wOn || !fDate) return false;
+            api.runOnBackend((noteId, waitingOn, followUpDate) => {
+              const n = api.getNote(noteId);
+              if (n) {
+                n.setLabel("waitingOn", waitingOn);
+                n.setLabel("followUpDate", followUpDate);
+              }
+            }, [current.noteId, wOn, fDate]).then(() => {
+              if (api.showMessage) api.showMessage("Set Awaiting Reply details.");
+            });
+            return true;
+          });
+        });
+        btn("Mark Project Complete", "bx-check-double", "btn-outline-success", "Mark project status complete and move to Archive Projects", () => {
+          openModal({
+            title: "Mark Project Complete",
+            icon: "bx-check-double",
+            body: `<p class="m-0">Are you sure you want to mark <strong>${context.hubTitle.replace(/</g, "&lt;")}</strong> as complete and archive it?</p>`,
+            confirmText: "Mark Complete & Archive",
+            confirmKind: "primary"
+          }, () => {
+            api.runOnBackend((hubId) => {
+              const hubNote = api.getNote(hubId);
+              const archiveRoot = api.getNoteWithLabel("archiveProjectRoot");
+              if (hubNote) {
+                hubNote.setLabel("status", "complete");
+                if (archiveRoot) api.ensureNoteIsPresentInParent(hubId, archiveRoot.noteId, "");
+              }
+            }, [context.hubId]).then(() => {
+              if (api.showMessage) api.showMessage(`Project "${context.hubTitle}" marked complete.`);
+            });
+            return true;
+          });
+        });
+        if (context.hubArea === "active") {
+          btn("Archive Project", "bx-archive-in", "btn-outline-warning", "Move project to Archive Projects root folder", () => {
+            openModal({
+              title: "Archive Project",
+              icon: "bx-archive-in",
+              body: `<p class="m-0">Move <strong>${context.hubTitle.replace(/</g, "&lt;")}</strong> to Archive Projects?</p>`,
+              confirmText: "Archive Project"
+            }, () => {
+              api.runOnBackend((hubId) => {
+                const hubNote = api.getNote(hubId);
+                const archiveRoot = api.getNoteWithLabel("archiveProjectRoot");
+                const activeRoot = api.getNoteWithLabel("activeProjectRoot");
+                if (hubNote && archiveRoot) {
+                  api.ensureNoteIsPresentInParent(hubId, archiveRoot.noteId, "");
+                  if (activeRoot) api.ensureNoteIsAbsentFromParent(hubId, activeRoot.noteId);
+                }
+              }, [context.hubId]).then(() => {
+                if (api.showMessage) api.showMessage(`Project archived.`);
+              });
+              return true;
+            });
+          });
+        } else {
+          btn("Reopen Project", "bx-archive-out", "btn-outline-info", "Reopen project and move back to Active Projects root folder", () => {
+            api.runOnBackend((hubId) => {
+              const hubNote = api.getNote(hubId);
+              const activeRoot = api.getNoteWithLabel("activeProjectRoot");
+              const archiveRoot = api.getNoteWithLabel("archiveProjectRoot");
+              if (hubNote && activeRoot) {
+                hubNote.setLabel("status", "active");
+                api.ensureNoteIsPresentInParent(hubId, activeRoot.noteId, "");
+                if (archiveRoot) api.ensureNoteIsAbsentFromParent(hubId, archiveRoot.noteId);
+              }
+            }, [context.hubId]).then(() => {
+              if (api.showMessage) api.showMessage(`Project reopened.`);
+            });
+          });
         }
+        container.prepend(bar);
+        container.prepend(nav);
       });
-      observer.observe(document.body, { childList: true, subtree: true });
-      setTimeout(() => observer.disconnect(), 1e4);
+    }
+    if (typeof window !== "undefined") {
+      setInterval(() => {
+        initReportingNoteActionBars();
+        initStoryDraftEditorUI();
+      }, 1500);
+    }
+    const launcherScript = `(() => {
+        const type = api.currentNote?.getOwnedLabelValue?.('extLauncherType');
+        if (type && window.__ikmalQuickCapture) window.__ikmalQuickCapture(type);
+        else if (api.showError) api.showError('Ikmal Tools launcher is not ready. Reload the frontend.');
+    })();`;
+    if (typeof api !== "undefined" && typeof api.runOnBackend === "function" && api.currentNote?.noteId) {
+      api.runOnBackend((launchers, scriptNoteId, scriptContent) => {
+        const reservedTitles = new Set(launchers.map((launcher) => launcher.label));
+        const stableIds = new Set(launchers.map((launcher) => `al_${launcher.id}`));
+        const staleIkmalTitles = /* @__PURE__ */ new Set([
+          "Ikmal Tools for Trilium: Live Editor Status Bar Word Count launcher",
+          "Ikmal Tools for Trilium: Header Launcher Bar & Hotkey launcher"
+        ]);
+        const roots = ["_lbVisibleLaunchers", "_lbAvailableLaunchers", "lbVisibleLaunchers", "lbAvailableLaunchers"];
+        const removeLegacyLaunchers = (note) => {
+          for (const child of note.getChildNotes()) {
+            if (child.type === "launcher" && !stableIds.has(child.noteId) && (reservedTitles.has(child.title) || staleIkmalTitles.has(child.title))) {
+              child.deleteNote();
+              continue;
+            }
+            removeLegacyLaunchers(child);
+          }
+        };
+        for (const rootId of roots) {
+          try {
+            removeLegacyLaunchers(api.getNote(rootId));
+          } catch (error) {
+          }
+        }
+        for (const launcher of launchers) {
+          let isVisible = true;
+          try {
+            const existingLauncher = api.getNote(`al_${launcher.id}`);
+            isVisible = existingLauncher.getParentBranches().some((branch) => branch.parentNoteId === "_lbVisibleLaunchers");
+          } catch (error) {
+          }
+          const result = api.createOrUpdateLauncher({
+            id: launcher.id,
+            title: launcher.label,
+            icon: launcher.icon,
+            keyboardShortcut: launcher.shortcut || "",
+            isVisible,
+            type: "script",
+            scriptNoteId,
+            targetNoteId: "root"
+          });
+          const note = result?.note;
+          if (!note) continue;
+          note.setRelation("script", scriptNoteId);
+          note.setLabel("extLauncherType", launcher.type);
+          note.setLabel("extLauncherLabel", launcher.label);
+          note.setContent(scriptContent);
+          note.setLabel("scriptInLauncherContent");
+          note.mime = "application/javascript;env=frontend";
+          note.setLabel("iconClass", `bx bx-${launcher.icon}`);
+          note.save();
+        }
+        try {
+          const root = api.getNote("_lbVisibleLaunchers");
+          if (root) {
+            const extensionIds = launchers.map((l) => `al_${l.id}`);
+            const extensionSet = new Set(extensionIds);
+            const branches = [];
+            for (const childId of root.getChildNoteIds()) {
+              const note = api.getNote(childId);
+              const branchId = (note.parentBranchIds || []).find(
+                (bId) => api.getBranch(bId)?.parentNoteId === "_lbVisibleLaunchers"
+              );
+              if (branchId) {
+                branches.push({ noteId: childId, branchId, pos: api.getBranch(branchId)?.notePosition || 0 });
+              }
+            }
+            const nativeMax = Math.max(0, ...branches.filter((b) => !extensionSet.has(b.noteId)).map((b) => b.pos));
+            extensionIds.forEach((launcherId, idx) => {
+              const target = branches.find((b) => b.noteId === launcherId);
+              if (target) {
+                api.setBranchPosition(target.branchId, nativeMax + (idx + 1) * 10);
+              }
+            });
+            api.refreshNoteOrdering("_lbVisibleLaunchers");
+          }
+        } catch (err) {
+        }
+      }, [LAUNCHER_ACTIONS, api.currentNote.noteId, launcherScript]);
     }
   })();
 })();

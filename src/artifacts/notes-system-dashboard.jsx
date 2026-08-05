@@ -84,7 +84,7 @@ export function initNotesSystemDashboard(containerEl) {
                         alert(`Preview only (no Trilium api present).\n\nFormatted Title: ${plan.formattedTitle}\nLabels: ${plan.labelsToCreate.map(l => '#' + l.name + '=' + l.value).join(', ')}\nAuto-Clone Target: ${cloneTarget}`);
                     }
                 });
-            }, settingsEngine);
+            }, settingsEngine, { api: typeof api !== 'undefined' ? api : null });
         } else if (activeTab === 'templates') {
             renderTemplateStudio(contentArea, templateEngine, ifThenRuleEngine, () => {
                 console.log('Templates & Automations updated!');

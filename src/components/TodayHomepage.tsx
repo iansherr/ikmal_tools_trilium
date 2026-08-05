@@ -31,11 +31,23 @@ interface KanbanTask {
     project: string;
 }
 
+interface ActiveProject {
+    id: string;
+    title: string;
+    kind: string;
+    status: string;
+    startDate: number;
+}
+
 /** Stands in for real tasks outside Trilium (this preview harness, tests). */
 const SAMPLE_TASKS: KanbanTask[] = [
     { id: 't1', title: 'Review quarterly goals & roadmap', priority: 'high', status: 'todo', project: 'Trilium Extension' },
     { id: 't2', title: 'Publish LanguageTool plugin update', priority: 'medium', status: 'in_progress', project: 'LanguageTool Plugin' },
     { id: 't3', title: 'Setup ETAPI automated test suite', priority: 'high', status: 'done', project: 'Trilium Extension' },
+];
+
+const SAMPLE_ACTIVE_PROJECTS: ActiveProject[] = [
+    { id: 'sample_project_1', title: 'Trilium Extension', kind: 'project', status: 'active', startDate: Date.now() },
 ];
 
 const KANBAN_COLUMNS = [
@@ -44,6 +56,25 @@ const KANBAN_COLUMNS = [
     { id: 'done', title: 'Completed' },
 ];
 
+/**
+ * Keep the Today capture bar aligned with the original Ikmal workspace
+ * actions. The template registry contains more implementation/editorial
+ * templates, but the daily page should expose the intentional creation
+ * shortcuts users can recognize at a glance.
+ */
+const TODAY_QUICK_CAPTURE_ACTIONS = [
+    { type: 'projectHub', label: 'New Project', icon: 'book', title: 'Create a new Project Hub' },
+    { type: 'scratch', label: 'New Scratch', icon: 'file-blank', title: 'Create a scratch note' },
+    { type: 'meeting', label: 'New Meeting', icon: 'calendar-event', title: 'Create a new Meeting' },
+    { type: 'task', label: 'New Task', icon: 'check-square', title: 'Create a new Task' },
+    { type: 'story', label: 'New Story', icon: 'news', title: 'Create a new Story draft' },
+    { type: 'edit', label: 'New Edit', icon: 'edit-alt', title: 'Create a new Edit round' },
+    { type: 'email', label: 'New Email', icon: 'envelope', title: 'Create a new Email draft' },
+    { type: 'person', label: 'New Person', icon: 'user', title: 'Create a new Person' },
+    { type: 'organization', label: 'New Org', icon: 'buildings', title: 'Create a new Organization' },
+    { type: 'topic', label: 'New Topic', icon: 'purchase-tag', title: 'Create a new Topic' },
+] as const;
+
 import { SettingsEngine } from '../engine/settingsEngine.js';
 
 export function renderTodayHomepage(
@@ -51,9 +82,18 @@ export function renderTodayHomepage(
     todayEngine: TodayEngine,
     templateEngine: TemplateEngine,
     onQuickCapture: (templateId: string) => void,
-    settingsEngine?: SettingsEngine
+    settingsEngine?: SettingsEngine,
+    options: TodayHomepageOptions = {}
 ): void {
     let mode: 'edit' | 'preview' = 'preview';
+
+    const showEditor = options.showEditor !== false;
+    const showJournalCard = options.showJournalCard === true;
+    const showOpenTasks = options.showOpenTasks !== false;
+
+    let journalContext: any = null;
+    let journalOpenPromise: Promise<void> | null = null;
+    let splitWidthTimers: number[] = [];
 
     // Cached so switching tabs or toggling a widget does not re-request the forecast.
     // Keyed by the location it was fetched for, so changing location invalidates it.
@@ -70,6 +110,9 @@ export function renderTodayHomepage(
     let taskCache: KanbanTask[] | null = null;
     let taskPending = false;
 
+    let activeProjectCache: ActiveProject[] | null = null;
+    let activeProjectPending = false;
+
     // Words written today, for the Writing Goal widget.
     let wordsTodayCache: number | null = null;
     let wordsTodayPending = false;
@@ -83,12 +126,14 @@ export function renderTodayHomepage(
             wrapper.classList.add('ns-compact');
         }
 
-        wrapper.appendChild(pageHeader({
-            icon: 'bx-home-alt',
-            title: 'Today Homepage',
-            subtitle: 'Daily dashboard with quick capture, live kanban, and a component grid.',
-            actions: [modeSwitcher()],
-        }));
+        if (options.showHeader !== false) {
+            wrapper.appendChild(pageHeader({
+                icon: 'bx-home-alt',
+                title: options.title || 'Today Homepage',
+                subtitle: options.subtitle || 'Daily dashboard with quick capture, live kanban, and a component grid.',
+                actions: showEditor ? [modeSwitcher()] : undefined,
+            }));
+        }
 
         if (mode === 'edit') {
             renderEditor(wrapper);
@@ -501,7 +546,8 @@ export function renderTodayHomepage(
     /** The Trilium frontend script API, when this is actually running inside Trilium. */
     function triliumApi(): any {
         const g = globalThis as any;
-        return g.api && typeof g.api.searchForNotes === 'function' ? g.api : null;
+        const runtimeApi = options.api || g.api;
+        return runtimeApi && typeof runtimeApi.searchForNotes === 'function' ? runtimeApi : null;
     }
 
     /**
@@ -612,6 +658,99 @@ export function renderTodayHomepage(
         return tasks;
     }
 
+    function noteLabel(note: any, name: string): string {
+        if (typeof note?.getLabelValue === 'function') return note.getLabelValue(name) || '';
+        if (typeof note?.getOwnedLabelValue === 'function') return note.getOwnedLabelValue(name) || '';
+        return '';
+    }
+
+    function noteMarker(note: any, name: string): string | null {
+        if (typeof note?.getOwnedLabelValue !== 'function') return null;
+        const value = note.getOwnedLabelValue(name);
+        return value === undefined || value === null ? null : value;
+    }
+
+    async function loadActiveProjects(): Promise<ActiveProject[]> {
+        const api = triliumApi();
+        if (!api) return SAMPLE_ACTIVE_PROJECTS;
+
+        const notes = new Map<string, any>();
+        // Keep the old saved-search contract first, then add marker fallbacks
+        // for older hubs that predate the current #kind/#status labels.
+        for (const query of [
+            '#kind AND #status = active AND #!projectArchive orderBy #startDate desc',
+            '#extProjectHub',
+            '#extTemplate',
+        ]) {
+            try {
+                for (const note of await api.searchForNotes(query)) {
+                    if (note?.noteId) notes.set(note.noteId, note);
+                }
+            } catch {
+                // One unsupported legacy query must not hide the other sources.
+            }
+        }
+
+        return [...notes.values()]
+            .filter((note) => {
+                const isProject = noteMarker(note, 'extProjectHub') !== null
+                    || noteMarker(note, 'extTemplate') === 'projectHub'
+                    || noteLabel(note, 'kind') === 'project';
+                return isProject
+                    && noteLabel(note, 'status') === 'active'
+                    && !noteLabel(note, 'projectArchive');
+            })
+            .map((note) => ({
+                id: note.noteId,
+                title: note.title,
+                kind: noteLabel(note, 'kind') || 'project',
+                status: noteLabel(note, 'status') || 'active',
+                startDate: parseTriliumTimestamp(noteLabel(note, 'startDate') || note.dateModified),
+            }))
+            .sort((a, b) => (Number.isFinite(b.startDate) ? b.startDate : 0)
+                - (Number.isFinite(a.startDate) ? a.startDate : 0));
+    }
+
+    function ensureActiveProjectsLoaded(card: HTMLElement): boolean {
+        if (activeProjectCache) return true;
+
+        card.appendChild(emptyState('Loading…'));
+        if (!activeProjectPending) {
+            activeProjectPending = true;
+            loadActiveProjects().then((projects) => {
+                activeProjectCache = projects;
+            }).finally(() => {
+                activeProjectPending = false;
+                if (mode === 'preview') refresh();
+            });
+        }
+        return false;
+    }
+
+    function renderActiveProjects(card: HTMLElement) {
+        if (!ensureActiveProjectsLoaded(card)) return;
+        const api = triliumApi();
+        if (!activeProjectCache!.length) {
+            card.appendChild(emptyState('No active projects.'));
+            return;
+        }
+        for (const project of activeProjectCache!.slice(0, 8)) {
+            const actions = api?.openTabWithNote
+                ? [iconAction({
+                    icon: 'bx-right-arrow-alt',
+                    title: `Open ${project.title}`,
+                    onClick: () => api.openTabWithNote(project.id, true),
+                })]
+                : undefined;
+            card.appendChild(listItem({
+                icon: 'bx-book',
+                title: project.title,
+                description: `${project.kind} · ${project.status}`,
+                actions,
+            }));
+        }
+    }
+
     /** Renders a loading placeholder and kicks off the fetch if needed; returns whether the cache is ready to read. */
     function ensureTasksLoaded(card: HTMLElement): boolean {
         if (taskCache) return true;
@@ -690,6 +829,16 @@ export function renderTodayHomepage(
             card.appendChild(listItem({
                 title: entry.title,
                 description: `${entry.yearsAgo} year${entry.yearsAgo === 1 ? '' : 's'} ago today`,
+                actions: [
+                    iconAction({
+                        icon: 'bx-show',
+                        title: 'Open Note',
+                        onClick: () => {
+                            const api = (globalThis as any).api;
+                            if (api?.activateNote) api.activateNote(entry.noteId);
+                        },
+                    }),
+                ],
             }));
         }
     }
@@ -707,6 +856,29 @@ export function renderTodayHomepage(
             card.appendChild(listItem({
                 title: entry.title,
                 description: `Untouched for ${entry.daysSinceModified} days`,
+                actions: [
+                    iconAction({
+                        icon: 'bx-show',
+                        title: 'Open Note',
+                        onClick: () => {
+                            const api = (globalThis as any).api;
+                            if (api?.activateNote) api.activateNote(entry.noteId);
+                        },
+                    }),
+                    iconAction({
+                        icon: 'bx-check-double',
+                        title: 'Mark Touched',
+                        onClick: () => {
+                            const api = (globalThis as any).api;
+                            if (api?.runOnBackend) {
+                                api.runOnBackend((id: string) => {
+                                    const n = (api as any).getNote(id);
+                                    if (n) n.touch?.();
+                                }, [entry.noteId]);
+                            }
+                        },
+                    }),
+                ],
             }));
         }
     }
@@ -826,11 +998,34 @@ export function renderTodayHomepage(
     function renderDashboard(parent: HTMLElement) {
         const layout = todayEngine.getLayout();
 
+        if (showJournalCard) {
+            renderJournalCard(parent);
+        }
+
         if (layout.showQuickCaptureBar) {
             renderQuickCapture(parent);
         }
 
-        const widgets = todayEngine.getVisibleWidgets();
+        const filterRow = document.createElement('div');
+        filterRow.className = 'ns-filter-row mb-3';
+        filterRow.innerHTML = `
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-transparent border-end-0"><i class="bx bx-search text-muted"></i></span>
+                <input type="text" class="form-control form-control-sm border-start-0 today-dashboard-filter" placeholder="Filter tasks, projects, and notes on today's homepage…">
+            </div>
+        `;
+        filterRow.querySelector('input')?.addEventListener('input', (e) => {
+            const query = (e.target as HTMLInputElement).value.toLowerCase().trim();
+            const items = parent.querySelectorAll('.ns-kanban-card, .ns-list-item, .ns-row, tr');
+            items.forEach((item) => {
+                const text = item.textContent?.toLowerCase() || '';
+                (item as HTMLElement).style.display = !query || text.includes(query) ? '' : 'none';
+            });
+        });
+        parent.appendChild(filterRow);
+
+        const widgets = todayEngine.getVisibleWidgets()
+            .filter((widget) => showOpenTasks || widget.id !== 'openTasks');
         if (!widgets.length) {
             const { card } = section(parent, { title: 'Dashboard' });
             card.appendChild(emptyState('No widgets are shown. Switch to Edit to turn some on.'));
@@ -857,6 +1052,8 @@ export function renderTodayHomepage(
 
             if (widget.id === 'openTasks') {
                 renderKanban(card);
+            } else if (widget.id === 'activeProjects') {
+                renderActiveProjects(card);
             } else if (widget.id === 'weather') {
                 renderWeatherWidget(card);
             } else if (widget.id === 'activityHeatmap') {
@@ -877,19 +1074,143 @@ export function renderTodayHomepage(
         parent.appendChild(grid);
     }
 
-    function renderQuickCapture(parent: HTMLElement) {
-        const templates = templateEngine.getAllTemplates().filter((t) => !t.noJournalClone).slice(0, 4);
-        if (!templates.length) return;
+    function renderJournalCard(parent: HTMLElement) {
+        const { section: journalSection, card } = section(parent);
+        journalSection.classList.add('ns-journal-section');
+        card.classList.add('ns-journal-card');
 
+        const api = triliumApi();
+        if (!api?.getTodayNote) {
+            card.appendChild(emptyState('Open this page inside Trilium to access today’s journal.'));
+            return;
+        }
+
+        const loading = emptyState('Loading today’s journal…');
+        card.appendChild(loading);
+        api.getTodayNote().then((note: any) => {
+            loading.remove();
+            const entry = document.createElement('div');
+            entry.className = 'ns-journal-entry';
+            const title = document.createElement('div');
+            title.className = 'ns-journal-date';
+            title.textContent = note?.title || 'Today’s journal';
+            const hint = document.createElement('div');
+            hint.className = 'ns-meta';
+            hint.textContent = 'Keep this page pinned; the button opens the editable day note in a split.';
+            const open = button({
+                text: 'Open Today’s Journal',
+                icon: 'bx-edit-alt',
+                onClick: () => openJournalNote(api, note.noteId),
+            });
+            open.classList.add('ns-journal-open');
+            entry.append(title, hint, open);
+            card.appendChild(entry);
+        }).catch((error: Error) => {
+            loading.textContent = `Today’s journal is unavailable: ${error.message}`;
+        });
+    }
+
+    function contextNoteId(context: any): string | null {
+        return context?.note?.noteId || context?.noteId || null;
+    }
+
+    function isDailyContext(context: any): boolean {
+        const note = context?.note;
+        return Boolean(note?.hasLabel?.('dateNote')
+            || note?.getLabelValue?.('dateNote')
+            || note?.getOwnedLabelValue?.('dateNote'));
+    }
+
+    function splitPair(): { todaySplit: HTMLElement; journalSplit: HTMLElement; parent: HTMLElement } | null {
+        const todaySplit = container.closest('.note-split') as HTMLElement | null;
+        const journalNtxId = journalContext?.ntxId;
+        if (!todaySplit || !journalNtxId || !todaySplit.parentElement) return null;
+
+        const parent = todaySplit.parentElement;
+        const journalSplit = [...parent.children].find((element) =>
+            element instanceof HTMLElement
+            && element.classList.contains('note-split')
+            && element.getAttribute('data-ntx-id') === journalNtxId,
+        ) as HTMLElement | undefined;
+        return journalSplit ? { todaySplit, journalSplit, parent } : null;
+    }
+
+    function applyJournalWidth(): boolean {
+        const pair = splitPair();
+        if (!pair) return false;
+
+        const width = Math.min(85, Math.max(35, Math.round(todayEngine.getLayout().journalWidthPercent)));
+        pair.todaySplit.style.width = `${100 - width}%`;
+        pair.journalSplit.style.width = `${width}%`;
+        return true;
+    }
+
+    function scheduleJournalWidth(api?: any, noteId?: string) {
+        for (const timer of splitWidthTimers) window.clearTimeout(timer);
+        splitWidthTimers = [];
+        const apply = () => {
+            if (api && noteId) {
+                const context = findExactJournalContext(api, noteId);
+                if (context) journalContext = context;
+            }
+            applyJournalWidth();
+        };
+        window.requestAnimationFrame(() => {
+            apply();
+            for (const delay of [50, 150, 350, 750, 1500]) {
+                splitWidthTimers.push(window.setTimeout(apply, delay));
+            }
+        });
+    }
+
+    function findExactJournalContext(api: any, noteId: string): any {
+        const contexts = typeof api.getNoteContexts === 'function' ? api.getNoteContexts() : [];
+        return contexts.find((context: any) => contextNoteId(context) === noteId);
+    }
+
+    async function openJournalNote(api: any, noteId: string): Promise<void> {
+        if (!api?.openSplitWithNote) return;
+        if (journalOpenPromise) return journalOpenPromise;
+
+        journalOpenPromise = (async () => {
+            let context = findExactJournalContext(api, noteId);
+            if (!context && journalContext && typeof journalContext.setNote === 'function') {
+                context = await journalContext.setNote(noteId);
+            }
+            if (!context) {
+                const contexts = typeof api.getNoteContexts === 'function' ? api.getNoteContexts() : [];
+                const existingDailyContext = contexts.find((candidate: any) => isDailyContext(candidate));
+                if (existingDailyContext && typeof existingDailyContext.setNote === 'function') {
+                    context = await existingDailyContext.setNote(noteId);
+                }
+            }
+
+            if (!context) {
+                await api.openSplitWithNote(noteId, true);
+                context = findExactJournalContext(api, noteId);
+            }
+
+            if (context) journalContext = context;
+            scheduleJournalWidth(api, noteId);
+        })().finally(() => {
+            journalOpenPromise = null;
+        });
+
+        await journalOpenPromise;
+    }
+
+    function renderQuickCapture(parent: HTMLElement) {
         const { card } = section(parent, { title: 'Quick capture' });
 
         const actions = document.createElement('div');
         actions.className = 'ns-actions';
-        for (const tpl of templates) {
+        for (const action of TODAY_QUICK_CAPTURE_ACTIONS) {
             actions.appendChild(button({
-                text: tpl.title,
-                icon: `bx-${tpl.icon}`,
-                onClick: () => onQuickCapture(tpl.id),
+                text: action.label,
+                icon: `bx-${action.icon}`,
+                className: 'ns-quick-capture-action',
+                title: action.title,
+                onClick: () => onQuickCapture(action.type),
             }));
         }
         card.appendChild(actions);
@@ -938,4 +1259,19 @@ export function renderTodayHomepage(
     }
 
     refresh();
+}
+
+export interface TodayHomepageOptions {
+    /** The Trilium script API is scoped to the render invocation, not window.api. */
+    api?: any;
+    /** Let Trilium's ordinary note title bar provide the page title. */
+    showHeader?: boolean;
+    /** Hide the layout editor controls when this is presented as the visible Today page. */
+    showEditor?: boolean;
+    /** Add the current-day journal entry point above the dashboard widgets. */
+    showJournalCard?: boolean;
+    /** Keep the editable workspace dashboard's task board out of the focused Today page. */
+    showOpenTasks?: boolean;
+    title?: string;
+    subtitle?: string;
 }

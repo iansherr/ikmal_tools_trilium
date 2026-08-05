@@ -67,35 +67,52 @@ export interface SectionOptions {
     description?: string;
     /** Controls rendered beside the title, outside the card. */
     actions?: HTMLElement[];
+    /** Allows section card to be collapsed/expanded. */
+    collapsible?: boolean;
 }
 
 /**
  * A titled settings section. Returns the card so callers can append rows to it;
  * the section itself is already attached to `parent`.
  */
-export function section(parent: HTMLElement, { title, description, actions }: SectionOptions = {}): {
+export function section(parent: HTMLElement, { title, description, actions, collapsible }: SectionOptions = {}): {
     section: HTMLElement;
     card: HTMLElement;
 } {
     const sectionEl = document.createElement('div');
     sectionEl.className = 'ns-section';
 
-    if (title || actions?.length) {
-        const header = document.createElement('div');
-        header.className = 'ns-section-header';
-        header.innerHTML = `<h4 class="ns-section-title">${escapeHtml(title ?? '')}</h4>`;
-
-        if (actions?.length) {
-            const actionsEl = document.createElement('div');
-            actionsEl.className = 'ns-actions';
-            actions.forEach((a) => actionsEl.appendChild(a));
-            header.appendChild(actionsEl);
-        }
-        sectionEl.appendChild(header);
-    }
-
     const card = document.createElement('div');
     card.className = 'ns-section-card';
+
+    if (title || actions?.length || collapsible) {
+        const header = document.createElement('div');
+        header.className = 'ns-section-header d-flex justify-content-between align-items-center';
+        header.innerHTML = `<h4 class="ns-section-title m-0">${escapeHtml(title ?? '')}</h4>`;
+
+        const headerRight = document.createElement('div');
+        headerRight.className = 'ns-actions d-flex align-items-center gap-2';
+
+        if (actions?.length) {
+            actions.forEach((a) => headerRight.appendChild(a));
+        }
+
+        if (collapsible) {
+            const toggleBtn = iconAction({
+                icon: 'bx-chevron-up',
+                title: 'Collapse section',
+                onClick: () => {
+                    const isHidden = card.hidden;
+                    card.hidden = !isHidden;
+                    toggleBtn.querySelector('span')?.setAttribute('class', `bx ${card.hidden ? 'bx-chevron-down' : 'bx-chevron-up'}`);
+                },
+            });
+            headerRight.appendChild(toggleBtn);
+        }
+
+        header.appendChild(headerRight);
+        sectionEl.appendChild(header);
+    }
 
     if (description) {
         const p = document.createElement('p');
@@ -352,6 +369,7 @@ export interface ComboboxOption {
     value: string;
     label: string;
     description?: string;
+    icon?: string;
 }
 
 export interface ComboboxHandle<T extends string | string[] = string | string[]> {
@@ -359,6 +377,7 @@ export interface ComboboxHandle<T extends string | string[] = string | string[]>
     el: HTMLElement;
     getValue: () => T;
     setValue: (value: T) => void;
+    setOptions?: (options: ComboboxOption[]) => void;
 }
 
 /**
@@ -542,7 +561,8 @@ export function searchableSelect({
                 const isSelected = isMulti ? selectedValues.includes(option.value) : selectedValue === option.value;
                 item.className = `ns-combobox-option${isSelected ? ' is-selected' : ''}`;
                 item.setAttribute('role', 'option');
-                item.innerHTML = `<span>${escapeHtml(option.label)}${isSelected ? ' <i class="bx bx-check text-success"></i>' : ''}</span>${option.description ? `<span class="ns-meta">${escapeHtml(option.description)}</span>` : ''}`;
+                const iconHtml = option.icon ? `<i class="bx ${escapeHtml(option.icon)} text-primary me-1"></i>` : '';
+                item.innerHTML = `<span>${iconHtml}${escapeHtml(option.label)}${isSelected ? ' <i class="bx bx-check text-success ms-1"></i>' : ''}</span>${option.description ? `<span class="ns-meta">${escapeHtml(option.description)}</span>` : ''}`;
                 // mousedown fires before the input's blur handler, so the click
                 // registers before closePanel() would otherwise swallow it.
                 item.addEventListener('mousedown', (e) => {
@@ -615,5 +635,73 @@ export function searchableSelect({
                 input.value = labelFor(selectedValue);
             }
         },
+        setOptions: (newOptions: ComboboxOption[]) => {
+            options = [...newOptions];
+            if (!isMulti) input.value = labelFor(selectedValue);
+        },
     };
+}
+
+export interface ToastOptions {
+    message: string;
+    type?: 'success' | 'info' | 'warning' | 'danger';
+    durationMs?: number;
+    undoAction?: () => void;
+}
+
+export function showToast(opts: ToastOptions | string, typeArg?: 'success' | 'info' | 'warning' | 'danger', durationArg?: number): void {
+    if (typeof document === 'undefined') return;
+    const message = typeof opts === 'string' ? opts : opts.message;
+    const type = typeof opts === 'string' ? (typeArg || 'success') : (opts.type || 'success');
+    const durationMs = typeof opts === 'string' ? (durationArg ?? 3500) : (opts.durationMs ?? 3500);
+    const undoAction = typeof opts === 'string' ? undefined : opts.undoAction;
+
+    let container = document.querySelector('.ns-toast-container') as HTMLElement;
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'ns-toast-container';
+        container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1060; display: flex; flex-direction: column; gap: 8px; max-width: 360px; pointer-events: none;';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const bgClass = type === 'success' ? 'bg-success' : type === 'warning' ? 'bg-warning text-dark' : type === 'danger' ? 'bg-danger' : 'bg-primary';
+    const icon = type === 'success' ? 'bx-check-circle' : type === 'warning' ? 'bx-error' : type === 'danger' ? 'bx-x-circle' : 'bx-info-circle';
+
+    toast.className = `toast show align-items-center text-white ${bgClass} border-0 shadow-lg`;
+    toast.style.cssText = 'pointer-events: auto; transition: all 0.3s ease; opacity: 1; transform: translateY(0);';
+    toast.innerHTML = `
+        <div class="d-flex p-2.5">
+            <div class="toast-body d-flex align-items-center gap-2 small">
+                <i class="bx ${icon} fs-6"></i>
+                <span>${escapeHtml(message)}</span>
+                ${undoAction ? `<button type="button" class="btn btn-micro btn-light text-dark ms-2 undo-btn">Undo</button>` : ''}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto close-toast-btn" aria-label="Close"></button>
+        </div>
+    `;
+
+    if (undoAction) {
+        toast.querySelector('.undo-btn')?.addEventListener('click', () => {
+            undoAction();
+            removeToast();
+        });
+    }
+
+    const removeToast = () => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+    };
+
+    toast.querySelector('.close-toast-btn')?.addEventListener('click', removeToast);
+    container.appendChild(toast);
+
+    if (durationMs > 0) {
+        setTimeout(removeToast, durationMs);
+    }
+}
+
+if (typeof window !== 'undefined') {
+    (window as any).__ikmalToast = showToast;
 }

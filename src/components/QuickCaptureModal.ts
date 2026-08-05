@@ -16,6 +16,35 @@ interface TriliumFNote {
     title: string;
 }
 
+function formatOptionLabel(attrName: string, opt: string): string {
+    const map: Record<string, string> = {
+        todo: '📝 To Do',
+        in_progress: '⏳ In Progress',
+        done: '✅ Done',
+        cancelled: '🚫 Cancelled',
+        drafting: '✏️ Drafting',
+        editing: '✂️ Editing',
+        review: '👀 In Review',
+        published: '🚀 Published',
+        approved: '✅ Approved',
+        returned: '🔄 Returned',
+        active: '🟢 Active',
+        archived: '📦 Archived',
+        on_hold: '⏸️ On Hold',
+        awaiting: '⏳ Awaiting Reply',
+        high: '🔴 High Priority',
+        medium: '🟡 Medium Priority',
+        low: '🟢 Low Priority',
+        simple: '⚡ Simple Task',
+        multi: '🧩 Multi-step Task',
+        project: '📘 Story Project',
+        edit: '✏️ Edit Package',
+        client: '🏢 Client Hub',
+        internal: '⚙️ Internal Hub',
+    };
+    return map[opt] || opt.charAt(0).toUpperCase() + opt.slice(1).replace(/_/g, ' ');
+}
+
 function triliumApi(): { searchForNotes(q: string): Promise<TriliumFNote[]>; showMessage?(msg: string): void } | null {
     const a = (globalThis as any).api;
     return a && typeof a.searchForNotes === 'function' ? a : null;
@@ -31,7 +60,8 @@ export async function showQuickCaptureModal(
     templateId: string,
     templateEngine: TemplateEngine,
     noteCreationEngine: NoteCreationEngine,
-    onCreated?: (outcome: QuickCaptureOutcome) => void
+    onCreated?: (outcome: QuickCaptureOutcome) => void,
+    initialRelations?: Record<string, string | string[]>
 ): Promise<void> {
     const isStoryOrEdit = templateId === 'story' || templateId === 'edit';
     const activeTplId = isStoryOrEdit ? 'story' : templateId;
@@ -48,6 +78,7 @@ export async function showQuickCaptureModal(
         edit: 'Starts a Quick Edit Package. Creates an Edit Project Hub (#kind=edit) and a Story Draft (#status=editing, #workflow=edit) for fast copy editing/proofreading, skipping extra reporting notes. Auto-cloned to today\'s Journal.',
         dailyNote: 'Creates today\'s daily journal note.',
         projectHub: 'Creates a new Project Hub root folder to organize tasks, stories, and meetings.',
+        scratch: 'Creates a quick scratchpad note. Choose an Active Project Hub to organize it under a project, or keep it in Unassigned for later.',
     };
 
     const description = descriptions[templateId] || `Creates a new ${template.title} note.`;
@@ -62,7 +93,18 @@ export async function showQuickCaptureModal(
     for (const rel of template.relationships) {
         if (!api) { relationCandidates.set(rel.relationName, []); continue; }
         const targetTpl = templateEngine.getTemplate(rel.targetTemplateId);
-        const notes = targetTpl ? await api.searchForNotes(`#${targetTpl.marker}`) : [];
+        let notes: TriliumFNote[] = [];
+        if (targetTpl) {
+            notes = await api.searchForNotes(`#${targetTpl.marker}`);
+            if (targetTpl.id === 'projectHub') {
+                const legacyHubs = await api.searchForNotes('#extTemplate=projectHub');
+                for (const h of legacyHubs) {
+                    if (!notes.some((existing) => existing.noteId === h.noteId)) {
+                        notes.push(h);
+                    }
+                }
+            }
+        }
         relationCandidates.set(rel.relationName, notes);
     }
 
@@ -87,9 +129,28 @@ export async function showQuickCaptureModal(
                     <button type="button" class="btn-close close-btn" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center gap-1.5 flex-wrap pb-2 border-bottom template-switcher-bar">
+                        <span class="tiny text-muted font-weight-bold me-1"><i class="bx bx-category"></i> Switch Template:</span>
+                        ${[
+                            { id: 'task', label: 'Task', icon: 'check-square' },
+                            { id: 'story', label: 'Story Project', icon: 'news' },
+                            { id: 'edit', label: 'Edit Package', icon: 'edit' },
+                            { id: 'meeting', label: 'Meeting', icon: 'calendar-event' },
+                            { id: 'person', label: 'Person', icon: 'user' },
+                            { id: 'organization', label: 'Organization', icon: 'buildings' },
+                            { id: 'projectHub', label: 'Project Hub', icon: 'book' },
+                            { id: 'scratch', label: 'Scratch', icon: 'file-blank' },
+                            { id: 'topic', label: 'Topic', icon: 'purchase-tag' },
+                        ].map(t => `
+                            <button type="button" class="btn btn-micro ${t.id === templateId ? 'btn-primary' : 'btn-outline-secondary'} tpl-switch-btn" data-tpl="${t.id}" style="border-radius: 12px;">
+                                <i class="bx bx-${t.icon}"></i> ${t.label}
+                            </button>
+                        `).join('')}
+                    </div>
+
                     <div class="p-3 rounded border" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.2)) !important;">
                         <div class="small font-weight-bold text-info d-flex align-items-center gap-1.5 mb-1">
-                            <i class="bx bx-info-circle"></i> Original System Contract: ${modalTitle}
+                            <i class="bx bx-info-circle"></i> Quick Capture: ${modalTitle}
                         </div>
                         <p class="small text-muted m-0">${description}</p>
                     </div>
@@ -105,18 +166,31 @@ export async function showQuickCaptureModal(
                                 <i class="bx bx-slider-alt text-success"></i> Promoted Form Attributes
                             </label>
                             <div class="row g-2 attr-form">
-                                ${template.attributes.map(a => `
+                                ${template.attributes.map(a => {
+                                    const opts = a.options || (
+                                        a.name === 'priority' ? ['medium', 'high', 'low'] :
+                                        a.name === 'complexity' ? ['simple', 'multi'] :
+                                        a.name === 'kind' ? ['project', 'edit', 'client', 'internal'] :
+                                        a.name === 'status' ? (
+                                            templateId === 'story' ? ['drafting', 'review', 'published'] :
+                                            templateId === 'edit' ? ['editing', 'approved', 'returned'] :
+                                            templateId === 'projectHub' ? ['active', 'on_hold', 'complete', 'archived'] :
+                                            ['todo', 'in_progress', 'done', 'cancelled']
+                                        ) : undefined
+                                    );
+                                    return `
                                     <div class="col-md-6">
                                         <label class="form-label tiny text-muted font-weight-bold">#${a.name}</label>
-                                        ${a.options ? `
+                                        ${opts ? `
                                             <select class="form-select form-select-sm attr-input" data-attr="${a.name}">
-                                                ${a.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                                ${opts.map(opt => `<option value="${opt}" ${opt === a.defaultValue ? 'selected' : ''}>${escapeHtml(formatOptionLabel(a.name, opt))}</option>`).join('')}
                                             </select>
                                         ` : `
                                             <input type="text" class="form-control form-control-sm attr-input" data-attr="${a.name}" value="${a.defaultValue ?? ''}" placeholder="Value...">
                                         `}
                                     </div>
-                                `).join('')}
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
                     ` : ''}
@@ -132,11 +206,16 @@ export async function showQuickCaptureModal(
                     <!-- Error state -->
                     <div class="create-error alert alert-danger d-none m-0"></div>
                 </div>
-                <div class="modal-footer border-top p-3 d-flex justify-content-between">
-                    <button type="button" class="btn btn-sm btn-outline-secondary close-btn">Cancel</button>
-                    <button type="button" class="btn btn-sm btn-primary create-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-plus"></i> Create ${modalTitle}
-                    </button>
+                <div class="modal-footer border-top p-3 d-flex justify-content-between align-items-center">
+                    <span class="destination-badge text-muted tiny font-weight-bold d-flex align-items-center gap-1" style="opacity: 0.85;">
+                        <i class="bx bx-map-pin text-primary"></i> <span class="dest-label">Landing: ${escapeHtml(template.title)} Container</span>
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary close-btn">Cancel</button>
+                        <button type="button" class="btn btn-sm btn-primary create-btn d-flex align-items-center gap-1" title="Cmd/Ctrl+Enter to create">
+                            <i class="bx bx-plus"></i> Create ${modalTitle}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -145,9 +224,40 @@ export async function showQuickCaptureModal(
     const closeButtons = modal.querySelectorAll('.close-btn');
     closeButtons.forEach(btn => btn.addEventListener('click', closeModal));
 
+    const tplSwitchButtons = modal.querySelectorAll('.tpl-switch-btn');
+    tplSwitchButtons.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            const targetTpl = (e.currentTarget as HTMLElement).dataset.tpl;
+            if (targetTpl && targetTpl !== templateId) {
+                closeModal();
+                showQuickCaptureModal(targetTpl, templateEngine, noteCreationEngine, onCreated, initialRelations);
+            }
+        });
+    });
+
     function closeModal() {
         if (modal.parentNode) modal.parentNode.removeChild(modal);
         if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+    }
+
+    const destLabel = modal.querySelector('.dest-label') as HTMLElement;
+    function updateDestinationBadge() {
+        if (!destLabel) return;
+        const projectPicker = relPickers.get('project');
+        const selectedProjectVal = projectPicker ? projectPicker.getValue() : null;
+        if (isStoryOrEdit && !selectedProjectVal) {
+            destLabel.textContent = 'Destination: Projects / Active';
+        } else if (selectedProjectVal) {
+            const projCandidates = relationCandidates.get('project') || [];
+            const match = projCandidates.find((c) => c.noteId === selectedProjectVal);
+            destLabel.textContent = `Destination: Under ${match?.title || 'Selected Project'}`;
+        } else if (templateId === 'task') {
+            destLabel.textContent = 'Destination: Tasks / Unassigned (+ Journal Clone)';
+        } else if (templateId === 'scratch') {
+            destLabel.textContent = 'Destination: Projects / Unassigned';
+        } else {
+            destLabel.textContent = `Destination: ${template?.title || modalTitle} Folder`;
+        }
     }
 
     // Relation pickers are real controls, not markup, so they carry their own
@@ -161,22 +271,94 @@ export async function showQuickCaptureModal(
         const labelText = rel.isMulti
             ? `~${escapeHtml(rel.relationName)} (multi) &rarr; ${escapeHtml(rel.targetTemplateName)}`
             : `~${escapeHtml(rel.relationName)} &rarr; ${escapeHtml(rel.targetTemplateName)}`;
-        field.innerHTML = `<label class="form-label tiny text-muted font-weight-bold">${labelText}</label>`;
+
+        const headerRow = document.createElement('div');
+        headerRow.className = 'd-flex justify-content-between align-items-center mb-1';
+        headerRow.innerHTML = `<label class="form-label tiny text-muted font-weight-bold m-0">${labelText}</label>`;
+
+        const targetTplId = rel.targetTemplateId;
+        if (['organization', 'person', 'client', 'companyOnBehalf', 'employer'].includes(rel.relationName) || ['organization', 'person'].includes(targetTplId)) {
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'btn btn-link btn-sm p-0 tiny text-decoration-none text-primary';
+            addBtn.innerHTML = `<i class="bx bx-plus-circle"></i> New ${escapeHtml(rel.targetTemplateName)}`;
+            addBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const newTitle = (globalThis as any).prompt ? (globalThis as any).prompt(`Enter title for new ${rel.targetTemplateName}:`) : null;
+                if (!newTitle || !newTitle.trim()) return;
+                const entType = targetTplId === 'person' ? 'person' : 'organization';
+                const plan = noteCreationEngine.planNoteCreation({
+                    type: entType,
+                    title: newTitle.trim(),
+                });
+                try {
+                    const res = api ? await materializeNoteCreation(plan) : undefined;
+                    const createdId = res ? res.noteId : `preview_${Date.now()}`;
+                    candidates.push({ noteId: createdId, title: newTitle.trim() });
+                    picker.setOptions?.(candidates.map((n) => ({ value: n.noteId, label: n.title })));
+                    picker.setValue(rel.isMulti ? [...(Array.isArray(picker.getValue()) ? picker.getValue() : []), createdId] : createdId);
+                    updateDestinationBadge();
+                } catch (err: any) {
+                    if ((globalThis as any).alert) (globalThis as any).alert(`Could not create ${rel.targetTemplateName}: ${err.message}`);
+                }
+            });
+            headerRow.appendChild(addBtn);
+        }
+        field.appendChild(headerRow);
+
+        // Add Quick Chips for top candidate active projects
+        if (rel.relationName === 'project' && candidates.length > 0) {
+            const chipsRow = document.createElement('div');
+            chipsRow.className = 'd-flex align-items-center gap-1 mb-1.5 flex-wrap project-quick-chips';
+            chipsRow.innerHTML = `<span class="tiny text-muted me-1">Quick pick:</span>`;
+            candidates.slice(0, 4).forEach((c) => {
+                const chipBtn = document.createElement('button');
+                chipBtn.type = 'button';
+                chipBtn.className = 'btn btn-micro btn-outline-secondary';
+                chipBtn.style.borderRadius = '10px';
+                chipBtn.innerHTML = `<i class="bx bx-book"></i> ${escapeHtml(c.title)}`;
+                chipBtn.addEventListener('click', () => {
+                    picker.setValue(c.noteId);
+                    updateDestinationBadge();
+                });
+                chipsRow.appendChild(chipBtn);
+            });
+            field.appendChild(chipsRow);
+        }
+
+        const initialVal = initialRelations && initialRelations[rel.relationName]
+            ? initialRelations[rel.relationName]
+            : (rel.isMulti ? [] : '');
+
+        const targetTpl = templateEngine.getTemplate(rel.targetTemplateId);
+        const iconClass = targetTpl?.icon ? `bx-${targetTpl.icon}` : 'bx-file';
+
         const picker = searchableSelect({
             id: `rel-${rel.relationName}`,
-            value: rel.isMulti ? [] : '',
+            value: initialVal,
             isMulti: rel.isMulti,
             placeholder: candidates.length ? `Search ${rel.targetTemplateName}…` : `No existing ${rel.targetTemplateName} notes found`,
-            options: candidates.map((n) => ({ value: n.noteId, label: n.title })),
+            options: candidates.map((n) => ({ value: n.noteId, label: n.title, icon: iconClass })),
         });
         field.appendChild(picker.el);
         relForm?.appendChild(field);
         relPickers.set(rel.relationName, picker);
     }
 
+    updateDestinationBadge();
+
     const titleInput = modal.querySelector('.title-input') as HTMLInputElement;
     const createBtn = modal.querySelector('.create-btn') as HTMLButtonElement;
     const errorBox = modal.querySelector('.create-error') as HTMLElement;
+
+    setTimeout(() => titleInput?.focus(), 50);
+
+    modal.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            createBtn.click();
+        }
+    });
 
     createBtn.addEventListener('click', async () => {
         const rawTitle = titleInput.value.trim() || `Untitled ${modalTitle}`;

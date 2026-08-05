@@ -1,0 +1,30 @@
+{
+  "id": "iansherr/ikmal_shortcuts_trilium",
+  "version": "0.1.0",
+  "name": "Ikmal Shortcuts & Quick Capture",
+  "description": "Global keyboard hotkeys (Alt+T/S/M, Cmd+Shift+K), searchable hotkey cheatsheet, and quick capture command palette.",
+  "author": "Ian Sherr",
+  "maintainer": "Ian Sherr",
+  "repository": "https://github.com/iansherr/ikmal_tools_trilium",
+  "homepage": "https://github.com/iansherr/ikmal_tools_trilium",
+  "license": "MIT",
+  "maintenance": "active",
+  "securityStatus": "reviewed",
+  "compatibility": {
+    "minTriliumVersion": "0.104.0"
+  },
+  "permissions": [
+    "read-notes",
+    "write-notes"
+  ],
+  "artifacts": [
+    {
+      "id": "ikmal-shortcuts-launcher",
+      "type": "frontend",
+      "source": "dist/artifacts/notes-system-launcher.js",
+      "integrity": "sha256-yWf7Go+IiIxcGx11PfDq6uov3p7COFANnM1VN9e1Z6g=",
+      "title": "Ikmal Shortcuts & Quick Capture",
+      "activation": "startup"
+    }
+  ]
+}

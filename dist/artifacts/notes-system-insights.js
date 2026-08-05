@@ -320,8 +320,10 @@
       defaultContent: "<h2>CONTACT INFO</h2><p></p><h2>NOTES</h2><p></p>",
       isBuiltin: true,
       attributes: [
+        { name: "jobTitle", type: "label", dataType: "string", isPromoted: true, label: "Job Focus" },
         { name: "email", type: "label", dataType: "string", isPromoted: true, label: "Email" },
         { name: "phone", type: "label", dataType: "string", isPromoted: true, label: "Phone" },
+        { name: "employer", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Employer", inverseRelationName: "staff" },
         { name: "organization", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Organization" }
       ],
       relationships: [
@@ -335,6 +337,18 @@
           autoCloneToParent: true,
           inheritTopics: true,
           direction: "parent"
+        },
+        {
+          id: "rel_person_employer",
+          name: "Employer",
+          relationName: "employer",
+          targetTemplateId: "organization",
+          targetTemplateName: "Organization",
+          isMulti: true,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent",
+          inverseRelationName: "staff"
         }
       ]
     },
@@ -349,7 +363,10 @@
       defaultContent: "<h2>ABOUT</h2><p></p><h2>KEY CONTACTS</h2><ul><li></li></ul>",
       isBuiltin: true,
       attributes: [
-        { name: "website", type: "label", dataType: "string", isPromoted: true, label: "Website" }
+        { name: "location", type: "label", dataType: "string", isPromoted: true, label: "Location" },
+        { name: "ticker", type: "label", dataType: "string", isPromoted: true, label: "Ticker" },
+        { name: "website", type: "label", dataType: "string", isPromoted: true, label: "Website" },
+        { name: "staff", type: "relation", dataType: "relation", targetTemplateId: "person", isPromoted: true, label: "People / Staff", inverseRelationName: "employer" }
       ],
       relationships: [
         {
@@ -362,6 +379,18 @@
           autoCloneToParent: false,
           inheritTopics: true,
           direction: "child"
+        },
+        {
+          id: "rel_org_staff",
+          name: "People / Staff",
+          relationName: "staff",
+          targetTemplateId: "person",
+          targetTemplateName: "Person",
+          isMulti: true,
+          autoCloneToParent: false,
+          inheritTopics: true,
+          direction: "child",
+          inverseRelationName: "employer"
         }
       ]
     },
@@ -1034,6 +1063,9 @@
   };
 
   // src/engine/noteCreationEngine.ts
+  var EDIT_ROUND_CONTENT = "<h2>LINKS</h2><ul><li></li></ul><h2>OPEN QUESTIONS</h2><ul><li></li></ul><h2>EDITORIAL NOTES</h2><p></p><h2>REQUESTED CHANGES</h2><ul><li></li></ul><h2>HED</h2><ul><li></li><li></li><li></li></ul><h2>BYLINE</h2><p>By Ian Sherr (+1 415.347.6397)</p><h2>STORYBODY</h2><p></p><p>--ENDIT--</p><h2>WRITER RESPONSE</h2><p></p>";
+  var STORY_DRAFT_CONTENT = "<h2>HED</h2><ul><li></li><li></li><li></li></ul><h2>DEK</h2><ul><li></li><li></li><li></li></ul><h2>BYLINE</h2><p>By Ian Sherr (+1 415.347.6397)</p><h2>STORYBODY</h2><p></p><p>--ENDIT--</p>";
+  var REPORTING_NOTES_CONTENT = "<h2>LINKS</h2><ul><li></li></ul><h2>OPEN QUESTIONS</h2><ul><li></li></ul><h2>IDEA / ANGLE</h2><p></p><h2>REPORTING NOTES</h2><p></p><div class='reporting-note-actions-placeholder' data-reporting-note-actions='true'></div>";
   var NoteCreationEngine = class {
     constructor(templateEngine, relationshipEngine, ifThenRuleEngine, settingsEngine = new SettingsEngine()) {
       __publicField(this, "templateEngine", templateEngine);
@@ -1043,12 +1075,21 @@
     }
     planNoteCreation(request) {
       const isStoryOrEdit = request.type === "story" || request.type === "edit";
-      const templateId = isStoryOrEdit ? "story" : request.type;
-      const mode = request.mode || (request.type === "edit" ? "edit" : "project");
+      const relValues = request.relations || {};
+      const hasExistingProject = Boolean(relValues.project || request.targetContainerId);
+      let templateId = request.type;
+      let rootContainerMarker = "";
+      if (isStoryOrEdit && !hasExistingProject) {
+        templateId = "projectHub";
+        rootContainerMarker = "activeProjectRoot";
+      } else if (isStoryOrEdit) {
+        templateId = "story";
+      }
       const template = this.templateEngine.getTemplate(templateId);
       if (!template) {
         throw new Error(`Unknown note template type: '${request.type}'`);
       }
+      const mode = request.mode || (request.type === "edit" ? "edit" : "project");
       const date = request.date || /* @__PURE__ */ new Date();
       const formattedTitle = this.templateEngine.formatTitle(template.id, request.title, date);
       const labelsToCreate = [];
@@ -1069,22 +1110,41 @@
         }
       }
       labelsToCreate.push({ name: template.marker, value: "" });
-      if (isStoryOrEdit) {
-        labelsToCreate.push({ name: "workflow", value: mode });
-        labelsToCreate.push({ name: "status", value: mode === "edit" ? "editing" : "drafting" });
+      if (isStoryOrEdit && !hasExistingProject) {
         labelsToCreate.push({ name: "kind", value: mode });
+        labelsToCreate.push({ name: "status", value: "active" });
+        labelsToCreate.push({ name: "extHubIcon", value: mode });
+        labelsToCreate.push({ name: "iconClass", value: mode === "edit" ? "bx bx-edit-alt" : "bx bx-book" });
+        const draftTitle = `${request.title} \u2014 ${mode === "edit" ? "Round" : "Draft"} 1`;
+        childNotesToCreate.push({
+          title: draftTitle,
+          templateId: "story",
+          content: mode === "edit" ? EDIT_ROUND_CONTENT : STORY_DRAFT_CONTENT,
+          labels: [
+            { name: "extStoryDraft", value: "" },
+            { name: "round", value: "1" },
+            { name: "status", value: mode === "edit" ? "editing" : "drafting" },
+            { name: "workflow", value: mode },
+            { name: "kind", value: mode }
+          ]
+        });
         if (mode === "project") {
           childNotesToCreate.push({
-            title: `${request.title} (Reporting & Notes)`,
+            title: `${request.title} \u2014 Reporting Notes`,
             templateId: "reportingNotes",
+            content: REPORTING_NOTES_CONTENT,
             labels: [
               { name: "extReportingNotes", value: "" },
+              { name: "extReportingTitleManaged", value: "" },
               { name: "status", value: "active" }
             ]
           });
         }
+      } else if (isStoryOrEdit) {
+        labelsToCreate.push({ name: "workflow", value: mode });
+        labelsToCreate.push({ name: "status", value: mode === "edit" ? "editing" : "drafting" });
+        labelsToCreate.push({ name: "kind", value: mode });
       }
-      const relValues = request.relations || {};
       const resolved = this.relationshipEngine.resolveCreationRelations(template.id, relValues);
       const autoCloneContainers = resolved.autoCloneContainers;
       const inheritedTopicSources = this.settingsEngine.get("enableDerivedTopics") ? resolved.inheritedTopicSources : [];
@@ -1100,6 +1160,9 @@
       };
       const executedIfThenRules = [];
       let content = template.defaultContent;
+      if (template.id === "story" && (mode === "edit" || attrValues.workflow === "edit" || attrValues.kind === "edit")) {
+        content = EDIT_ROUND_CONTENT;
+      }
       if (this.settingsEngine.get("autoRunIfThenRulesOnCreation")) {
         const ruleResults = this.ifThenRuleEngine.evaluateEvent("onNoteCreated", noteContext);
         for (const res of ruleResults) {
@@ -1133,12 +1196,12 @@ ${content}`;
         }
       }
       const category = this.templateEngine.getCategory(template.category);
-      const journalClone = this.settingsEngine.get("autoJournalClone") && !template.noJournalClone && category?.autoJournalClone !== false && autoCloneContainers.length === 0;
+      const journalClone = this.settingsEngine.get("autoJournalClone") && !template.noJournalClone && template.id !== "projectHub" && category?.autoJournalClone !== false && autoCloneContainers.length === 0;
       return {
         templateId: template.id,
         mode: isStoryOrEdit ? mode : void 0,
         formattedTitle,
-        rootContainerMarker: template.rootContainerMarker,
+        rootContainerMarker: rootContainerMarker || template.rootContainerMarker,
         targetContainerId: request.targetContainerId,
         content,
         labelsToCreate,
@@ -1157,23 +1220,35 @@ ${content}`;
   function escapeHtml(value) {
     return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-  function section(parent, { title, description, actions } = {}) {
+  function section(parent, { title, description, actions, collapsible } = {}) {
     const sectionEl = document.createElement("div");
     sectionEl.className = "ns-section";
-    if (title || actions?.length) {
-      const header = document.createElement("div");
-      header.className = "ns-section-header";
-      header.innerHTML = `<h4 class="ns-section-title">${escapeHtml(title ?? "")}</h4>`;
-      if (actions?.length) {
-        const actionsEl = document.createElement("div");
-        actionsEl.className = "ns-actions";
-        actions.forEach((a) => actionsEl.appendChild(a));
-        header.appendChild(actionsEl);
-      }
-      sectionEl.appendChild(header);
-    }
     const card = document.createElement("div");
     card.className = "ns-section-card";
+    if (title || actions?.length || collapsible) {
+      const header = document.createElement("div");
+      header.className = "ns-section-header d-flex justify-content-between align-items-center";
+      header.innerHTML = `<h4 class="ns-section-title m-0">${escapeHtml(title ?? "")}</h4>`;
+      const headerRight = document.createElement("div");
+      headerRight.className = "ns-actions d-flex align-items-center gap-2";
+      if (actions?.length) {
+        actions.forEach((a) => headerRight.appendChild(a));
+      }
+      if (collapsible) {
+        const toggleBtn = iconAction({
+          icon: "bx-chevron-up",
+          title: "Collapse section",
+          onClick: () => {
+            const isHidden = card.hidden;
+            card.hidden = !isHidden;
+            toggleBtn.querySelector("span")?.setAttribute("class", `bx ${card.hidden ? "bx-chevron-down" : "bx-chevron-up"}`);
+          }
+        });
+        headerRight.appendChild(toggleBtn);
+      }
+      header.appendChild(headerRight);
+      sectionEl.appendChild(header);
+    }
     if (description) {
       const p = document.createElement("p");
       p.className = "ns-section-description";
@@ -1183,6 +1258,64 @@ ${content}`;
     sectionEl.appendChild(card);
     parent.appendChild(sectionEl);
     return { section: sectionEl, card };
+  }
+  function iconAction({ icon, title, onClick }) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "icon-action";
+    btn.title = title;
+    btn.setAttribute("aria-label", title);
+    btn.innerHTML = `<span class="bx ${escapeHtml(icon)}"></span>`;
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+  function showToast(opts, typeArg, durationArg) {
+    if (typeof document === "undefined") return;
+    const message = typeof opts === "string" ? opts : opts.message;
+    const type = typeof opts === "string" ? typeArg || "success" : opts.type || "success";
+    const durationMs = typeof opts === "string" ? durationArg ?? 3500 : opts.durationMs ?? 3500;
+    const undoAction = typeof opts === "string" ? void 0 : opts.undoAction;
+    let container = document.querySelector(".ns-toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.className = "ns-toast-container";
+      container.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 1060; display: flex; flex-direction: column; gap: 8px; max-width: 360px; pointer-events: none;";
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement("div");
+    const bgClass = type === "success" ? "bg-success" : type === "warning" ? "bg-warning text-dark" : type === "danger" ? "bg-danger" : "bg-primary";
+    const icon = type === "success" ? "bx-check-circle" : type === "warning" ? "bx-error" : type === "danger" ? "bx-x-circle" : "bx-info-circle";
+    toast.className = `toast show align-items-center text-white ${bgClass} border-0 shadow-lg`;
+    toast.style.cssText = "pointer-events: auto; transition: all 0.3s ease; opacity: 1; transform: translateY(0);";
+    toast.innerHTML = `
+        <div class="d-flex p-2.5">
+            <div class="toast-body d-flex align-items-center gap-2 small">
+                <i class="bx ${icon} fs-6"></i>
+                <span>${escapeHtml(message)}</span>
+                ${undoAction ? `<button type="button" class="btn btn-micro btn-light text-dark ms-2 undo-btn">Undo</button>` : ""}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto close-toast-btn" aria-label="Close"></button>
+        </div>
+    `;
+    if (undoAction) {
+      toast.querySelector(".undo-btn")?.addEventListener("click", () => {
+        undoAction();
+        removeToast();
+      });
+    }
+    const removeToast = () => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(10px)";
+      setTimeout(() => toast.remove(), 300);
+    };
+    toast.querySelector(".close-toast-btn")?.addEventListener("click", removeToast);
+    container.appendChild(toast);
+    if (durationMs > 0) {
+      setTimeout(removeToast, durationMs);
+    }
+  }
+  if (typeof window !== "undefined") {
+    window.__ikmalToast = showToast;
   }
 
   // src/engine/noteInsightsEngine.ts
@@ -1297,6 +1430,24 @@ ${content}`;
             </div>
         </div>
     `;
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.className = "btn btn-sm btn-outline-primary mt-2 d-inline-flex align-items-center gap-1";
+    copyBtn.innerHTML = '<i class="bx bx-copy"></i> Copy Accomplishments for Standup';
+    copyBtn.addEventListener("click", async () => {
+      const text = `**Daily Accomplishments (${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)})**
+- Writing Progress: ${progress.current}/${progress.goal} words (${progress.percent}%)
+- Moon Phase: ${phase.symbol} ${phase.label}
+- Daily Reflection: "${quote.text}" \u2014 ${quote.author}`;
+      if (navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(text);
+          if (window.__ikmalToast) window.__ikmalToast("Copied daily accomplishments to clipboard!", "success");
+        } catch (e) {
+        }
+      }
+    });
+    moonCard.appendChild(copyBtn);
     col2.appendChild(moonCard);
     grid.appendChild(col2);
     card.appendChild(grid);

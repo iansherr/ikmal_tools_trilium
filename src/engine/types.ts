@@ -15,6 +15,7 @@ export interface PromotedAttributeDef {
     options?: string[]; // For select type
     targetTemplateId?: string; // For relation type
     isPromoted: boolean;
+    inverseRelationName?: string;
 }
 
 export interface TemplateRelationshipDef {
@@ -27,6 +28,7 @@ export interface TemplateRelationshipDef {
     autoCloneToParent: boolean;
     inheritTopics: boolean;
     direction: 'parent' | 'child' | 'peer';
+    inverseRelationName?: string;
 }
 
 export interface TemplateCategoryDef {

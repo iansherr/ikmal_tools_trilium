@@ -29,27 +29,52 @@ The integration branch is experimental and is not a production Trilium release.
 The `src/artifacts` files are build inputs. The committed `dist/artifacts` files are the
 bundled payloads referenced by the package manifest and downloaded by Trilium.
 
+The current manifest is still the compatibility package for the existing DEV vault.
+The build also generates staged App Store-style metadata under `manifests/`: an
+independently installable `Ikmal Editor` component and an `Ikmal Tools` bundle
+index. Those staged manifests are intentionally not registered or deployed until
+the package manager's ownership-transfer migration is ready, so development never
+creates a duplicate package tree.
+
 ## What this is
 
 `trilium-package.json` declares one installable package (`iansherr/ikmal_tools_trilium`)
-made of a main workspace dashboard, global launcher, live editor status bar word counter, and standalone micro-tool render artifacts:
+made of a main workspace dashboard, visible workspace setup/repair, project dashboards, global launcher, live editor status bar word counter, and standalone micro-tool render artifacts:
 
 | Artifact | Type | Source | Description |
 |---|---|---|---|
+| `notes-system-today-page` | render note | `dist/artifacts/notes-system-today-page.js` | Visible, read-only Today page with the current journal entry point and responsive widgets |
 | `notes-system-dashboard` | render note | `dist/artifacts/notes-system-dashboard.js` | Main 3-tab workspace UI (Today, Template Studio, Package Settings) |
+| `notes-system-project-dashboard` | render note | `dist/artifacts/notes-system-project-dashboard.js` | Project Hub dashboard with live related work, task creation, and completion actions |
 | `notes-system-kanban` | render note | `dist/artifacts/notes-system-kanban.js` | Ikmal Standalone Task Kanban Board |
 | `notes-system-insights` | render note | `dist/artifacts/notes-system-insights.js` | Ikmal Standalone Writing & Productivity Insights |
 | `notes-system-quick-capture` | render note | `dist/artifacts/notes-system-quick-capture.js` | Ikmal Standalone Quick Capture Toolbar |
 | `notes-system-weather` | render note | `dist/artifacts/notes-system-weather.js` | Ikmal Standalone Weather & Climate Card |
 | `notes-system-on-this-day` | render note | `dist/artifacts/notes-system-on-this-day.js` | Ikmal Standalone Time Machine (On This Day) |
 | `notes-system-stale-notes` | render note | `dist/artifacts/notes-system-stale-notes.js` | Ikmal Standalone Stale Notes Reviewer |
-| `notes-system-launcher` | frontend startup script | `dist/artifacts/notes-system-launcher.js` | Global Header Launcher Bar & `Cmd/Ctrl+Shift+K` Hotkey |
-| `notes-system-word-count` | frontend startup script | `dist/artifacts/notes-system-word-count.js` | Live Editor Status Bar Word & Char Counter |
+| `notes-system-launcher` | frontend startup script | `dist/artifacts/notes-system-launcher.js` | Native, configurable launchbar entries for the ten creation actions plus the `Cmd/Ctrl+Shift+K` quick capture shortcut |
+| `notes-system-word-count` | frontend startup script | `dist/artifacts/notes-system-word-count.js` | Per-editor word, character, reading-time, and selection-details footer |
 | `notes-system-css` | stylesheet | `dist/artifacts/notes-system.css` | Theme & UI Stylesheet |
+| `notes-system-workspace-bootstrap` | frontend startup script | `dist/artifacts/notes-system-workspace-bootstrap.js` | Idempotently creates/repairs the visible Today entry and Project Hub dashboard links |
 
-The workspace dashboard render note mounts three tabs (Today, Template Studio, Settings) into a container div and owns state in memory for the session. Nothing here talks to Trilium's database schema directly, and there is no backend script or custom HTTP endpoint — notes are created and read entirely from the frontend, through the standard script API (`api.searchForNotes`, `api.createNote`, etc.) and a small set of authenticated `fetch` calls.
+The workspace dashboard render note mounts three tabs (Today, Template Studio, Settings) into a container div and owns state in memory for the session. The workspace bootstrap repairs the visible Today render relation, restores same-day journal branches for Ikmal-created notes, updates or creates Project Dashboard render children for current and legacy Project Hubs, removes only Ikmal-generated Open Tasks and Day start structure from daily-note bodies, and archives a stray package-created Project Dashboard if it is attached only to a daily note. It preserves user-entered text and is idempotent: it does not remove legitimate project branches or create duplicate dashboard children. Package artifacts are discovered through the authenticated hidden-note search path, while user-authored project and journal notes remain in their normal tree locations.
 
-The launcher and word-count artifacts are startup scripts that add their UI through the browser DOM. They are intentionally not Trilium custom-widget launchers; declaring them as launchers would make Trilium try to render their side-effect scripts as widget objects.
+The visible Today page and the workspace dashboard share the same widget renderer, but have different responsibilities: the file-tree Today page is a focused daily workspace without the workspace Open Tasks board, while the dashboard retains that board along with layout editing, Template Studio, and package settings. Its journal button reuses the existing daily-note split, applies the saved journal-width percentage after Trilium initializes the split, and replaces the existing journal context when the date changes.
+
+The launcher artifact registers the ten creation actions as native Trilium script
+launchers, so Configure Launchbar can reorder them or move them to Available
+Launchers. The word-count artifact remains a frontend startup script; it is not
+a custom-widget launcher. It renders a compact Ikmal Editor word/character/read-
+time indicator shown only while editing and pinned to the bottom of the note
+window, including split panes and panes created later, instead of adding a
+second row to Trilium's global status bar. Its local editor layer highlights
+adjacent duplicate words without changing saved note content. With text
+selected, right-clicking in an editor adds selection statistics and
+paragraph-level local Ikmal Editor checks beside Trilium's existing context
+menu. This editor layer is self-contained; it does not send note text to a
+server. The separate LanguageTool package is optional and is not required.
+
+The Today grid is container-responsive rather than window-responsive. Its auto-fit minimum is clamped to the available note-pane width, and the task board collapses to one column before a narrow split can create horizontal overflow. Quick-capture controls retain one-line labels and full-width touch targets in narrow panes.
 
 ## Architecture
 

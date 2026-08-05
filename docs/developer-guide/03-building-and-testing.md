@@ -10,7 +10,7 @@ npm run build
 
 This performs 3 steps:
 1. Compiles `src/engine/` and `src/components/` via TypeScript (`tsconfig.build.json`) to `dist/`.
-2. Bundles all 11 JS artifacts to `dist/artifacts/` using `esbuild` target ES2020.
+2. Bundles all declared render and frontend artifacts to `dist/artifacts/` using `esbuild` target ES2020.
 3. Computes SRI SHA-256 hashes and updates `trilium-package.json`.
 
 ---
@@ -24,7 +24,7 @@ Execute all test suites with a single command:
 ```
 
 ### Test Suites Included:
-1. **Node Unit & Engine Tests**: `node --test tests/*.test.mjs` (37 tests)
+1. **Node Unit & Engine Tests**: `node --test tests/*.test.mjs` (42 tests at the current baseline)
 2. **ETAPI Client Tests**: `python3 -m unittest tests/test_etapi.py` (3 tests)
 3. **Live Docker Instance E2E Smoke Tests**: `PYTHONPATH=. python3 tests/smoke_test_live_instance.py` (8 tests)
 
@@ -37,3 +37,22 @@ To deploy updated artifacts to a live Docker Trilium instance (`http://localhost
 ```bash
 PYTHONPATH=. python3 tools/deploy_plugin_to_instance.py http://127.0.0.1:38080 test_smoke_token_12345
 ```
+
+## Responsive visual verification
+
+The Today page must be checked in a real Trilium renderer after CSS or layout
+changes. In particular, verify a narrow note pane around the preferred 22%
+split (a 500px Playwright viewport is a useful regression fixture):
+
+1. The auto-fit widget grid is one column when the available pane cannot fit two
+   readable cards.
+2. The Open Tasks board is contained within its card, with no horizontal
+   overflow or partial second column.
+3. Task text wraps inside its card.
+4. Quick-capture buttons stay one line tall, retain left-aligned labels, and
+   remain easy to tap.
+
+The Today page establishes its own container-query boundary because the
+standalone file-tree note does not have the workspace dashboard's outer shell.
+Keep that boundary when changing the page wrapper; otherwise the narrow-pane
+breakpoints will not apply to the standalone page.

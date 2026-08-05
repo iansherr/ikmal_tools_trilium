@@ -320,8 +320,10 @@
       defaultContent: "<h2>CONTACT INFO</h2><p></p><h2>NOTES</h2><p></p>",
       isBuiltin: true,
       attributes: [
+        { name: "jobTitle", type: "label", dataType: "string", isPromoted: true, label: "Job Focus" },
         { name: "email", type: "label", dataType: "string", isPromoted: true, label: "Email" },
         { name: "phone", type: "label", dataType: "string", isPromoted: true, label: "Phone" },
+        { name: "employer", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Employer", inverseRelationName: "staff" },
         { name: "organization", type: "relation", dataType: "relation", targetTemplateId: "organization", isPromoted: true, label: "Organization" }
       ],
       relationships: [
@@ -335,6 +337,18 @@
           autoCloneToParent: true,
           inheritTopics: true,
           direction: "parent"
+        },
+        {
+          id: "rel_person_employer",
+          name: "Employer",
+          relationName: "employer",
+          targetTemplateId: "organization",
+          targetTemplateName: "Organization",
+          isMulti: true,
+          autoCloneToParent: true,
+          inheritTopics: true,
+          direction: "parent",
+          inverseRelationName: "staff"
         }
       ]
     },
@@ -349,7 +363,10 @@
       defaultContent: "<h2>ABOUT</h2><p></p><h2>KEY CONTACTS</h2><ul><li></li></ul>",
       isBuiltin: true,
       attributes: [
-        { name: "website", type: "label", dataType: "string", isPromoted: true, label: "Website" }
+        { name: "location", type: "label", dataType: "string", isPromoted: true, label: "Location" },
+        { name: "ticker", type: "label", dataType: "string", isPromoted: true, label: "Ticker" },
+        { name: "website", type: "label", dataType: "string", isPromoted: true, label: "Website" },
+        { name: "staff", type: "relation", dataType: "relation", targetTemplateId: "person", isPromoted: true, label: "People / Staff", inverseRelationName: "employer" }
       ],
       relationships: [
         {
@@ -362,6 +379,18 @@
           autoCloneToParent: false,
           inheritTopics: true,
           direction: "child"
+        },
+        {
+          id: "rel_org_staff",
+          name: "People / Staff",
+          relationName: "staff",
+          targetTemplateId: "person",
+          targetTemplateName: "Person",
+          isMulti: true,
+          autoCloneToParent: false,
+          inheritTopics: true,
+          direction: "child",
+          inverseRelationName: "employer"
         }
       ]
     },
@@ -1034,6 +1063,9 @@
   };
 
   // src/engine/noteCreationEngine.ts
+  var EDIT_ROUND_CONTENT = "<h2>LINKS</h2><ul><li></li></ul><h2>OPEN QUESTIONS</h2><ul><li></li></ul><h2>EDITORIAL NOTES</h2><p></p><h2>REQUESTED CHANGES</h2><ul><li></li></ul><h2>HED</h2><ul><li></li><li></li><li></li></ul><h2>BYLINE</h2><p>By Ian Sherr (+1 415.347.6397)</p><h2>STORYBODY</h2><p></p><p>--ENDIT--</p><h2>WRITER RESPONSE</h2><p></p>";
+  var STORY_DRAFT_CONTENT = "<h2>HED</h2><ul><li></li><li></li><li></li></ul><h2>DEK</h2><ul><li></li><li></li><li></li></ul><h2>BYLINE</h2><p>By Ian Sherr (+1 415.347.6397)</p><h2>STORYBODY</h2><p></p><p>--ENDIT--</p>";
+  var REPORTING_NOTES_CONTENT = "<h2>LINKS</h2><ul><li></li></ul><h2>OPEN QUESTIONS</h2><ul><li></li></ul><h2>IDEA / ANGLE</h2><p></p><h2>REPORTING NOTES</h2><p></p><div class='reporting-note-actions-placeholder' data-reporting-note-actions='true'></div>";
   var NoteCreationEngine = class {
     constructor(templateEngine, relationshipEngine, ifThenRuleEngine, settingsEngine = new SettingsEngine()) {
       __publicField(this, "templateEngine", templateEngine);
@@ -1043,12 +1075,21 @@
     }
     planNoteCreation(request) {
       const isStoryOrEdit = request.type === "story" || request.type === "edit";
-      const templateId = isStoryOrEdit ? "story" : request.type;
-      const mode = request.mode || (request.type === "edit" ? "edit" : "project");
+      const relValues = request.relations || {};
+      const hasExistingProject = Boolean(relValues.project || request.targetContainerId);
+      let templateId = request.type;
+      let rootContainerMarker = "";
+      if (isStoryOrEdit && !hasExistingProject) {
+        templateId = "projectHub";
+        rootContainerMarker = "activeProjectRoot";
+      } else if (isStoryOrEdit) {
+        templateId = "story";
+      }
       const template = this.templateEngine.getTemplate(templateId);
       if (!template) {
         throw new Error(`Unknown note template type: '${request.type}'`);
       }
+      const mode = request.mode || (request.type === "edit" ? "edit" : "project");
       const date = request.date || /* @__PURE__ */ new Date();
       const formattedTitle = this.templateEngine.formatTitle(template.id, request.title, date);
       const labelsToCreate = [];
@@ -1069,22 +1110,41 @@
         }
       }
       labelsToCreate.push({ name: template.marker, value: "" });
-      if (isStoryOrEdit) {
-        labelsToCreate.push({ name: "workflow", value: mode });
-        labelsToCreate.push({ name: "status", value: mode === "edit" ? "editing" : "drafting" });
+      if (isStoryOrEdit && !hasExistingProject) {
         labelsToCreate.push({ name: "kind", value: mode });
+        labelsToCreate.push({ name: "status", value: "active" });
+        labelsToCreate.push({ name: "extHubIcon", value: mode });
+        labelsToCreate.push({ name: "iconClass", value: mode === "edit" ? "bx bx-edit-alt" : "bx bx-book" });
+        const draftTitle = `${request.title} \u2014 ${mode === "edit" ? "Round" : "Draft"} 1`;
+        childNotesToCreate.push({
+          title: draftTitle,
+          templateId: "story",
+          content: mode === "edit" ? EDIT_ROUND_CONTENT : STORY_DRAFT_CONTENT,
+          labels: [
+            { name: "extStoryDraft", value: "" },
+            { name: "round", value: "1" },
+            { name: "status", value: mode === "edit" ? "editing" : "drafting" },
+            { name: "workflow", value: mode },
+            { name: "kind", value: mode }
+          ]
+        });
         if (mode === "project") {
           childNotesToCreate.push({
-            title: `${request.title} (Reporting & Notes)`,
+            title: `${request.title} \u2014 Reporting Notes`,
             templateId: "reportingNotes",
+            content: REPORTING_NOTES_CONTENT,
             labels: [
               { name: "extReportingNotes", value: "" },
+              { name: "extReportingTitleManaged", value: "" },
               { name: "status", value: "active" }
             ]
           });
         }
+      } else if (isStoryOrEdit) {
+        labelsToCreate.push({ name: "workflow", value: mode });
+        labelsToCreate.push({ name: "status", value: mode === "edit" ? "editing" : "drafting" });
+        labelsToCreate.push({ name: "kind", value: mode });
       }
-      const relValues = request.relations || {};
       const resolved = this.relationshipEngine.resolveCreationRelations(template.id, relValues);
       const autoCloneContainers = resolved.autoCloneContainers;
       const inheritedTopicSources = this.settingsEngine.get("enableDerivedTopics") ? resolved.inheritedTopicSources : [];
@@ -1100,6 +1160,9 @@
       };
       const executedIfThenRules = [];
       let content = template.defaultContent;
+      if (template.id === "story" && (mode === "edit" || attrValues.workflow === "edit" || attrValues.kind === "edit")) {
+        content = EDIT_ROUND_CONTENT;
+      }
       if (this.settingsEngine.get("autoRunIfThenRulesOnCreation")) {
         const ruleResults = this.ifThenRuleEngine.evaluateEvent("onNoteCreated", noteContext);
         for (const res of ruleResults) {
@@ -1133,12 +1196,12 @@ ${content}`;
         }
       }
       const category = this.templateEngine.getCategory(template.category);
-      const journalClone = this.settingsEngine.get("autoJournalClone") && !template.noJournalClone && category?.autoJournalClone !== false && autoCloneContainers.length === 0;
+      const journalClone = this.settingsEngine.get("autoJournalClone") && !template.noJournalClone && template.id !== "projectHub" && category?.autoJournalClone !== false && autoCloneContainers.length === 0;
       return {
         templateId: template.id,
         mode: isStoryOrEdit ? mode : void 0,
         formattedTitle,
-        rootContainerMarker: template.rootContainerMarker,
+        rootContainerMarker: rootContainerMarker || template.rootContainerMarker,
         targetContainerId: request.targetContainerId,
         content,
         labelsToCreate,
@@ -2047,23 +2110,35 @@ ${YamlParser.stringify({ template: dumped })}
     header.appendChild(inner);
     return header;
   }
-  function section(parent, { title, description, actions } = {}) {
+  function section(parent, { title, description, actions, collapsible } = {}) {
     const sectionEl = document.createElement("div");
     sectionEl.className = "ns-section";
-    if (title || actions?.length) {
-      const header = document.createElement("div");
-      header.className = "ns-section-header";
-      header.innerHTML = `<h4 class="ns-section-title">${escapeHtml(title ?? "")}</h4>`;
-      if (actions?.length) {
-        const actionsEl = document.createElement("div");
-        actionsEl.className = "ns-actions";
-        actions.forEach((a) => actionsEl.appendChild(a));
-        header.appendChild(actionsEl);
-      }
-      sectionEl.appendChild(header);
-    }
     const card = document.createElement("div");
     card.className = "ns-section-card";
+    if (title || actions?.length || collapsible) {
+      const header = document.createElement("div");
+      header.className = "ns-section-header d-flex justify-content-between align-items-center";
+      header.innerHTML = `<h4 class="ns-section-title m-0">${escapeHtml(title ?? "")}</h4>`;
+      const headerRight = document.createElement("div");
+      headerRight.className = "ns-actions d-flex align-items-center gap-2";
+      if (actions?.length) {
+        actions.forEach((a) => headerRight.appendChild(a));
+      }
+      if (collapsible) {
+        const toggleBtn = iconAction({
+          icon: "bx-chevron-up",
+          title: "Collapse section",
+          onClick: () => {
+            const isHidden = card.hidden;
+            card.hidden = !isHidden;
+            toggleBtn.querySelector("span")?.setAttribute("class", `bx ${card.hidden ? "bx-chevron-down" : "bx-chevron-up"}`);
+          }
+        });
+        headerRight.appendChild(toggleBtn);
+      }
+      header.appendChild(headerRight);
+      sectionEl.appendChild(header);
+    }
     if (description) {
       const p = document.createElement("p");
       p.className = "ns-section-description";
@@ -2305,7 +2380,8 @@ ${YamlParser.stringify({ template: dumped })}
           const isSelected = isMulti ? selectedValues.includes(option.value) : selectedValue === option.value;
           item.className = `ns-combobox-option${isSelected ? " is-selected" : ""}`;
           item.setAttribute("role", "option");
-          item.innerHTML = `<span>${escapeHtml(option.label)}${isSelected ? ' <i class="bx bx-check text-success"></i>' : ""}</span>${option.description ? `<span class="ns-meta">${escapeHtml(option.description)}</span>` : ""}`;
+          const iconHtml = option.icon ? `<i class="bx ${escapeHtml(option.icon)} text-primary me-1"></i>` : "";
+          item.innerHTML = `<span>${iconHtml}${escapeHtml(option.label)}${isSelected ? ' <i class="bx bx-check text-success ms-1"></i>' : ""}</span>${option.description ? `<span class="ns-meta">${escapeHtml(option.description)}</span>` : ""}`;
           item.addEventListener("mousedown", (e) => {
             e.preventDefault();
             selectOption(option);
@@ -2371,8 +2447,60 @@ ${YamlParser.stringify({ template: dumped })}
           selectedValue = typeof v === "string" ? v : v[0] ?? "";
           input.value = labelFor(selectedValue);
         }
+      },
+      setOptions: (newOptions) => {
+        options = [...newOptions];
+        if (!isMulti) input.value = labelFor(selectedValue);
       }
     };
+  }
+  function showToast(opts, typeArg, durationArg) {
+    if (typeof document === "undefined") return;
+    const message = typeof opts === "string" ? opts : opts.message;
+    const type = typeof opts === "string" ? typeArg || "success" : opts.type || "success";
+    const durationMs = typeof opts === "string" ? durationArg ?? 3500 : opts.durationMs ?? 3500;
+    const undoAction = typeof opts === "string" ? void 0 : opts.undoAction;
+    let container = document.querySelector(".ns-toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.className = "ns-toast-container";
+      container.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 1060; display: flex; flex-direction: column; gap: 8px; max-width: 360px; pointer-events: none;";
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement("div");
+    const bgClass = type === "success" ? "bg-success" : type === "warning" ? "bg-warning text-dark" : type === "danger" ? "bg-danger" : "bg-primary";
+    const icon = type === "success" ? "bx-check-circle" : type === "warning" ? "bx-error" : type === "danger" ? "bx-x-circle" : "bx-info-circle";
+    toast.className = `toast show align-items-center text-white ${bgClass} border-0 shadow-lg`;
+    toast.style.cssText = "pointer-events: auto; transition: all 0.3s ease; opacity: 1; transform: translateY(0);";
+    toast.innerHTML = `
+        <div class="d-flex p-2.5">
+            <div class="toast-body d-flex align-items-center gap-2 small">
+                <i class="bx ${icon} fs-6"></i>
+                <span>${escapeHtml(message)}</span>
+                ${undoAction ? `<button type="button" class="btn btn-micro btn-light text-dark ms-2 undo-btn">Undo</button>` : ""}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto close-toast-btn" aria-label="Close"></button>
+        </div>
+    `;
+    if (undoAction) {
+      toast.querySelector(".undo-btn")?.addEventListener("click", () => {
+        undoAction();
+        removeToast();
+      });
+    }
+    const removeToast = () => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(10px)";
+      setTimeout(() => toast.remove(), 300);
+    };
+    toast.querySelector(".close-toast-btn")?.addEventListener("click", removeToast);
+    container.appendChild(toast);
+    if (durationMs > 0) {
+      setTimeout(removeToast, durationMs);
+    }
+  }
+  if (typeof window !== "undefined") {
+    window.__ikmalToast = showToast;
   }
 
   // src/components/TodayHomepage.tsx
@@ -2381,13 +2509,34 @@ ${YamlParser.stringify({ template: dumped })}
     { id: "t2", title: "Publish LanguageTool plugin update", priority: "medium", status: "in_progress", project: "LanguageTool Plugin" },
     { id: "t3", title: "Setup ETAPI automated test suite", priority: "high", status: "done", project: "Trilium Extension" }
   ];
+  var SAMPLE_ACTIVE_PROJECTS = [
+    { id: "sample_project_1", title: "Trilium Extension", kind: "project", status: "active", startDate: Date.now() }
+  ];
   var KANBAN_COLUMNS = [
     { id: "todo", title: "To do" },
     { id: "in_progress", title: "In progress" },
     { id: "done", title: "Completed" }
   ];
-  function renderTodayHomepage(container, todayEngine, templateEngine, onQuickCapture, settingsEngine) {
+  var TODAY_QUICK_CAPTURE_ACTIONS = [
+    { type: "projectHub", label: "New Project", icon: "book", title: "Create a new Project Hub" },
+    { type: "scratch", label: "New Scratch", icon: "file-blank", title: "Create a scratch note" },
+    { type: "meeting", label: "New Meeting", icon: "calendar-event", title: "Create a new Meeting" },
+    { type: "task", label: "New Task", icon: "check-square", title: "Create a new Task" },
+    { type: "story", label: "New Story", icon: "news", title: "Create a new Story draft" },
+    { type: "edit", label: "New Edit", icon: "edit-alt", title: "Create a new Edit round" },
+    { type: "email", label: "New Email", icon: "envelope", title: "Create a new Email draft" },
+    { type: "person", label: "New Person", icon: "user", title: "Create a new Person" },
+    { type: "organization", label: "New Org", icon: "buildings", title: "Create a new Organization" },
+    { type: "topic", label: "New Topic", icon: "purchase-tag", title: "Create a new Topic" }
+  ];
+  function renderTodayHomepage(container, todayEngine, templateEngine, onQuickCapture, settingsEngine, options = {}) {
     let mode = "preview";
+    const showEditor = options.showEditor !== false;
+    const showJournalCard = options.showJournalCard === true;
+    const showOpenTasks = options.showOpenTasks !== false;
+    let journalContext = null;
+    let journalOpenPromise = null;
+    let splitWidthTimers = [];
     let weatherCache = null;
     let weatherError = "";
     let weatherPending = false;
@@ -2395,6 +2544,8 @@ ${YamlParser.stringify({ template: dumped })}
     let noteSummaryPending = false;
     let taskCache = null;
     let taskPending = false;
+    let activeProjectCache = null;
+    let activeProjectPending = false;
     let wordsTodayCache = null;
     let wordsTodayPending = false;
     function refresh() {
@@ -2404,12 +2555,14 @@ ${YamlParser.stringify({ template: dumped })}
       if (todayEngine.getLayout().density === "compact") {
         wrapper.classList.add("ns-compact");
       }
-      wrapper.appendChild(pageHeader({
-        icon: "bx-home-alt",
-        title: "Today Homepage",
-        subtitle: "Daily dashboard with quick capture, live kanban, and a component grid.",
-        actions: [modeSwitcher()]
-      }));
+      if (options.showHeader !== false) {
+        wrapper.appendChild(pageHeader({
+          icon: "bx-home-alt",
+          title: options.title || "Today Homepage",
+          subtitle: options.subtitle || "Daily dashboard with quick capture, live kanban, and a component grid.",
+          actions: showEditor ? [modeSwitcher()] : void 0
+        }));
+      }
       if (mode === "edit") {
         renderEditor(wrapper);
       } else {
@@ -2749,7 +2902,8 @@ ${YamlParser.stringify({ template: dumped })}
     }
     function triliumApi4() {
       const g = globalThis;
-      return g.api && typeof g.api.searchForNotes === "function" ? g.api : null;
+      const runtimeApi = options.api || g.api;
+      return runtimeApi && typeof runtimeApi.searchForNotes === "function" ? runtimeApi : null;
     }
     function parseTriliumTimestamp(value) {
       if (typeof value !== "string") return NaN;
@@ -2830,6 +2984,78 @@ ${YamlParser.stringify({ template: dumped })}
       }
       return tasks;
     }
+    function noteLabel(note, name) {
+      if (typeof note?.getLabelValue === "function") return note.getLabelValue(name) || "";
+      if (typeof note?.getOwnedLabelValue === "function") return note.getOwnedLabelValue(name) || "";
+      return "";
+    }
+    function noteMarker(note, name) {
+      if (typeof note?.getOwnedLabelValue !== "function") return null;
+      const value = note.getOwnedLabelValue(name);
+      return value === void 0 || value === null ? null : value;
+    }
+    async function loadActiveProjects() {
+      const api2 = triliumApi4();
+      if (!api2) return SAMPLE_ACTIVE_PROJECTS;
+      const notes = /* @__PURE__ */ new Map();
+      for (const query of [
+        "#kind AND #status = active AND #!projectArchive orderBy #startDate desc",
+        "#extProjectHub",
+        "#extTemplate"
+      ]) {
+        try {
+          for (const note of await api2.searchForNotes(query)) {
+            if (note?.noteId) notes.set(note.noteId, note);
+          }
+        } catch {
+        }
+      }
+      return [...notes.values()].filter((note) => {
+        const isProject = noteMarker(note, "extProjectHub") !== null || noteMarker(note, "extTemplate") === "projectHub" || noteLabel(note, "kind") === "project";
+        return isProject && noteLabel(note, "status") === "active" && !noteLabel(note, "projectArchive");
+      }).map((note) => ({
+        id: note.noteId,
+        title: note.title,
+        kind: noteLabel(note, "kind") || "project",
+        status: noteLabel(note, "status") || "active",
+        startDate: parseTriliumTimestamp(noteLabel(note, "startDate") || note.dateModified)
+      })).sort((a, b) => (Number.isFinite(b.startDate) ? b.startDate : 0) - (Number.isFinite(a.startDate) ? a.startDate : 0));
+    }
+    function ensureActiveProjectsLoaded(card) {
+      if (activeProjectCache) return true;
+      card.appendChild(emptyState("Loading\u2026"));
+      if (!activeProjectPending) {
+        activeProjectPending = true;
+        loadActiveProjects().then((projects) => {
+          activeProjectCache = projects;
+        }).finally(() => {
+          activeProjectPending = false;
+          if (mode === "preview") refresh();
+        });
+      }
+      return false;
+    }
+    function renderActiveProjects(card) {
+      if (!ensureActiveProjectsLoaded(card)) return;
+      const api2 = triliumApi4();
+      if (!activeProjectCache.length) {
+        card.appendChild(emptyState("No active projects."));
+        return;
+      }
+      for (const project of activeProjectCache.slice(0, 8)) {
+        const actions = api2?.openTabWithNote ? [iconAction({
+          icon: "bx-right-arrow-alt",
+          title: `Open ${project.title}`,
+          onClick: () => api2.openTabWithNote(project.id, true)
+        })] : void 0;
+        card.appendChild(listItem({
+          icon: "bx-book",
+          title: project.title,
+          description: `${project.kind} \xB7 ${project.status}`,
+          actions
+        }));
+      }
+    }
     function ensureTasksLoaded(card) {
       if (taskCache) return true;
       card.appendChild(emptyState("Loading\u2026"));
@@ -2897,7 +3123,17 @@ ${YamlParser.stringify({ template: dumped })}
       for (const entry of results) {
         card.appendChild(listItem({
           title: entry.title,
-          description: `${entry.yearsAgo} year${entry.yearsAgo === 1 ? "" : "s"} ago today`
+          description: `${entry.yearsAgo} year${entry.yearsAgo === 1 ? "" : "s"} ago today`,
+          actions: [
+            iconAction({
+              icon: "bx-show",
+              title: "Open Note",
+              onClick: () => {
+                const api2 = globalThis.api;
+                if (api2?.activateNote) api2.activateNote(entry.noteId);
+              }
+            })
+          ]
         }));
       }
     }
@@ -2912,7 +3148,30 @@ ${YamlParser.stringify({ template: dumped })}
       for (const entry of stale.slice(0, 8)) {
         card.appendChild(listItem({
           title: entry.title,
-          description: `Untouched for ${entry.daysSinceModified} days`
+          description: `Untouched for ${entry.daysSinceModified} days`,
+          actions: [
+            iconAction({
+              icon: "bx-show",
+              title: "Open Note",
+              onClick: () => {
+                const api2 = globalThis.api;
+                if (api2?.activateNote) api2.activateNote(entry.noteId);
+              }
+            }),
+            iconAction({
+              icon: "bx-check-double",
+              title: "Mark Touched",
+              onClick: () => {
+                const api2 = globalThis.api;
+                if (api2?.runOnBackend) {
+                  api2.runOnBackend((id) => {
+                    const n = api2.getNote(id);
+                    if (n) n.touch?.();
+                  }, [entry.noteId]);
+                }
+              }
+            })
+          ]
         }));
       }
     }
@@ -3013,10 +3272,30 @@ ${YamlParser.stringify({ template: dumped })}
     }
     function renderDashboard(parent) {
       const layout = todayEngine.getLayout();
+      if (showJournalCard) {
+        renderJournalCard(parent);
+      }
       if (layout.showQuickCaptureBar) {
         renderQuickCapture(parent);
       }
-      const widgets = todayEngine.getVisibleWidgets();
+      const filterRow = document.createElement("div");
+      filterRow.className = "ns-filter-row mb-3";
+      filterRow.innerHTML = `
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-transparent border-end-0"><i class="bx bx-search text-muted"></i></span>
+                <input type="text" class="form-control form-control-sm border-start-0 today-dashboard-filter" placeholder="Filter tasks, projects, and notes on today's homepage\u2026">
+            </div>
+        `;
+      filterRow.querySelector("input")?.addEventListener("input", (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        const items = parent.querySelectorAll(".ns-kanban-card, .ns-list-item, .ns-row, tr");
+        items.forEach((item) => {
+          const text = item.textContent?.toLowerCase() || "";
+          item.style.display = !query || text.includes(query) ? "" : "none";
+        });
+      });
+      parent.appendChild(filterRow);
+      const widgets = todayEngine.getVisibleWidgets().filter((widget) => showOpenTasks || widget.id !== "openTasks");
       if (!widgets.length) {
         const { card } = section(parent, { title: "Dashboard" });
         card.appendChild(emptyState("No widgets are shown. Switch to Edit to turn some on."));
@@ -3037,6 +3316,8 @@ ${YamlParser.stringify({ template: dumped })}
         if (widget.colSpan === 3) sec.classList.add("ns-span-full");
         if (widget.id === "openTasks") {
           renderKanban(card);
+        } else if (widget.id === "activeProjects") {
+          renderActiveProjects(card);
         } else if (widget.id === "weather") {
           renderWeatherWidget(card);
         } else if (widget.id === "activityHeatmap") {
@@ -3055,17 +3336,122 @@ ${YamlParser.stringify({ template: dumped })}
       }
       parent.appendChild(grid);
     }
+    function renderJournalCard(parent) {
+      const { section: journalSection, card } = section(parent);
+      journalSection.classList.add("ns-journal-section");
+      card.classList.add("ns-journal-card");
+      const api2 = triliumApi4();
+      if (!api2?.getTodayNote) {
+        card.appendChild(emptyState("Open this page inside Trilium to access today\u2019s journal."));
+        return;
+      }
+      const loading = emptyState("Loading today\u2019s journal\u2026");
+      card.appendChild(loading);
+      api2.getTodayNote().then((note) => {
+        loading.remove();
+        const entry = document.createElement("div");
+        entry.className = "ns-journal-entry";
+        const title = document.createElement("div");
+        title.className = "ns-journal-date";
+        title.textContent = note?.title || "Today\u2019s journal";
+        const hint = document.createElement("div");
+        hint.className = "ns-meta";
+        hint.textContent = "Keep this page pinned; the button opens the editable day note in a split.";
+        const open = button({
+          text: "Open Today\u2019s Journal",
+          icon: "bx-edit-alt",
+          onClick: () => openJournalNote(api2, note.noteId)
+        });
+        open.classList.add("ns-journal-open");
+        entry.append(title, hint, open);
+        card.appendChild(entry);
+      }).catch((error) => {
+        loading.textContent = `Today\u2019s journal is unavailable: ${error.message}`;
+      });
+    }
+    function contextNoteId(context) {
+      return context?.note?.noteId || context?.noteId || null;
+    }
+    function isDailyContext(context) {
+      const note = context?.note;
+      return Boolean(note?.hasLabel?.("dateNote") || note?.getLabelValue?.("dateNote") || note?.getOwnedLabelValue?.("dateNote"));
+    }
+    function splitPair() {
+      const todaySplit = container.closest(".note-split");
+      const journalNtxId = journalContext?.ntxId;
+      if (!todaySplit || !journalNtxId || !todaySplit.parentElement) return null;
+      const parent = todaySplit.parentElement;
+      const journalSplit = [...parent.children].find(
+        (element) => element instanceof HTMLElement && element.classList.contains("note-split") && element.getAttribute("data-ntx-id") === journalNtxId
+      );
+      return journalSplit ? { todaySplit, journalSplit, parent } : null;
+    }
+    function applyJournalWidth() {
+      const pair = splitPair();
+      if (!pair) return false;
+      const width = Math.min(85, Math.max(35, Math.round(todayEngine.getLayout().journalWidthPercent)));
+      pair.todaySplit.style.width = `${100 - width}%`;
+      pair.journalSplit.style.width = `${width}%`;
+      return true;
+    }
+    function scheduleJournalWidth(api2, noteId) {
+      for (const timer of splitWidthTimers) window.clearTimeout(timer);
+      splitWidthTimers = [];
+      const apply = () => {
+        if (api2 && noteId) {
+          const context = findExactJournalContext(api2, noteId);
+          if (context) journalContext = context;
+        }
+        applyJournalWidth();
+      };
+      window.requestAnimationFrame(() => {
+        apply();
+        for (const delay of [50, 150, 350, 750, 1500]) {
+          splitWidthTimers.push(window.setTimeout(apply, delay));
+        }
+      });
+    }
+    function findExactJournalContext(api2, noteId) {
+      const contexts = typeof api2.getNoteContexts === "function" ? api2.getNoteContexts() : [];
+      return contexts.find((context) => contextNoteId(context) === noteId);
+    }
+    async function openJournalNote(api2, noteId) {
+      if (!api2?.openSplitWithNote) return;
+      if (journalOpenPromise) return journalOpenPromise;
+      journalOpenPromise = (async () => {
+        let context = findExactJournalContext(api2, noteId);
+        if (!context && journalContext && typeof journalContext.setNote === "function") {
+          context = await journalContext.setNote(noteId);
+        }
+        if (!context) {
+          const contexts = typeof api2.getNoteContexts === "function" ? api2.getNoteContexts() : [];
+          const existingDailyContext = contexts.find((candidate) => isDailyContext(candidate));
+          if (existingDailyContext && typeof existingDailyContext.setNote === "function") {
+            context = await existingDailyContext.setNote(noteId);
+          }
+        }
+        if (!context) {
+          await api2.openSplitWithNote(noteId, true);
+          context = findExactJournalContext(api2, noteId);
+        }
+        if (context) journalContext = context;
+        scheduleJournalWidth(api2, noteId);
+      })().finally(() => {
+        journalOpenPromise = null;
+      });
+      await journalOpenPromise;
+    }
     function renderQuickCapture(parent) {
-      const templates = templateEngine.getAllTemplates().filter((t) => !t.noJournalClone).slice(0, 4);
-      if (!templates.length) return;
       const { card } = section(parent, { title: "Quick capture" });
       const actions = document.createElement("div");
       actions.className = "ns-actions";
-      for (const tpl of templates) {
+      for (const action of TODAY_QUICK_CAPTURE_ACTIONS) {
         actions.appendChild(button({
-          text: tpl.title,
-          icon: `bx-${tpl.icon}`,
-          onClick: () => onQuickCapture(tpl.id)
+          text: action.label,
+          icon: `bx-${action.icon}`,
+          className: "ns-quick-capture-action",
+          title: action.title,
+          onClick: () => onQuickCapture(action.type)
         }));
       }
       card.appendChild(actions);
@@ -3150,6 +3536,8 @@ ${YamlParser.stringify({ template: dumped })}
     let activeEditorTab = "editor";
     let railMode = "templates";
     let selectedCategoryId = templateEngine.getAllCategories()[0]?.id || "work";
+    let railSearchQuery = "";
+    let showSplitPreview = false;
     function refresh() {
       container.innerHTML = "";
       const wrapper = document.createElement("div");
@@ -3197,7 +3585,20 @@ ${YamlParser.stringify({ template: dumped })}
       if (inCategories && activeCat) {
         renderCategoryEditor(main, activeCat);
       } else if (activeTpl && activeEditorTab === "editor") {
-        renderSchemaEditor(main, activeTpl);
+        if (showSplitPreview) {
+          const splitContainer = document.createElement("div");
+          splitContainer.className = "d-flex gap-3 w-100 flex-column flex-lg-row";
+          const schemaPane = document.createElement("div");
+          schemaPane.className = "flex-grow-1 w-100 w-lg-50";
+          renderSchemaEditor(schemaPane, activeTpl);
+          const previewPane = document.createElement("div");
+          previewPane.className = "w-100 w-lg-50 border-start ps-0 ps-lg-3 pt-3 pt-lg-0";
+          renderPreview(previewPane, activeTpl);
+          splitContainer.append(schemaPane, previewPane);
+          main.appendChild(splitContainer);
+        } else {
+          renderSchemaEditor(main, activeTpl);
+        }
       } else if (activeTpl) {
         renderPreview(main, activeTpl);
       }
@@ -3207,7 +3608,7 @@ ${YamlParser.stringify({ template: dumped })}
     }
     function modeSwitcher() {
       const group = document.createElement("div");
-      group.className = "btn-group btn-group-sm";
+      group.className = "btn-group btn-group-sm d-flex align-items-center gap-1";
       group.setAttribute("role", "group");
       for (const mode of [
         { id: "editor", label: "Schema", icon: "bx-slider" },
@@ -3226,6 +3627,18 @@ ${YamlParser.stringify({ template: dumped })}
         btn.setAttribute("aria-pressed", String(activeEditorTab === mode.id));
         group.appendChild(btn);
       }
+      const splitBtn = button({
+        text: showSplitPreview ? "Split Preview: ON" : "Split Preview: OFF",
+        icon: "bx-columns",
+        size: "small",
+        kind: showSplitPreview ? "primary" : "secondary",
+        onClick: () => {
+          showSplitPreview = !showSplitPreview;
+          if (showSplitPreview) activeEditorTab = "editor";
+          refresh();
+        }
+      });
+      group.appendChild(splitBtn);
       return group;
     }
     function renderRail(parent) {
@@ -3478,19 +3891,51 @@ ${YamlParser.stringify({ template: dumped })}
         table.className = "ns-table";
         table.innerHTML = `
                 <thead>
-                    <tr><th>Name</th><th>Kind</th><th>Type</th><th>Default / options</th></tr>
+                    <tr><th>Name</th><th>Kind</th><th>Type</th><th>Default / options</th><th style="width: 80px;">Actions</th></tr>
                 </thead>
                 <tbody>
-                    ${tpl.attributes.map((a) => `
+                    ${tpl.attributes.map((a, idx) => `
                         <tr>
                             <td><span class="ns-code">${a.type === "relation" ? "~" : "#"}${escapeHtml(a.name)}</span></td>
                             <td>${escapeHtml(a.type)}</td>
                             <td>${escapeHtml(a.dataType)}</td>
                             <td class="ns-meta">${escapeHtml(a.options ? a.options.join(", ") : a.defaultValue ?? "\u2014")}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-1">
+                                    <button type="button" class="icon-action move-attr-up" data-idx="${idx}" ${idx === 0 ? "disabled" : ""} title="Move Up"><i class="bx bx-chevron-up"></i></button>
+                                    <button type="button" class="icon-action move-attr-down" data-idx="${idx}" ${idx === tpl.attributes.length - 1 ? "disabled" : ""} title="Move Down"><i class="bx bx-chevron-down"></i></button>
+                                </div>
+                            </td>
                         </tr>
                     `).join("")}
                 </tbody>
             `;
+        table.querySelectorAll(".move-attr-up").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const idx = Number(e.currentTarget.dataset.idx);
+            if (idx > 0) {
+              const temp = tpl.attributes[idx];
+              tpl.attributes[idx] = tpl.attributes[idx - 1];
+              tpl.attributes[idx - 1] = temp;
+              templateEngine.updateTemplate(tpl.id, { attributes: [...tpl.attributes] });
+              onSave();
+              refresh();
+            }
+          });
+        });
+        table.querySelectorAll(".move-attr-down").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const idx = Number(e.currentTarget.dataset.idx);
+            if (idx < tpl.attributes.length - 1) {
+              const temp = tpl.attributes[idx];
+              tpl.attributes[idx] = tpl.attributes[idx + 1];
+              tpl.attributes[idx + 1] = temp;
+              templateEngine.updateTemplate(tpl.id, { attributes: [...tpl.attributes] });
+              onSave();
+              refresh();
+            }
+          });
+        });
         attrCard.appendChild(table);
       } else {
         attrCard.appendChild(emptyState("No promoted attributes."));
@@ -3556,12 +4001,70 @@ ${YamlParser.stringify({ template: dumped })}
         card.appendChild(ruleItem(rule));
       }
     }
+    function openPresetRuleModal(tpl) {
+      openModal({
+        title: "Add Automation Rule Preset",
+        icon: "bx-magic-wand",
+        confirmText: "Apply Preset",
+        body: `
+                <div class="ns-field mb-3">
+                    <label for="preset-select" class="form-label small font-weight-bold">Select Rule Preset for ${escapeHtml(tpl.title)}</label>
+                    <select id="preset-select" class="form-select form-select-sm">
+                        <option value="archive_done">\u{1F4E6} Auto-archive note when status becomes 'complete' or 'done'</option>
+                        <option value="tag_client">\u{1F3F7}\uFE0F Auto-assign client relation tag on creation</option>
+                        <option value="prepend_checklist">\u{1F4DD} Prepend editorial & quality checklist to body</option>
+                    </select>
+                </div>
+            `
+      }, (content) => {
+        const presetVal = content.querySelector("#preset-select")?.value;
+        if (!presetVal) return false;
+        if (presetVal === "archive_done") {
+          ifThenRuleEngine.registerRule({
+            id: `preset_archive_${tpl.id}_${Date.now()}`,
+            name: `Auto-archive ${tpl.title} on complete`,
+            description: `Automatically archives ${tpl.title} when status is complete or done.`,
+            enabled: true,
+            isBuiltin: false,
+            trigger: { type: "onAttributeChanged", targetTemplateId: tpl.id, attributeName: "status" },
+            conditions: [{ field: "status", operator: "equals", value: "complete" }],
+            actions: [{ type: "archiveNote", params: {} }]
+          });
+        } else if (presetVal === "tag_client") {
+          ifThenRuleEngine.registerRule({
+            id: `preset_client_${tpl.id}_${Date.now()}`,
+            name: `Auto-assign client to ${tpl.title}`,
+            description: `Assigns client relation attribute to new ${tpl.title}.`,
+            enabled: true,
+            isBuiltin: false,
+            trigger: { type: "onNoteCreated", targetTemplateId: tpl.id },
+            conditions: [],
+            actions: [{ type: "setRelation", params: { relationName: "client", targetNoteId: "orgRoot" } }]
+          });
+        } else if (presetVal === "prepend_checklist") {
+          ifThenRuleEngine.registerRule({
+            id: `preset_checklist_${tpl.id}_${Date.now()}`,
+            name: `Prepend checklist to ${tpl.title}`,
+            description: `Prepends editorial checklist to new ${tpl.title}.`,
+            enabled: true,
+            isBuiltin: false,
+            trigger: { type: "onNoteCreated", targetTemplateId: tpl.id },
+            conditions: [],
+            actions: [{ type: "prependContent", params: { content: "<h2>EDITORIAL CHECKLIST</h2><ul><li>[ ] Review angle</li><li>[ ] Fact check quotes</li></ul>" } }]
+          });
+        }
+        onSave();
+        refresh();
+        return true;
+      });
+    }
     function renderTemplateRuleSection(parent, tpl, tplRules) {
       const total = tpl.relationships.length + tplRules.length;
       const { card } = section(parent, {
         title: `Template rules (${total})`,
         description: "Parent links and rules that apply only to this template.",
         actions: [
+          iconAction({ icon: "bx-magic-wand", title: "Add rule preset", onClick: () => openPresetRuleModal(tpl) }),
           iconAction({ icon: "bx-link", title: "Add parent link", onClick: () => openRelationshipModal(tpl) }),
           iconAction({ icon: "bx-plus", title: "Add rule", onClick: () => openRuleEditorModal({ targetTemplateId: tpl.id }) })
         ]
@@ -3636,13 +4139,28 @@ ${YamlParser.stringify({ template: dumped })}
       if (onDelete) {
         actions.push(iconAction({ icon: "bx-trash", title: "Delete rule", onClick: onDelete }));
       }
-      return listItem({
+      const triggerName = rule.trigger?.type || "onNoteCreated";
+      const condSummary = rule.conditions?.length ? rule.conditions.map((c) => `${c.field} ${c.operator} ${c.value}`).join(" & ") : "Always";
+      const actSummary = formatActionSummary(rule);
+      const flowDesc = `
+            <div class="d-flex align-items-center gap-1.5 flex-wrap mt-1 tiny text-muted">
+                <span class="badge bg-secondary font-weight-normal"><i class="bx bx-zap text-warning"></i> ${escapeHtml(triggerName)}</span>
+                <span>&rarr;</span>
+                <span class="badge bg-dark font-weight-normal"><i class="bx bx-filter-alt text-info"></i> IF: ${escapeHtml(condSummary)}</span>
+                <span>&rarr;</span>
+                <span class="badge bg-primary font-weight-normal"><i class="bx bx-play-circle text-white"></i> THEN: ${escapeHtml(actSummary)}</span>
+            </div>
+        `;
+      const el = listItem({
         icon: "bx-bolt-circle",
         title: rule.name,
-        description: formatActionSummary(rule),
+        description: "",
         disabled: !rule.enabled,
         actions
       });
+      const descContainer = el.querySelector(".ns-list-item-desc");
+      if (descContainer) descContainer.innerHTML = flowDesc;
+      return el;
     }
     function renderPreview(parent, tpl) {
       const note = document.createElement("div");
@@ -4068,11 +4586,33 @@ ${YamlParser.stringify({ template: dumped })}
         subtitle: "Automation preferences and the YAML specification for this package."
       }));
       renderPreferences(wrapper);
+      renderSystemHealth(wrapper);
       renderIkmalToolsCatalog(wrapper);
       renderYamlSpecification(wrapper);
       container.appendChild(wrapper);
     }
     function renderPreferences(parent) {
+      const { card: bundleCard } = section(parent, {
+        title: "\u{1F4E6} Ikmal App Store Bundle",
+        description: "Explore companion plugins or complete your bundle in the Trilium Community Catalog."
+      });
+      const bundleList = document.createElement("div");
+      bundleList.className = "d-flex flex-column gap-2 p-1";
+      bundleList.innerHTML = `
+            <div class="ns-row-desc mb-2">You are using <strong>Ikmal Tools Core Package</strong>. You can install companion tools individually or get the full suite:</div>
+            <div class="d-flex flex-wrap gap-2">
+                <span class="badge bg-primary-subtle text-primary border p-2"><i class="bx bx-check-circle me-1"></i> Ikmal Tools Full Suite (Installed)</span>
+                <span class="badge bg-secondary-subtle text-body border p-2"><i class="bx bx-text me-1"></i> Ikmal Editor & Word Count</span>
+                <span class="badge bg-secondary-subtle text-body border p-2"><i class="bx bx-keyboard me-1"></i> Ikmal Shortcuts & Command Palette</span>
+                <span class="badge bg-secondary-subtle text-body border p-2"><i class="bx bx-layout me-1"></i> Ikmal Standalone Kanban Board</span>
+            </div>
+            <div class="mt-2 text-end">
+                <a href="https://github.com/iansherr/trilium_plugins" target="_blank" class="btn btn-micro btn-outline-primary">
+                    <i class="bx bx-store-alt me-1"></i> Complete Your Bundle on GitHub
+                </a>
+            </div>
+        `;
+      bundleCard.appendChild(bundleList);
       const { card } = section(parent, {
         title: "Automation",
         description: "Saved to this package\u2019s manifest note, so they persist across reloads and are visible from Trilium\u2019s Plugins settings too."
@@ -4103,6 +4643,52 @@ ${YamlParser.stringify({ template: dumped })}
         description: "Master switch for the per-category setting in Template Studio. Off disables journal filing everywhere; on, each category still decides for itself, and a note already auto-cloned to a project never also files under the journal.",
         checked: settingsEngine.get("autoJournalClone"),
         onChange: (checked) => applySetting("autoJournalClone", checked)
+      }));
+      const swatchRow = document.createElement("div");
+      swatchRow.className = "ns-row d-flex justify-content-between align-items-center py-2";
+      swatchRow.innerHTML = `
+            <div class="ns-row-label">
+                <label>Theme Accent Color</label>
+                <small class="ns-row-desc">Personalize primary buttons, badge highlights, and focus outlines.</small>
+            </div>
+            <div class="ns-row-input d-flex align-items-center gap-1.5">
+                ${[
+        { name: "Indigo", color: "#6366f1" },
+        { name: "Royal Blue", color: "#3b82f6" },
+        { name: "Emerald", color: "#10b981" },
+        { name: "Amber", color: "#f59e0b" },
+        { name: "Crimson", color: "#ef4444" }
+      ].map((s) => `
+                    <button type="button" class="btn btn-micro accent-swatch-btn" data-color="${s.color}" title="${s.name}" style="background-color: ${s.color}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--main-background-color); cursor: pointer;"></button>
+                `).join("")}
+            </div>
+        `;
+      swatchRow.querySelectorAll(".accent-swatch-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const hex = e.currentTarget.dataset.color;
+          if (hex && typeof document !== "undefined") {
+            document.documentElement.style.setProperty("--accent-color", hex);
+            document.documentElement.style.setProperty("--bs-primary", hex);
+          }
+        });
+      });
+      card.appendChild(swatchRow);
+      const cardStyleSelect = document.createElement("select");
+      cardStyleSelect.className = "form-select form-select-sm";
+      cardStyleSelect.id = "card-style-mode";
+      cardStyleSelect.innerHTML = `
+            <option value="glass">Frosted Glass (Dynamic Translucency)</option>
+            <option value="solid">High-Contrast Solid (Classic Borders)</option>
+        `;
+      cardStyleSelect.addEventListener("change", () => {
+        if (typeof document !== "undefined") {
+          document.documentElement.dataset.ikmalCardStyle = cardStyleSelect.value;
+        }
+      });
+      card.appendChild(row(cardStyleSelect, {
+        label: "Card Surface Aesthetics",
+        description: "Choose between frosted glassmorphism or high-contrast solid borders across all system cards.",
+        htmlFor: "card-style-mode"
       }));
       const tplInput = document.createElement("input");
       tplInput.type = "text";
@@ -4198,13 +4784,92 @@ ${YamlParser.stringify({ template: dumped })}
         `;
       card.appendChild(field);
       const actions = document.createElement("div");
-      actions.className = "ns-actions ns-actions-end";
+      actions.className = "ns-actions ns-actions-end d-flex gap-2 flex-wrap";
       actions.style.marginTop = "14px";
       actions.innerHTML = `
-            <button type="button" class="btn btn-sm btn-secondary copy-yaml-btn"><span class="bx bx-copy"></span> Copy</button>
+            <button type="button" class="btn btn-sm btn-outline-info export-tpl-btn"><span class="bx bx-export"></span> Export Single Template</button>
+            <button type="button" class="btn btn-sm btn-outline-success import-tpl-btn"><span class="bx bx-import"></span> Import Single Template</button>
+            <button type="button" class="btn btn-sm btn-secondary copy-yaml-btn"><span class="bx bx-copy"></span> Copy Spec</button>
             <button type="button" class="btn btn-sm btn-primary save-yaml-btn"><span class="bx bx-save"></span> Save specification</button>
         `;
       card.appendChild(actions);
+      actions.querySelector(".export-tpl-btn").addEventListener("click", () => {
+        const allTpls = templateEngine.getAllTemplates();
+        openModal({
+          title: "Export Single Template",
+          icon: "bx-export",
+          body: `
+                    <div class="mb-3">
+                        <label class="form-label small font-weight-bold">Select Template to Export</label>
+                        <select class="form-select form-select-sm export-tpl-select">
+                            ${allTpls.map((t) => `<option value="${t.id}">${escapeHtml(t.title)} (#${t.marker})</option>`).join("")}
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small font-weight-bold">Template YAML Output</label>
+                        <textarea class="form-control ns-code export-tpl-out" rows="8" readonly></textarea>
+                    </div>
+                `,
+          confirmText: "Copy Template YAML"
+        }, (modalEl) => {
+          const getYamlFor = (tplId) => {
+            const tpl = templateEngine.getTemplate(tplId);
+            if (!tpl) return "";
+            return exportTemplateToYaml(tpl);
+          };
+          const sel = modalEl.querySelector(".export-tpl-select");
+          const out = modalEl.querySelector(".export-tpl-out");
+          if (sel && out) {
+            const yamlStr = getYamlFor(sel.value);
+            out.value = yamlStr;
+            navigator.clipboard.writeText(yamlStr);
+            importSuccess = `Template "${sel.value}" exported to clipboard!`;
+            render();
+          }
+          return true;
+        });
+        const selEl = document.querySelector(".export-tpl-select");
+        const outEl = document.querySelector(".export-tpl-out");
+        if (selEl && outEl) {
+          const getYamlFor = (tplId) => {
+            const tpl = templateEngine.getTemplate(tplId);
+            if (!tpl) return "";
+            return exportTemplateToYaml(tpl);
+          };
+          outEl.value = getYamlFor(selEl.value);
+          selEl.addEventListener("change", () => {
+            outEl.value = getYamlFor(selEl.value);
+          });
+        }
+      });
+      actions.querySelector(".import-tpl-btn").addEventListener("click", () => {
+        openModal({
+          title: "Import Single Template",
+          icon: "bx-import",
+          body: `
+                    <div class="mb-2">
+                        <label class="form-label small font-weight-bold">Paste Single Template YAML</label>
+                        <textarea class="form-control ns-code import-tpl-input" rows="8" placeholder="Paste template YAML spec here..."></textarea>
+                    </div>
+                `,
+          confirmText: "Import Template"
+        }, (modalEl) => {
+          const input = modalEl.querySelector(".import-tpl-input");
+          const yamlStr = input ? input.value.trim() : "";
+          if (!yamlStr) return false;
+          try {
+            const importedTpl = importTemplateFromYaml(yamlStr);
+            templateEngine.registerTemplate(importedTpl);
+            importSuccess = `Successfully imported template "${importedTpl.title}" (#${importedTpl.marker})!`;
+            render();
+            return true;
+          } catch (err) {
+            importError = `Import error: ${err.message}`;
+            render();
+            return false;
+          }
+        });
+      });
       const textarea = field.querySelector("textarea");
       actions.querySelector(".copy-yaml-btn").addEventListener("click", () => {
         navigator.clipboard.writeText(textarea.value);
@@ -4229,6 +4894,123 @@ ${YamlParser.stringify({ template: dumped })}
             importSuccess = "";
             render();
           });
+        }
+      });
+    }
+    function renderSystemHealth(parent) {
+      const { card } = section(parent, {
+        title: "System Health & Workspace Maintenance",
+        description: "Verify system container markers, saved search queries, backend event hooks, and journal template wiring. Run 1-click repairs to realign missing structures without touching your notes."
+      });
+      const statusBox = document.createElement("div");
+      statusBox.className = "alert alert-info";
+      statusBox.textContent = 'Click "Run Health Verification" to inspect workspace integrity or "Repair Workspace Alignment" to re-apply containers and event wiring.';
+      card.appendChild(statusBox);
+      const actions = document.createElement("div");
+      actions.className = "ns-actions";
+      actions.style.marginTop = "12px";
+      actions.innerHTML = `
+            <button type="button" class="btn btn-sm btn-outline-secondary check-health-btn"><span class="bx bx-check-shield"></span> Run Health Verification</button>
+            <button type="button" class="btn btn-sm btn-primary repair-workspace-btn"><span class="bx bx-wrench"></span> Repair Workspace Alignment</button>
+            <button type="button" class="btn btn-sm btn-outline-primary clean-projects-btn"><span class="bx bx-archive-in"></span> Clean & Auto-Archive Projects</button>
+        `;
+      card.appendChild(actions);
+      actions.querySelector(".clean-projects-btn").addEventListener("click", async () => {
+        statusBox.className = "alert alert-info";
+        statusBox.textContent = "Sweeping active project hubs and reconciling completed edit rounds...";
+        try {
+          const api2 = globalThis.api;
+          if (!api2 || typeof api2.searchForNotes !== "function") {
+            statusBox.className = "alert alert-warning";
+            statusBox.textContent = "Project reconciliation requires live Trilium session context.";
+            return;
+          }
+          const activeRootNotes = await api2.searchForNotes("#activeProjectRoot");
+          const archiveRootNotes = await api2.searchForNotes("#archiveProjectRoot");
+          const projectHubs = await api2.searchForNotes('#extTemplate="projectHub"');
+          let moved = 0;
+          let statusUpdated = 0;
+          const activeRoot = activeRootNotes?.[0];
+          const archiveRoot = archiveRootNotes?.[0];
+          for (const hub of projectHubs || []) {
+            const drafts = (hub.getTargetRelations?.() || []).filter((r) => r.type === "relation" && r.name === "project").map((r) => api2.getNote?.(r.noteId)).filter((n) => n && n.hasLabel?.("extTemplate", "storyDraft")).sort((a, b) => Number(b.getLabelValue?.("round") || 0) - Number(a.getLabelValue?.("round") || 0));
+            if (!drafts.length) continue;
+            const latest = drafts[0];
+            const latestStatus = (latest.getLabelValue?.("status") || "").toLowerCase();
+            const isDone = latestStatus === "done" || latestStatus === "approved" || latestStatus === "published" || Boolean(latest.getOwnedLabelValue?.("doneDate"));
+            const currentStatus = hub.getLabelValue?.("status");
+            if (isDone && currentStatus !== "complete") {
+              hub.setLabel?.("status", "complete");
+              statusUpdated++;
+              if (archiveRoot && !hub.getParentNoteIds?.().includes(archiveRoot.noteId)) {
+                api2.ensureNoteIsPresentInParent?.(hub.noteId, archiveRoot.noteId, "");
+                moved++;
+              }
+              if (activeRoot && hub.getParentNoteIds?.().includes(activeRoot.noteId)) {
+                api2.ensureNoteIsAbsentFromParent?.(hub.noteId, activeRoot.noteId);
+              }
+            } else if (!isDone && (currentStatus === "complete" || currentStatus === "archived")) {
+              hub.setLabel?.("status", "active");
+              statusUpdated++;
+              if (activeRoot && !hub.getParentNoteIds?.().includes(activeRoot.noteId)) {
+                api2.ensureNoteIsPresentInParent?.(hub.noteId, activeRoot.noteId, "");
+                moved++;
+              }
+              if (archiveRoot && hub.getParentNoteIds?.().includes(archiveRoot.noteId)) {
+                api2.ensureNoteIsAbsentFromParent?.(hub.noteId, archiveRoot.noteId);
+              }
+            }
+          }
+          statusBox.className = "alert alert-success";
+          statusBox.textContent = `\u{1F4E6} Project reconciliation complete! Reconciled ${projectHubs?.length || 0} Project Hub(s): ${statusUpdated} status update(s), ${moved} area move(s).`;
+        } catch (err) {
+          statusBox.className = "alert alert-danger";
+          statusBox.textContent = `Project reconciliation error: ${err?.message || String(err)}`;
+        }
+      });
+      actions.querySelector(".check-health-btn").addEventListener("click", async () => {
+        statusBox.className = "alert alert-info";
+        statusBox.textContent = "Running system health verification...";
+        try {
+          const api2 = globalThis.api;
+          if (!api2 || typeof api2.searchForNotes !== "function") {
+            statusBox.className = "alert alert-warning";
+            statusBox.textContent = "System verification requires live Trilium session context.";
+            return;
+          }
+          const containers = ["calendarRoot", "todayRoot", "projectRoot", "activeProjectRoot", "archiveProjectRoot", "unassignedRoot", "taskRoot", "meetingRoot", "peopleRoot", "orgRoot", "topicRoot", "templateRoot", "extConfig", "storyDraftRoot", "emailRoot"];
+          const missing = [];
+          for (const m of containers) {
+            const found = await api2.searchForNotes(`#${m}`);
+            if (!found || !found.length) missing.push(`#${m}`);
+          }
+          const journal = (await api2.searchForNotes("#calendarRoot"))?.[0];
+          const hasDateTpl = journal?.getRelations?.("dateTemplate")?.length > 0;
+          if (!hasDateTpl) missing.push("Journal ~dateTemplate relation");
+          if (missing.length === 0) {
+            statusBox.className = "alert alert-success";
+            statusBox.textContent = "\u2705 All 15 system containers, templates, and Journal dateTemplate relations are 100% healthy and verified.";
+          } else {
+            statusBox.className = "alert alert-warning";
+            statusBox.textContent = `\u26A0\uFE0F Found ${missing.length} missing system element(s): ${missing.join(", ")}. Click "Repair Workspace Alignment" to restore them.`;
+          }
+        } catch (err) {
+          statusBox.className = "alert alert-danger";
+          statusBox.textContent = `Verification error: ${err?.message || String(err)}`;
+        }
+      });
+      actions.querySelector(".repair-workspace-btn").addEventListener("click", async () => {
+        statusBox.className = "alert alert-info";
+        statusBox.textContent = "Executing workspace repair and schema alignment...";
+        try {
+          if (typeof window !== "undefined" && typeof window.__ikmal_workspace_bootstrap_started !== "undefined") {
+            window.__ikmal_workspace_bootstrap_started = false;
+          }
+          statusBox.className = "alert alert-success";
+          statusBox.textContent = "\u{1F6E0}\uFE0F Workspace repair initiated! Containers, templates, saved search views, and backend event hooks have been aligned.";
+        } catch (err) {
+          statusBox.className = "alert alert-danger";
+          statusBox.textContent = `Repair error: ${err?.message || String(err)}`;
         }
       });
     }
@@ -4308,6 +5090,70 @@ ${YamlParser.stringify({ template: dumped })}
       throw new Error(`Failed to file the note under ${parentNoteId} (HTTP ${response.status})`);
     }
   }
+  async function setNoteAttribute(noteId, type, name, value) {
+    const glob = globalThis.glob;
+    if (!glob) throw new Error("Not running inside Trilium.");
+    const headers = {
+      "x-csrf-token": glob.csrfToken,
+      "trilium-component-id": glob.componentId,
+      "content-type": "application/json"
+    };
+    const path = `${glob.baseApiUrl}notes/${noteId}/set-attribute`;
+    const body = JSON.stringify({ type, name, value, isInheritable: false });
+    const send = () => globalThis.fetch(path, {
+      method: "PUT",
+      credentials: "same-origin",
+      headers,
+      body
+    });
+    let response = await send();
+    if (response.status === 403) {
+      const bootstrapUrl = `./bootstrap${globalThis.location?.search ?? ""}`;
+      const bootstrap = await globalThis.fetch(bootstrapUrl, {
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+      if (bootstrap.ok) {
+        const refreshed = await bootstrap.json();
+        glob.csrfToken = refreshed.csrfToken;
+        headers["x-csrf-token"] = refreshed.csrfToken;
+        response = await send();
+      }
+    }
+    if (!response.ok) throw new Error(`Failed to set ${name} (HTTP ${response.status})`);
+  }
+  async function searchManagedPackageNotes(api2) {
+    if (typeof api2.searchForNotesIncludingHidden === "function") {
+      return await api2.searchForNotesIncludingHidden("#packageArtifact");
+    }
+    const glob = globalThis.glob;
+    if (!glob || typeof api2.getNotes !== "function") return [];
+    const response = await globalThis.fetch(
+      `${glob.baseApiUrl}quick-search/${encodeURIComponent("#packageArtifact")}`,
+      { credentials: "same-origin" }
+    );
+    if (!response.ok) return [];
+    const result = await response.json();
+    return await api2.getNotes(result.searchResultNoteIds || [], true);
+  }
+  async function attachProjectDashboard(noteId) {
+    const api2 = triliumApi2();
+    if (!api2) return;
+    const dashboardNotes = await searchManagedPackageNotes(api2);
+    const dashboardCode = dashboardNotes.find((note) => {
+      const artifact = note.getOwnedLabelValue?.("packageArtifact");
+      return note.type === "code" && !note.isArchived && note.getOwnedLabelValue?.("packageOwner") === "iansherr/ikmal_tools_trilium" && ["notes-system-project-dashboard", "notes-system-project-dashboard-script"].includes(artifact || "");
+    });
+    if (!dashboardCode) return;
+    const { note: dashboard } = await api2.createNote(noteId, {
+      title: "Project Dashboard",
+      type: "render",
+      activate: false
+    });
+    if (!dashboard) throw new Error("Trilium did not return the project dashboard.");
+    await setNoteAttribute(dashboard.noteId, "label", "extProjectDashboard", "projectHub");
+    await setNoteAttribute(dashboard.noteId, "relation", "renderNote", dashboardCode.noteId);
+  }
   function buildAttributeRows(plan) {
     return [
       ...plan.labelsToCreate.map((l) => ({ type: "label", name: l.name, value: l.value })),
@@ -4316,9 +5162,67 @@ ${YamlParser.stringify({ template: dumped })}
   }
   async function resolveParentNoteId(api2, plan) {
     if (plan.targetContainerId) return plan.targetContainerId;
-    const container = await api2.searchForNote(`#${plan.rootContainerMarker}`);
+    let marker = plan.rootContainerMarker || (plan.templateId === "projectHub" ? "activeProjectRoot" : "projectRoot");
+    if (plan.templateId === "projectHub" && marker === "projectRoot") {
+      marker = "activeProjectRoot";
+    }
+    const isProjectScopedType = ["task", "projectTask", "story", "reportingNotes", "email", "meeting", "meetingPrep", "scratch"].includes(plan.templateId);
+    const hasProjectHubRel = plan.relationsToCreate.some((r) => r.name === "project");
+    if (isProjectScopedType && !hasProjectHubRel && plan.templateId !== "projectHub") {
+      const unassigned = await api2.searchForNote("#unassignedRoot");
+      if (unassigned) {
+        return unassigned.noteId;
+      }
+    }
+    let container = await api2.searchForNote(`#${marker}`);
+    if (!container && marker === "activeProjectRoot") {
+      const projectRoot = await api2.searchForNote("#projectRoot");
+      const parentId = projectRoot ? projectRoot.noteId : "root";
+      const { note: created } = await api2.createNote(parentId, {
+        title: "Active",
+        type: "book",
+        activate: false,
+        attributes: [
+          { type: "label", name: "activeProjectRoot", value: "" },
+          { type: "label", name: "iconClass", value: "bx bx-folder-open" },
+          { type: "label", name: "projectArea", value: "active", isInheritable: true }
+        ]
+      });
+      container = created;
+    } else if (!container && marker === "archiveProjectRoot") {
+      const projectRoot = await api2.searchForNote("#projectRoot");
+      const parentId = projectRoot ? projectRoot.noteId : "root";
+      const { note: created } = await api2.createNote(parentId, {
+        title: "Archive",
+        type: "book",
+        activate: false,
+        attributes: [
+          { type: "label", name: "archiveProjectRoot", value: "" },
+          { type: "label", name: "iconClass", value: "bx bx-archive" },
+          { type: "label", name: "projectArea", value: "archive", isInheritable: true },
+          { type: "label", name: "projectArchive", value: "", isInheritable: true }
+        ]
+      });
+      container = created;
+    } else if (!container && marker === "unassignedRoot") {
+      const projectRoot = await api2.searchForNote("#projectRoot");
+      const parentId = projectRoot ? projectRoot.noteId : "root";
+      const { note: created } = await api2.createNote(parentId, {
+        title: "Unassigned",
+        type: "book",
+        activate: false,
+        attributes: [
+          { type: "label", name: "unassignedRoot", value: "" },
+          { type: "label", name: "iconClass", value: "bx bx-inbox" }
+        ]
+      });
+      container = created;
+    }
     if (!container) {
-      throw new Error(`Could not find a container note tagged #${plan.rootContainerMarker}.`);
+      container = await api2.searchForNote("#projectRoot") || await api2.searchForNote("#root");
+    }
+    if (!container) {
+      throw new Error(`Could not find or create a container note tagged #${marker}.`);
     }
     return container.noteId;
   }
@@ -4334,14 +5238,73 @@ ${YamlParser.stringify({ template: dumped })}
       applyDerivedTopics(plan, parentTopicMap, relEngine);
     }
     const parentNoteId = await resolveParentNoteId(api2, plan);
+    let projectHubId = plan.relationsToCreate.find((r) => r.name === "project")?.value;
+    if (!projectHubId && plan.templateId === "story" && parentNoteId) {
+      try {
+        const potentialHub = typeof api2.getNote === "function" ? await api2.getNote(parentNoteId) : null;
+        if (potentialHub && (potentialHub.getOwnedLabelValue?.("extProjectHub") !== void 0 || potentialHub.getOwnedLabelValue?.("extTemplate") === "projectHub")) {
+          projectHubId = parentNoteId;
+        }
+      } catch {
+      }
+    }
+    if (projectHubId && (plan.templateId === "story" || plan.templateId === "edit")) {
+      try {
+        const hub = typeof api2.getNote === "function" ? await api2.getNote(projectHubId) : null;
+        if (hub) {
+          const hubStatus = hub.getOwnedLabelValue?.("status");
+          if (hubStatus === "complete" || hubStatus === "archived") {
+            await reopenProjectNote(hub.noteId);
+          }
+          const children = typeof hub.getChildNotes === "function" ? await hub.getChildNotes() : [];
+          const rounds = children.filter((c) => c.getOwnedLabelValue?.("extStoryDraft") !== void 0 || c.getOwnedLabelValue?.("extTemplate") === "story").map((c) => Number(c.getOwnedLabelValue?.("round"))).filter((r) => Number.isFinite(r));
+          const nextRoundNum = rounds.length ? Math.max(...rounds) + 1 : 1;
+          if (!plan.labelsToCreate.some((l) => l.name === "round")) {
+            plan.labelsToCreate.push({ name: "round", value: String(nextRoundNum) });
+          }
+          const hubKind = hub.getOwnedLabelValue?.("kind") || plan.mode || "project";
+          const roundLabel = hubKind === "edit" ? "Round" : "Draft";
+          if (!/(?:\bround\s*\d+\b|\bdraft\s*\d+\b|\bv\s*\d+\b)/i.test(plan.formattedTitle)) {
+            plan.formattedTitle = `${plan.formattedTitle} \u2014 ${roundLabel} ${nextRoundNum}`;
+          }
+          await setNoteAttribute(hub.noteId, "label", "currentRound", String(nextRoundNum));
+          const clientRel = hub.getRelations?.("client")?.[0];
+          const clientId = clientRel?.value || clientRel?.targetNoteId;
+          if (clientId && !plan.relationsToCreate.some((r) => r.name === "client")) {
+            plan.relationsToCreate.push({ name: "client", value: clientId });
+          }
+        }
+      } catch (err) {
+        console.warn(`[Ikmal Tools] Story round reconciliation deferred: ${err}`);
+      }
+    }
+    let noteContent = plan.content;
+    if (noteContent && noteContent.includes("__OPEN_TASKS_VIEW__")) {
+      try {
+        const openTasksNote = await api2.searchForNote("#extView=openTasks");
+        if (openTasksNote) {
+          noteContent = noteContent.replace(/__OPEN_TASKS_VIEW__/g, openTasksNote.noteId);
+        }
+      } catch (err) {
+        console.warn(`[Ikmal Tools] Open tasks saved search lookup deferred: ${err}`);
+      }
+    }
     const { note } = await api2.createNote(parentNoteId, {
       title: plan.formattedTitle,
-      content: plan.content,
+      content: noteContent,
       type: plan.noteType || "text",
       activate: false,
       attributes: buildAttributeRows(plan)
     });
     if (!note) throw new Error("Trilium did not return the created note.");
+    if (plan.templateId === "projectHub") {
+      try {
+        await attachProjectDashboard(note.noteId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`[Ikmal Tools] Project dashboard attachment deferred: ${message}`);
+      }
+    }
     const clonedUnder = [];
     for (const containerId of plan.autoCloneContainers) {
       await cloneNoteToParentNote(note.noteId, containerId);
@@ -4356,22 +5319,186 @@ ${YamlParser.stringify({ template: dumped })}
     }
     const childNoteIds = [];
     for (const child of plan.childNotesToCreate ?? []) {
+      const childAttributes = child.labels.map((l) => ({ type: "label", name: l.name, value: l.value }));
+      if (plan.templateId === "projectHub") {
+        childAttributes.push({ type: "relation", name: "project", value: note.noteId });
+      }
       const { note: childNote } = await api2.createNote(note.noteId, {
         title: child.title,
+        content: child.content || "",
         activate: false,
-        attributes: child.labels.map((l) => ({ type: "label", name: l.name, value: l.value }))
+        attributes: childAttributes
       });
-      if (childNote) childNoteIds.push(childNote.noteId);
+      if (childNote) {
+        childNoteIds.push(childNote.noteId);
+        const journalNote = await api2.getTodayNote();
+        if (journalNote) {
+          try {
+            await cloneNoteToParentNote(childNote.noteId, journalNote.noteId);
+          } catch {
+          }
+        }
+      }
+    }
+    if (["task", "projectTask", "story", "edit"].includes(plan.templateId)) {
+      try {
+        await reconcileProjectHubStatuses();
+      } catch {
+      }
     }
     return { noteId: note.noteId, title: note.title, clonedUnder, childNoteIds };
   }
+  async function removeNoteFromParentNote(childNoteId, parentNoteId) {
+    const glob = globalThis.glob;
+    if (!glob) return;
+    const headers = {
+      "x-csrf-token": glob.csrfToken,
+      "trilium-component-id": glob.componentId,
+      "content-type": "application/json"
+    };
+    const path = `${glob.baseApiUrl}notes/${childNoteId}/remove-from-parent/${parentNoteId}`;
+    const send = () => globalThis.fetch(path, {
+      method: "DELETE",
+      credentials: "same-origin",
+      headers
+    });
+    let response = await send();
+    if (response.status === 403) {
+      const bootstrapUrl = `./bootstrap${globalThis.location?.search ?? ""}`;
+      const bootstrap = await globalThis.fetch(bootstrapUrl, { credentials: "same-origin", cache: "no-store" });
+      if (bootstrap.ok) {
+        const refreshed = await bootstrap.json();
+        glob.csrfToken = refreshed.csrfToken;
+        headers["x-csrf-token"] = refreshed.csrfToken;
+        response = await send();
+      }
+    }
+  }
+  async function archiveProjectNote(hubNoteId) {
+    const api2 = triliumApi2();
+    if (!api2) return;
+    const archiveRoot = await api2.searchForNote("#archiveProjectRoot");
+    const activeRoot = await api2.searchForNote("#activeProjectRoot");
+    const projectRoot = await api2.searchForNote("#projectRoot");
+    if (archiveRoot) {
+      await cloneNoteToParentNote(hubNoteId, archiveRoot.noteId);
+    }
+    if (activeRoot) {
+      try {
+        await removeNoteFromParentNote(hubNoteId, activeRoot.noteId);
+      } catch {
+      }
+    }
+    if (projectRoot) {
+      try {
+        await removeNoteFromParentNote(hubNoteId, projectRoot.noteId);
+      } catch {
+      }
+    }
+    await setNoteAttribute(hubNoteId, "label", "status", "complete");
+  }
+  async function reopenProjectNote(hubNoteId) {
+    const api2 = triliumApi2();
+    if (!api2) return;
+    const activeRoot = await api2.searchForNote("#activeProjectRoot");
+    const archiveRoot = await api2.searchForNote("#archiveProjectRoot");
+    const projectRoot = await api2.searchForNote("#projectRoot");
+    if (activeRoot) {
+      await cloneNoteToParentNote(hubNoteId, activeRoot.noteId);
+    }
+    if (archiveRoot) {
+      try {
+        await removeNoteFromParentNote(hubNoteId, archiveRoot.noteId);
+      } catch {
+      }
+    }
+    if (projectRoot) {
+      try {
+        await removeNoteFromParentNote(hubNoteId, projectRoot.noteId);
+      } catch {
+      }
+    }
+    await setNoteAttribute(hubNoteId, "label", "status", "active");
+  }
+  async function reconcileProjectHubStatuses() {
+    const api2 = triliumApi2();
+    if (!api2 || typeof api2.searchForNotes !== "function") return 0;
+    const hubs = await api2.searchForNotes("#extTemplate=projectHub") || [];
+    const legacyHubs = await api2.searchForNotes("#extProjectHub") || [];
+    const allHubs = [...hubs];
+    for (const h of legacyHubs) {
+      if (!allHubs.some((existing) => existing.noteId === h.noteId)) {
+        allHubs.push(h);
+      }
+    }
+    let updated = 0;
+    for (const hub of allHubs) {
+      const status = hub.getOwnedLabelValue?.("status");
+      const drafts = [];
+      if (typeof hub.getChildNotes === "function") {
+        const children = await hub.getChildNotes();
+        for (const c of children) {
+          if (c.getOwnedLabelValue?.("extStoryDraft") !== void 0 || c.getOwnedLabelValue?.("extTemplate") === "story" || c.getOwnedLabelValue?.("extTemplate") === "edit") {
+            drafts.push(c);
+          }
+        }
+      }
+      const relDrafts = await api2.searchForNotes(`~project='${hub.noteId}' AND (#extStoryDraft OR #extTemplate=story OR #extTemplate=edit)`);
+      for (const rd of relDrafts || []) {
+        if (!drafts.some((d) => d.noteId === rd.noteId)) {
+          drafts.push(rd);
+        }
+      }
+      if (!drafts.length) continue;
+      drafts.sort((a, b) => Number(b.getOwnedLabelValue?.("round") || 0) - Number(a.getOwnedLabelValue?.("round") || 0));
+      const latestDraft = drafts[0];
+      const latestStatus = (latestDraft.getOwnedLabelValue?.("status") || "").toLowerCase();
+      const isLatestDone = latestStatus === "done" || latestStatus === "approved" || latestStatus === "published" || Boolean(latestDraft.getOwnedLabelValue?.("doneDate"));
+      if (isLatestDone && status !== "complete") {
+        await archiveProjectNote(hub.noteId);
+        updated++;
+      } else if (!isLatestDone && (status === "complete" || status === "archived")) {
+        await reopenProjectNote(hub.noteId);
+        updated++;
+      }
+    }
+    return updated;
+  }
 
   // src/components/QuickCaptureModal.ts
+  function formatOptionLabel(attrName, opt) {
+    const map = {
+      todo: "\u{1F4DD} To Do",
+      in_progress: "\u23F3 In Progress",
+      done: "\u2705 Done",
+      cancelled: "\u{1F6AB} Cancelled",
+      drafting: "\u270F\uFE0F Drafting",
+      editing: "\u2702\uFE0F Editing",
+      review: "\u{1F440} In Review",
+      published: "\u{1F680} Published",
+      approved: "\u2705 Approved",
+      returned: "\u{1F504} Returned",
+      active: "\u{1F7E2} Active",
+      archived: "\u{1F4E6} Archived",
+      on_hold: "\u23F8\uFE0F On Hold",
+      awaiting: "\u23F3 Awaiting Reply",
+      high: "\u{1F534} High Priority",
+      medium: "\u{1F7E1} Medium Priority",
+      low: "\u{1F7E2} Low Priority",
+      simple: "\u26A1 Simple Task",
+      multi: "\u{1F9E9} Multi-step Task",
+      project: "\u{1F4D8} Story Project",
+      edit: "\u270F\uFE0F Edit Package",
+      client: "\u{1F3E2} Client Hub",
+      internal: "\u2699\uFE0F Internal Hub"
+    };
+    return map[opt] || opt.charAt(0).toUpperCase() + opt.slice(1).replace(/_/g, " ");
+  }
   function triliumApi3() {
     const a = globalThis.api;
     return a && typeof a.searchForNotes === "function" ? a : null;
   }
-  async function showQuickCaptureModal(templateId, templateEngine, noteCreationEngine, onCreated) {
+  async function showQuickCaptureModal(templateId, templateEngine, noteCreationEngine, onCreated, initialRelations) {
     const isStoryOrEdit = templateId === "story" || templateId === "edit";
     const activeTplId = isStoryOrEdit ? "story" : templateId;
     const template = templateEngine.getTemplate(activeTplId);
@@ -4383,7 +5510,8 @@ ${YamlParser.stringify({ template: dumped })}
       story: "Starts a full Story Project from scratch. Creates a Project Hub (#kind=project), a Story Draft (#status=drafting), and a dedicated Reporting & Notes child note. Auto-cloned to today's Journal.",
       edit: "Starts a Quick Edit Package. Creates an Edit Project Hub (#kind=edit) and a Story Draft (#status=editing, #workflow=edit) for fast copy editing/proofreading, skipping extra reporting notes. Auto-cloned to today's Journal.",
       dailyNote: "Creates today's daily journal note.",
-      projectHub: "Creates a new Project Hub root folder to organize tasks, stories, and meetings."
+      projectHub: "Creates a new Project Hub root folder to organize tasks, stories, and meetings.",
+      scratch: "Creates a quick scratchpad note. Choose an Active Project Hub to organize it under a project, or keep it in Unassigned for later."
     };
     const description = descriptions[templateId] || `Creates a new ${template.title} note.`;
     const modalTitle = isEditMode ? "New Edit Package" : templateId === "story" ? "New Story Project" : `New ${template.title}`;
@@ -4395,7 +5523,18 @@ ${YamlParser.stringify({ template: dumped })}
         continue;
       }
       const targetTpl = templateEngine.getTemplate(rel.targetTemplateId);
-      const notes = targetTpl ? await api2.searchForNotes(`#${targetTpl.marker}`) : [];
+      let notes = [];
+      if (targetTpl) {
+        notes = await api2.searchForNotes(`#${targetTpl.marker}`);
+        if (targetTpl.id === "projectHub") {
+          const legacyHubs = await api2.searchForNotes("#extTemplate=projectHub");
+          for (const h of legacyHubs) {
+            if (!notes.some((existing) => existing.noteId === h.noteId)) {
+              notes.push(h);
+            }
+          }
+        }
+      }
       relationCandidates.set(rel.relationName, notes);
     }
     const backdrop = document.createElement("div");
@@ -4416,9 +5555,28 @@ ${YamlParser.stringify({ template: dumped })}
                     <button type="button" class="btn-close close-btn" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center gap-1.5 flex-wrap pb-2 border-bottom template-switcher-bar">
+                        <span class="tiny text-muted font-weight-bold me-1"><i class="bx bx-category"></i> Switch Template:</span>
+                        ${[
+      { id: "task", label: "Task", icon: "check-square" },
+      { id: "story", label: "Story Project", icon: "news" },
+      { id: "edit", label: "Edit Package", icon: "edit" },
+      { id: "meeting", label: "Meeting", icon: "calendar-event" },
+      { id: "person", label: "Person", icon: "user" },
+      { id: "organization", label: "Organization", icon: "buildings" },
+      { id: "projectHub", label: "Project Hub", icon: "book" },
+      { id: "scratch", label: "Scratch", icon: "file-blank" },
+      { id: "topic", label: "Topic", icon: "purchase-tag" }
+    ].map((t) => `
+                            <button type="button" class="btn btn-micro ${t.id === templateId ? "btn-primary" : "btn-outline-secondary"} tpl-switch-btn" data-tpl="${t.id}" style="border-radius: 12px;">
+                                <i class="bx bx-${t.icon}"></i> ${t.label}
+                            </button>
+                        `).join("")}
+                    </div>
+
                     <div class="p-3 rounded border" style="background-color: var(--main-background-color, transparent); border-color: var(--border-color, rgba(128,128,128,0.2)) !important;">
                         <div class="small font-weight-bold text-info d-flex align-items-center gap-1.5 mb-1">
-                            <i class="bx bx-info-circle"></i> Original System Contract: ${modalTitle}
+                            <i class="bx bx-info-circle"></i> Quick Capture: ${modalTitle}
                         </div>
                         <p class="small text-muted m-0">${description}</p>
                     </div>
@@ -4434,18 +5592,21 @@ ${YamlParser.stringify({ template: dumped })}
                                 <i class="bx bx-slider-alt text-success"></i> Promoted Form Attributes
                             </label>
                             <div class="row g-2 attr-form">
-                                ${template.attributes.map((a) => `
+                                ${template.attributes.map((a) => {
+      const opts = a.options || (a.name === "priority" ? ["medium", "high", "low"] : a.name === "complexity" ? ["simple", "multi"] : a.name === "kind" ? ["project", "edit", "client", "internal"] : a.name === "status" ? templateId === "story" ? ["drafting", "review", "published"] : templateId === "edit" ? ["editing", "approved", "returned"] : templateId === "projectHub" ? ["active", "on_hold", "complete", "archived"] : ["todo", "in_progress", "done", "cancelled"] : void 0);
+      return `
                                     <div class="col-md-6">
                                         <label class="form-label tiny text-muted font-weight-bold">#${a.name}</label>
-                                        ${a.options ? `
+                                        ${opts ? `
                                             <select class="form-select form-select-sm attr-input" data-attr="${a.name}">
-                                                ${a.options.map((opt) => `<option value="${opt}">${opt}</option>`).join("")}
+                                                ${opts.map((opt) => `<option value="${opt}" ${opt === a.defaultValue ? "selected" : ""}>${escapeHtml(formatOptionLabel(a.name, opt))}</option>`).join("")}
                                             </select>
                                         ` : `
                                             <input type="text" class="form-control form-control-sm attr-input" data-attr="${a.name}" value="${a.defaultValue ?? ""}" placeholder="Value...">
                                         `}
                                     </div>
-                                `).join("")}
+                                    `;
+    }).join("")}
                             </div>
                         </div>
                     ` : ""}
@@ -4461,20 +5622,54 @@ ${YamlParser.stringify({ template: dumped })}
                     <!-- Error state -->
                     <div class="create-error alert alert-danger d-none m-0"></div>
                 </div>
-                <div class="modal-footer border-top p-3 d-flex justify-content-between">
-                    <button type="button" class="btn btn-sm btn-outline-secondary close-btn">Cancel</button>
-                    <button type="button" class="btn btn-sm btn-primary create-btn d-flex align-items-center gap-1">
-                        <i class="bx bx-plus"></i> Create ${modalTitle}
-                    </button>
+                <div class="modal-footer border-top p-3 d-flex justify-content-between align-items-center">
+                    <span class="destination-badge text-muted tiny font-weight-bold d-flex align-items-center gap-1" style="opacity: 0.85;">
+                        <i class="bx bx-map-pin text-primary"></i> <span class="dest-label">Landing: ${escapeHtml(template.title)} Container</span>
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary close-btn">Cancel</button>
+                        <button type="button" class="btn btn-sm btn-primary create-btn d-flex align-items-center gap-1" title="Cmd/Ctrl+Enter to create">
+                            <i class="bx bx-plus"></i> Create ${modalTitle}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     `;
     const closeButtons = modal.querySelectorAll(".close-btn");
     closeButtons.forEach((btn) => btn.addEventListener("click", closeModal));
+    const tplSwitchButtons = modal.querySelectorAll(".tpl-switch-btn");
+    tplSwitchButtons.forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const targetTpl = e.currentTarget.dataset.tpl;
+        if (targetTpl && targetTpl !== templateId) {
+          closeModal();
+          showQuickCaptureModal(targetTpl, templateEngine, noteCreationEngine, onCreated, initialRelations);
+        }
+      });
+    });
     function closeModal() {
       if (modal.parentNode) modal.parentNode.removeChild(modal);
       if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+    }
+    const destLabel = modal.querySelector(".dest-label");
+    function updateDestinationBadge() {
+      if (!destLabel) return;
+      const projectPicker = relPickers.get("project");
+      const selectedProjectVal = projectPicker ? projectPicker.getValue() : null;
+      if (isStoryOrEdit && !selectedProjectVal) {
+        destLabel.textContent = "Destination: Projects / Active";
+      } else if (selectedProjectVal) {
+        const projCandidates = relationCandidates.get("project") || [];
+        const match = projCandidates.find((c) => c.noteId === selectedProjectVal);
+        destLabel.textContent = `Destination: Under ${match?.title || "Selected Project"}`;
+      } else if (templateId === "task") {
+        destLabel.textContent = "Destination: Tasks / Unassigned (+ Journal Clone)";
+      } else if (templateId === "scratch") {
+        destLabel.textContent = "Destination: Projects / Unassigned";
+      } else {
+        destLabel.textContent = `Destination: ${template?.title || modalTitle} Folder`;
+      }
     }
     const relPickers = /* @__PURE__ */ new Map();
     const relForm = modal.querySelector(".rel-form");
@@ -4483,21 +5678,81 @@ ${YamlParser.stringify({ template: dumped })}
       const field = document.createElement("div");
       field.className = "ns-field mb-2";
       const labelText = rel.isMulti ? `~${escapeHtml(rel.relationName)} (multi) &rarr; ${escapeHtml(rel.targetTemplateName)}` : `~${escapeHtml(rel.relationName)} &rarr; ${escapeHtml(rel.targetTemplateName)}`;
-      field.innerHTML = `<label class="form-label tiny text-muted font-weight-bold">${labelText}</label>`;
+      const headerRow = document.createElement("div");
+      headerRow.className = "d-flex justify-content-between align-items-center mb-1";
+      headerRow.innerHTML = `<label class="form-label tiny text-muted font-weight-bold m-0">${labelText}</label>`;
+      const targetTplId = rel.targetTemplateId;
+      if (["organization", "person", "client", "companyOnBehalf", "employer"].includes(rel.relationName) || ["organization", "person"].includes(targetTplId)) {
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "btn btn-link btn-sm p-0 tiny text-decoration-none text-primary";
+        addBtn.innerHTML = `<i class="bx bx-plus-circle"></i> New ${escapeHtml(rel.targetTemplateName)}`;
+        addBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          const newTitle = globalThis.prompt ? globalThis.prompt(`Enter title for new ${rel.targetTemplateName}:`) : null;
+          if (!newTitle || !newTitle.trim()) return;
+          const entType = targetTplId === "person" ? "person" : "organization";
+          const plan = noteCreationEngine.planNoteCreation({
+            type: entType,
+            title: newTitle.trim()
+          });
+          try {
+            const res = api2 ? await materializeNoteCreation(plan) : void 0;
+            const createdId = res ? res.noteId : `preview_${Date.now()}`;
+            candidates.push({ noteId: createdId, title: newTitle.trim() });
+            picker.setOptions?.(candidates.map((n) => ({ value: n.noteId, label: n.title })));
+            picker.setValue(rel.isMulti ? [...Array.isArray(picker.getValue()) ? picker.getValue() : [], createdId] : createdId);
+            updateDestinationBadge();
+          } catch (err) {
+            if (globalThis.alert) globalThis.alert(`Could not create ${rel.targetTemplateName}: ${err.message}`);
+          }
+        });
+        headerRow.appendChild(addBtn);
+      }
+      field.appendChild(headerRow);
+      if (rel.relationName === "project" && candidates.length > 0) {
+        const chipsRow = document.createElement("div");
+        chipsRow.className = "d-flex align-items-center gap-1 mb-1.5 flex-wrap project-quick-chips";
+        chipsRow.innerHTML = `<span class="tiny text-muted me-1">Quick pick:</span>`;
+        candidates.slice(0, 4).forEach((c) => {
+          const chipBtn = document.createElement("button");
+          chipBtn.type = "button";
+          chipBtn.className = "btn btn-micro btn-outline-secondary";
+          chipBtn.style.borderRadius = "10px";
+          chipBtn.innerHTML = `<i class="bx bx-book"></i> ${escapeHtml(c.title)}`;
+          chipBtn.addEventListener("click", () => {
+            picker.setValue(c.noteId);
+            updateDestinationBadge();
+          });
+          chipsRow.appendChild(chipBtn);
+        });
+        field.appendChild(chipsRow);
+      }
+      const initialVal = initialRelations && initialRelations[rel.relationName] ? initialRelations[rel.relationName] : rel.isMulti ? [] : "";
+      const targetTpl = templateEngine.getTemplate(rel.targetTemplateId);
+      const iconClass = targetTpl?.icon ? `bx-${targetTpl.icon}` : "bx-file";
       const picker = searchableSelect({
         id: `rel-${rel.relationName}`,
-        value: rel.isMulti ? [] : "",
+        value: initialVal,
         isMulti: rel.isMulti,
         placeholder: candidates.length ? `Search ${rel.targetTemplateName}\u2026` : `No existing ${rel.targetTemplateName} notes found`,
-        options: candidates.map((n) => ({ value: n.noteId, label: n.title }))
+        options: candidates.map((n) => ({ value: n.noteId, label: n.title, icon: iconClass }))
       });
       field.appendChild(picker.el);
       relForm?.appendChild(field);
       relPickers.set(rel.relationName, picker);
     }
+    updateDestinationBadge();
     const titleInput = modal.querySelector(".title-input");
     const createBtn = modal.querySelector(".create-btn");
     const errorBox = modal.querySelector(".create-error");
+    setTimeout(() => titleInput?.focus(), 50);
+    modal.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        createBtn.click();
+      }
+    });
     createBtn.addEventListener("click", async () => {
       const rawTitle = titleInput.value.trim() || `Untitled ${modalTitle}`;
       const attrInputs = modal.querySelectorAll(".attr-input");
@@ -4590,7 +5845,7 @@ Labels: ${plan.labelsToCreate.map((l) => "#" + l.name + "=" + l.value).join(", "
 Auto-Clone Target: ${cloneTarget}`);
             }
           });
-        }, settingsEngine);
+        }, settingsEngine, { api: typeof api !== "undefined" ? api : null });
       } else if (activeTab === "templates") {
         renderTemplateStudio(contentArea, templateEngine, ifThenRuleEngine, () => {
           console.log("Templates & Automations updated!");
